@@ -1,0 +1,3 @@
+display_name: SERRALE GitHub Sync
+short_description: Safely push this workspace to GitHub with runtime PAT auth
+default_prompt: Sync this workspace to the target GitHub branch using the serrale-github-sync skill, without storing secrets in files.

@@ -83,28 +83,28 @@ export function ProviderHomeScreen() {
       <View style={styles.summaryGrid}>
         <SummaryCard
           icon="document-text-outline"
-          number={dashboard.skills_count.toString()}
+          number={(dashboard?.skills_count ?? 0).toString()}
           label="Skills"
           hint="Verified"
           iconBg={providerColors.sky}
         />
         <SummaryCard
           icon="folder-outline"
-          number={dashboard.portfolio_count.toString()}
+          number={(dashboard?.portfolio_count ?? 0).toString()}
           label="Portfolio"
           hint="Items"
           iconBg={providerColors.purpleSoft}
         />
         <SummaryCard
           icon="layers-outline"
-          number={dashboard.services_count.toString()}
+          number={(dashboard?.services_count ?? 0).toString()}
           label="Services"
           hint="Offered"
           iconBg={providerColors.successSoft}
         />
         <SummaryCard
           icon="rocket-outline"
-          number={`${dashboard.profile_completion}%`}
+          number={`${dashboard?.profile_completion ?? 0}%`}
           label="Profile"
           hint="Completion"
           iconBg={providerColors.warningSoft}

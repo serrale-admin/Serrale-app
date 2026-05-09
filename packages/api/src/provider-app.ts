@@ -15,8 +15,19 @@ export async function getProviderBootstrap() {
 }
 
 export async function getProviderDashboard() {
-  const response = await api.get<ApiEnvelope<ProviderDashboard>>("/api/provider/dashboard");
-  return unwrapEnvelope(response.data);
+  const response = await api.get<ApiEnvelope<any>>("/api/provider/dashboard");
+  const raw = unwrapEnvelope(response.data);
+  
+  // Normalize response to be resilient to backend structure variations
+  return {
+    provider_name: raw.provider_name || raw.profile?.full_name || raw.profile?.name || "Provider",
+    profile_completion: raw.profile_completion || raw.completeness?.score || raw.readiness?.score || raw.profile?.completeness_score || 0,
+    verification_status: raw.verification_status || raw.verification?.verification_status || raw.profile?.verification_status || "not_started",
+    skills_count: raw.skills_count || raw.skills?.length || raw.skills?.count || 0,
+    portfolio_count: raw.portfolio_count || raw.portfolio?.length || raw.portfolio?.count || 0,
+    services_count: raw.services_count || raw.services?.length || raw.services?.count || 0,
+    next_actions: raw.next_actions || raw.readiness?.next_actions || []
+  } as ProviderDashboard;
 }
 
 // Profile & Avatar

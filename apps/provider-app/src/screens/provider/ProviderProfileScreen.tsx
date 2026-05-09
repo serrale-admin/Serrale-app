@@ -1,10 +1,20 @@
-import { ScrollView, StyleSheet, Text, View, Pressable, Image, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getProviderBootstrap } from "@serrale/api";
 import { IconSymbol } from "../../provider/components/IconSymbol";
-import { ProviderScreen } from "../../provider/components/ProviderScreen";
-import { providerColors, providerShadows } from "../../provider/theme";
+
+const BLUE = "#1D4ED8";
+const DARK_BLUE = "#1E3A8A";
+const NAVY = "#0F172A";
 
 export function ProviderProfileScreen() {
   const router = useRouter();
@@ -16,695 +26,737 @@ export function ProviderProfileScreen() {
 
   if (bootstrapQuery.isLoading) {
     return (
-      <View style={styles.root}>
-        <ActivityIndicator size="large" color={providerColors.blue} style={styles.loader} />
+      <View style={styles.centerState}>
+        <ActivityIndicator size="large" color={BLUE} />
       </View>
     );
   }
 
   if (bootstrapQuery.isError || !bootstrapQuery.data) {
     return (
-      <View style={styles.root}>
+      <View style={styles.centerState}>
         <Text style={styles.errorText}>Unable to load profile.</Text>
       </View>
     );
   }
 
-  const {
-    user,
-    profile,
-    completeness,
-    skills,
-    portfolio,
-    services,
-    verification,
-    reviews
-  } = bootstrapQuery.data;
+  const { user, profile, completeness, skills, portfolio, services, verification, reviews } =
+    bootstrapQuery.data;
 
-  const completion = Number(completeness?.score ?? (profile as any)?.completeness_score ?? 0);
-  const fullName = profile?.full_name || user?.full_name || (profile as any)?.name || "Provider";
-  const initials = fullName.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
+  const completion = Number(
+    completeness?.score ?? (profile as any)?.completeness_score ?? 78
+  );
+  const fullName =
+    profile?.full_name || user?.full_name || (profile as any)?.name || "Provider";
+  const initials = fullName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
   const title = profile?.title || (profile as any)?.category || "Service Provider";
-  const isVerified = Boolean(verification?.verified_identity || (profile as any)?.verified_identity);
-  const verificationStatus = isVerified ? "Identity verified" : (verification?.verification_status === "pending" ? "Pending review" : "Not verified");
+  const isVerified = Boolean(
+    verification?.verified_identity || (profile as any)?.verified_identity
+  );
 
-  const normalizedSkills = (skills || []).map((s: any) => s?.skills?.name || s?.name || s?.label || String(s));
+  const normalizedSkills = (skills || []).map(
+    (s: any) => s?.skills?.name || s?.name || s?.label || String(s)
+  );
+
+  const projectsCount = (profile as any)?.projects_completed ?? 0;
+  const proposalsCount = (profile as any)?.proposals_submitted ?? 0;
+  const skillsCount = normalizedSkills.length;
+  const reviewsCount = reviews?.length || (profile as any)?.review_count || 0;
 
   return (
-    <ProviderScreen contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft} />
-        <Text style={styles.headerTitle}>Profile</Text>
-        <Pressable style={styles.headerRight}>
-          <IconSymbol name="settings-outline" size={22} color={providerColors.navy} />
+    <View style={styles.root}>
+      {/* ── Header ───────────────────────────── */}
+      <View style={styles.topBar}>
+        <Pressable style={styles.topBarBtn}>
+          <IconSymbol name="notifications-outline" size={22} color={NAVY} />
+        </Pressable>
+        <Text style={styles.topBarTitle}>Profile</Text>
+        <Pressable style={styles.topBarBtn} onPress={() => router.push("/settings/profile" as any)}>
+          <IconSymbol name="settings-outline" size={22} color={NAVY} />
         </Pressable>
       </View>
 
-      <View style={styles.mainCard}>
-        <View style={styles.profileRow}>
-          <View style={styles.avatarWrap}>
-            {user?.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarInitials}>{initials}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Hero Card (dark navy gradient) ── */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroTop}>
+            {/* Avatar */}
+            <View style={styles.avatarWrap}>
+              {user?.avatar_url ? (
+                <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarInitials}>{initials}</Text>
+                </View>
+              )}
+              <Pressable style={styles.cameraBadge}>
+                <IconSymbol name="camera" size={13} color={BLUE} />
+              </Pressable>
+            </View>
+
+            {/* Name & title */}
+            <View style={styles.heroInfo}>
+              <View style={styles.heroNameRow}>
+                <Text style={styles.heroName} numberOfLines={1}>{fullName}</Text>
+                <IconSymbol name="checkmark-circle" size={18} color="#60A5FA" />
               </View>
-            )}
-            <Pressable style={styles.cameraBadge}>
-              <IconSymbol name="camera" size={14} color={providerColors.blue} />
-            </Pressable>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>{fullName}</Text>
-            <Text style={styles.profileSubtitle}>{title}</Text>
-            <View style={styles.badgesRow}>
-              <View style={styles.badgeAvailable}>
-                <View style={styles.dotAvailable} />
-                <Text style={styles.badgeAvailableText}>Available for work</Text>
-              </View>
-              <View style={styles.badgeVerified}>
-                <IconSymbol name="shield-checkmark" size={12} color="#2563EB" />
-                <Text style={styles.badgeVerifiedText}>Identity verified</Text>
+              <Text style={styles.heroTitle}>{title}</Text>
+              <View style={styles.heroBadges}>
+                <View style={styles.badgeGreen}>
+                  <View style={styles.greenDot} />
+                  <Text style={styles.badgeGreenText}>Available for work</Text>
+                </View>
+                <View style={styles.badgeBlue}>
+                  <IconSymbol name="shield-checkmark" size={12} color="#93C5FD" />
+                  <Text style={styles.badgeBlueText}>Identity verified</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.completionRow}>
-          <Text style={styles.completionLabel}>Profile completeness</Text>
-          <View style={styles.progressBarWrap}>
-            <View style={[styles.progressBarFill, { width: `${completion}%` }]} />
+          {/* Completeness Bar */}
+          <View style={styles.completionRow}>
+            <Text style={styles.completionLabel}>Profile completeness</Text>
+            <View style={styles.progressWrap}>
+              <View style={[styles.progressFill, { width: `${completion}%` as any }]} />
+            </View>
+            <Text style={styles.completionPct}>{completion}%</Text>
+            <IconSymbol name="chevron-forward" size={16} color="rgba(255,255,255,0.5)" />
           </View>
-          <Text style={styles.completionValue}>{completion}%</Text>
-          <IconSymbol name="chevron-forward" size={16} color="#94A3B8" />
         </View>
-      </View>
 
-      <View style={styles.statsGrid}>
-        <StatCard label="Portfolio" value={portfolio?.length || 0} icon="briefcase" color="#E0E7FF" iconColor="#4F46E5" />
-        <StatCard label="Services" value={services?.length || 0} icon="cube" color="#ECFDF5" iconColor="#059669" />
-        <StatCard label="Skills" value={skills?.length || 0} icon="code-slash" color="#F5F3FF" iconColor="#7C3AED" />
-        <StatCard label="Reviews" value={reviews?.length || profile?.review_count || 0} icon="star" color="#FFF7ED" iconColor="#EA580C" />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <QuickActionBtn label="Edit Profile" icon="person-outline" onPress={() => router.push("/settings/profile")} />
-          <QuickActionBtn label="Add Portfolio" icon="image-outline" onPress={() => router.push("/portfolio")} />
-          <QuickActionBtn label="Add Service" icon="cube-outline" onPress={() => router.push("/settings/profile")} />
-          <QuickActionBtn label="Verification" icon="shield-checkmark-outline" onPress={() => router.push("/settings/profile")} />
+        {/* ── Stats Row ───────────────────────── */}
+        <View style={styles.statsRow}>
+          <StatCard value={projectsCount} label={"Projects\nCompleted"} icon="briefcase" iconColor={BLUE} iconBg="#EEF2FF" />
+          <StatCard value={proposalsCount} label={"Proposals\nSubmitted"} icon="document-text" iconColor="#059669" iconBg="#ECFDF5" />
+          <StatCard value={skillsCount} label={"Skills\nAdded"} icon="star" iconColor="#7C3AED" iconBg="#F5F3FF" />
+          <StatCard value={reviewsCount} label={"Reviews\nReceived"} icon="star-outline" iconColor="#EA580C" iconBg="#FFF7ED" />
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>About</Text>
-          <IconSymbol name="chevron-forward" size={18} color={providerColors.muted} />
-        </View>
-        <Text style={styles.bodyText} numberOfLines={4}>
-          {profile?.bio || "Add a short bio to help clients understand your work."}
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Skills</Text>
-          <Text style={styles.linkText}>View all</Text>
-        </View>
-        {normalizedSkills.length > 0 ? (
-          <View style={styles.skillsWrap}>
-            {normalizedSkills.slice(0, 5).map((skill: string, i: number) => (
-              <View key={i} style={styles.skillChip}>
-                <Text style={styles.skillChipText}>{skill}</Text>
-              </View>
-            ))}
-            {normalizedSkills.length > 5 && (
-              <View style={styles.skillChip}>
-                <Text style={styles.skillChipText}>+{normalizedSkills.length - 5}</Text>
-              </View>
-            )}
+        {/* ── Quick Actions ────────────────────── */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickGrid}>
+            <QuickBtn label="Edit Profile" icon="person-outline" onPress={() => router.push("/settings/profile" as any)} />
+            <QuickBtn label="Add Portfolio" icon="folder-outline" onPress={() => router.push("/portfolio" as any)} />
+            <QuickBtn label="My Services" icon="briefcase-outline" onPress={() => router.push("/settings/profile" as any)} />
+            <QuickBtn label="Verification" icon="shield-checkmark-outline" onPress={() => router.push("/settings/profile" as any)} />
           </View>
-        ) : (
-          <Text style={styles.emptyText}>Add skills so clients can find you.</Text>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Portfolio Preview</Text>
-          <Text style={styles.linkText}>View all</Text>
         </View>
-        {portfolio?.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioScroll}>
-            {portfolio.slice(0, 2).map((item: any, i: number) => (
-              <View key={i} style={styles.portfolioItem}>
-                {item.media_url ? (
-                  <Image source={{ uri: item.media_url }} style={styles.portfolioImg} />
-                ) : (
-                  <View style={styles.portfolioPlaceholder}>
-                    <IconSymbol name="image-outline" size={24} color={providerColors.muted} />
-                  </View>
-                )}
-                <View style={styles.portfolioInfo}>
-                  <Text style={styles.portfolioTitle} numberOfLines={2}>{item.title || "Untitled"}</Text>
-                  <Text style={styles.portfolioCategory} numberOfLines={1}>{item.category || item.service || "Portfolio"}</Text>
+
+        {/* ── About ───────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardTitle}>About</Text>
+            <IconSymbol name="chevron-forward" size={18} color="#94A3B8" />
+          </View>
+          <Text style={styles.bodyText} numberOfLines={4}>
+            {profile?.bio || "Add a short bio to help clients understand your work and experience."}
+          </Text>
+        </View>
+
+        {/* ── Skills ──────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardTitle}>Skills</Text>
+            <Text style={styles.linkText}>View all</Text>
+          </View>
+          {normalizedSkills.length > 0 ? (
+            <View style={styles.chipsWrap}>
+              {normalizedSkills.slice(0, 4).map((s: string, i: number) => (
+                <View key={i} style={styles.chip}>
+                  <Text style={styles.chipText}>{s}</Text>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyState}>
-            <IconSymbol name="folder-open-outline" size={32} color={providerColors.muted} />
-            <Text style={styles.emptyTitle}>No portfolio yet</Text>
-            <Text style={styles.linkText}>Add your first work</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Services</Text>
-          <Text style={styles.linkText}>View all</Text>
-        </View>
-        {services?.length > 0 ? (
-          <View style={styles.servicesList}>
-            {services.slice(0, 2).map((service: any, i: number) => (
-              <View key={i} style={styles.serviceRow}>
-                <View style={styles.serviceIcon}>
-                  <IconSymbol name="cube-outline" size={24} color={providerColors.blue} />
+              ))}
+              {normalizedSkills.length > 4 && (
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>+{normalizedSkills.length - 4}</Text>
                 </View>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceTitle} numberOfLines={1}>{service.name}</Text>
-                  {service.description && (
-                    <Text style={styles.serviceDesc} numberOfLines={1}>{service.description}</Text>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>Add skills so clients can find you.</Text>
+          )}
+        </View>
+
+        {/* ── Portfolio Preview ────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardTitle}>Portfolio Preview</Text>
+            <Text style={styles.linkText}>View all</Text>
+          </View>
+          {portfolio?.length > 0 ? (
+            <View style={styles.portfolioGrid}>
+              {portfolio.slice(0, 2).map((item: any, i: number) => (
+                <View key={i} style={styles.portfolioItem}>
+                  {item.media_url ? (
+                    <Image source={{ uri: item.media_url }} style={styles.portfolioImg} />
+                  ) : (
+                    <View style={styles.portfolioPlaceholder}>
+                      <IconSymbol name="image-outline" size={28} color="#94A3B8" />
+                    </View>
                   )}
-                </View>
-                <View style={styles.servicePriceWrap}>
-                  <Text style={styles.servicePrice}>
-                    {service.price ? `ETB ${new Intl.NumberFormat("en-US").format(Number(service.price))}` : "Set price"}
+                  <Text style={styles.portfolioTitle} numberOfLines={2}>
+                    {item.title || "Untitled"}
                   </Text>
-                  <IconSymbol name="chevron-forward" size={16} color={providerColors.muted} />
+                  <Text style={styles.portfolioCategory}>
+                    {item.category || item.service || "Portfolio"}
+                  </Text>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <IconSymbol name="folder-open-outline" size={32} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No portfolio yet</Text>
+              <Text style={styles.linkText}>Add your first work</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ── My Services ─────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <Text style={styles.cardTitle}>My Services</Text>
+            <Text style={styles.linkText}>View all</Text>
           </View>
-        ) : (
-          <Text style={styles.emptyText}>Create service packages clients can understand.</Text>
-        )}
-      </View>
+          {services?.length > 0 ? (
+            <View style={styles.servicesList}>
+              {services.slice(0, 2).map((svc: any, i: number) => (
+                <View key={i} style={[styles.serviceRow, i < services.slice(0,2).length - 1 && styles.serviceBorder]}>
+                  <View style={styles.serviceIcon}>
+                    <IconSymbol name="pencil" size={22} color="#059669" />
+                  </View>
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceTitle} numberOfLines={1}>{svc.name}</Text>
+                    {svc.description && (
+                      <Text style={styles.serviceDesc} numberOfLines={2}>{svc.description}</Text>
+                    )}
+                  </View>
+                  <View style={styles.servicePriceCol}>
+                    <Text style={styles.servicePrice}>
+                      {svc.price
+                        ? `ETB ${new Intl.NumberFormat("en-US").format(Number(svc.price))}`
+                        : "Set price"}
+                    </Text>
+                    <Text style={styles.servicePriceSub}>Starting price</Text>
+                  </View>
+                  <IconSymbol name="chevron-forward" size={16} color="#94A3B8" />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>Create service packages clients can choose from.</Text>
+          )}
+        </View>
 
-      <View style={styles.settingsMenu}>
-        <SettingsRow icon="person-outline" title="Account Settings" />
-        <SettingsRow icon="notifications-outline" title="Notifications" />
-        <SettingsRow icon="help-circle-outline" title="Help & Support" hideBorder />
-      </View>
-    </ProviderScreen>
-  );
-}
-
-// Subcomponents
-
-function StatCard({ label, value, icon, color, iconColor }: { label: string; value: number; icon: any; color: string; iconColor: string }) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIconWrap, { backgroundColor: color }]}>
-        <IconSymbol name={icon} size={18} color={iconColor} />
-      </View>
-      <View style={styles.statTextWrap}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-      </View>
+        {/* ── Settings Menu ───────────────────── */}
+        <View style={styles.menuCard}>
+          <SettingsRow icon="settings-outline" label="Account Settings" />
+          <SettingsRow icon="notifications-outline" label="Notifications" />
+          <SettingsRow icon="help-circle-outline" label="Help & Support" last />
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-function QuickActionBtn({ label, icon, onPress }: { label: string; icon: any; onPress: () => void }) {
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function StatCard({ value, label, icon, iconColor, iconBg }: any) {
   return (
-    <Pressable style={styles.quickActionBtn} onPress={onPress}>
-      <IconSymbol name={icon} size={18} color={providerColors.navy} />
-      <Text style={styles.quickActionText}>{label}</Text>
+    <View style={styles.statCard}>
+      <View style={[styles.statIconBox, { backgroundColor: iconBg }]}>
+        <IconSymbol name={icon} size={18} color={iconColor} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function QuickBtn({ label, icon, onPress }: any) {
+  return (
+    <Pressable style={styles.quickBtn} onPress={onPress}>
+      <IconSymbol name={icon} size={20} color={BLUE} />
+      <Text style={styles.quickBtnText}>{label}</Text>
     </Pressable>
   );
 }
 
-function SettingsRow({ icon, title, hideBorder }: { icon: any; title: string; hideBorder?: boolean }) {
+function SettingsRow({ icon, label, last }: any) {
   return (
-    <Pressable style={[styles.settingsRow, !hideBorder && styles.settingsRowBorder]}>
-      <IconSymbol name={icon} size={20} color={providerColors.navy} />
-      <Text style={styles.settingsRowTitle}>{title}</Text>
-      <IconSymbol name="chevron-forward" size={18} color={providerColors.muted} />
+    <Pressable style={[styles.settingsRow, !last && styles.settingsRowBorder]}>
+      <IconSymbol name={icon} size={20} color="#64748B" />
+      <Text style={styles.settingsRowLabel}>{label}</Text>
+      <IconSymbol name="chevron-forward" size={16} color="#94A3B8" />
     </Pressable>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    justifyContent: "center",
-    alignItems: "center"
   },
-  loader: {
-    marginTop: 40
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
   },
   errorText: {
     fontSize: 14,
-    color: providerColors.dangerRed
+    color: "#EF4444",
   },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 80,
-    backgroundColor: "#F8FAFC"
-  },
-  header: {
+
+  // TOP BAR
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 56,
-    marginBottom: 4
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 12,
+    backgroundColor: "#F8FAFC",
   },
-  headerLeft: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: providerColors.white,
+  topBarBtn: {
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2
   },
-  headerTitle: {
-    fontSize: 17,
+  topBarTitle: {
+    fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A"
+    color: NAVY,
   },
-  headerRight: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: providerColors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2
+
+  // SCROLL
+  scroll: {
+    flex: 1,
   },
-  mainCard: {
-    backgroundColor: providerColors.white,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+
+  // HERO CARD — dark navy gradient
+  heroCard: {
+    backgroundColor: DARK_BLUE,
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#64748B",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: "#F1F5F9"
+    shadowColor: DARK_BLUE,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  profileRow: {
+  heroTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16
+    gap: 16,
+    marginBottom: 20,
   },
   avatarWrap: {
-    position: "relative"
+    position: "relative",
   },
-  avatarImage: {
+  avatarImg: {
     width: 90,
     height: 90,
-    borderRadius: 45
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   avatarFallback: {
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   avatarInitials: {
     fontSize: 32,
-    fontWeight: "700",
-    color: "#3B82F6"
+    fontWeight: "800",
+    color: "#fff",
   },
   cameraBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: providerColors.white,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 2
+    elevation: 3,
   },
-  profileInfo: {
-    flex: 1
+  heroInfo: {
+    flex: 1,
   },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginBottom: 2
-  },
-  profileSubtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    marginBottom: 8
-  },
-  badgesRow: {
+  heroNameRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 6,
-    flexWrap: "wrap"
+    marginBottom: 3,
   },
-  badgeAvailable: {
+  heroName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#fff",
+    flex: 1,
+  },
+  heroTitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    marginBottom: 10,
+  },
+  heroBadges: {
+    gap: 6,
+  },
+  badgeGreen: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "rgba(34,197,94,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.3)",
     paddingHorizontal: 10,
     height: 28,
     borderRadius: 14,
-    gap: 6
+    gap: 6,
+    alignSelf: "flex-start",
   },
-  dotAvailable: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#22C55E"
+  greenDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#22C55E",
   },
-  badgeAvailableText: {
-    fontSize: 11,
-    color: "#166534",
-    fontWeight: "600"
+  badgeGreenText: {
+    fontSize: 12,
+    color: "#86EFAC",
+    fontWeight: "600",
   },
-  badgeVerified: {
+  badgeBlue: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "rgba(96,165,250,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(96,165,250,0.3)",
     paddingHorizontal: 10,
     height: 28,
     borderRadius: 14,
-    gap: 6
+    gap: 6,
+    alignSelf: "flex-start",
   },
-  badgeNotVerified: {
-    backgroundColor: "#F1F5F9"
+  badgeBlueText: {
+    fontSize: 12,
+    color: "#93C5FD",
+    fontWeight: "600",
   },
-  badgeVerifiedText: {
-    fontSize: 11,
-    color: "#1E40AF",
-    fontWeight: "600"
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F1F5F9",
-    marginVertical: 20
-  },
+
+  // COMPLETENESS
   completionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12
+    gap: 10,
   },
   completionLabel: {
-    fontSize: 14,
-    color: "#1E293B",
-    fontWeight: "600"
+    fontSize: 13,
+    color: "rgba(255,255,255,0.75)",
+    fontWeight: "500",
   },
-  progressBarWrap: {
+  progressWrap: {
     flex: 1,
-    height: 8,
-    backgroundColor: "#F1F5F9",
+    height: 7,
+    backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 4,
-    overflow: "hidden"
+    overflow: "hidden",
   },
-  progressBarFill: {
-    height: 8,
-    backgroundColor: "#2563EB",
-    borderRadius: 4
+  progressFill: {
+    height: 7,
+    backgroundColor: "#60A5FA",
+    borderRadius: 4,
   },
-  completionValue: {
+  completionPct: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2563EB"
+    color: "#60A5FA",
   },
-  statsGrid: {
+
+  // STATS ROW — 4 equal white cards
+  statsRow: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 20
+    marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    backgroundColor: providerColors.white,
+    backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 8,
-    flexDirection: "column",
-    alignItems: "flex-start",
+    padding: 10,
+    alignItems: "center",
     gap: 6,
-    shadowColor: "#000",
+    shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F8FAFC"
   },
-  statIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  statIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center"
-  },
-  statTextWrap: {
-    marginTop: 2
+    justifyContent: "center",
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A"
+    color: NAVY,
   },
   statLabel: {
     fontSize: 10,
-    color: "#64748B",
     fontWeight: "500",
-    marginTop: 1
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 13,
   },
-  section: {
-    marginBottom: 20
+
+  // SECTION BLOCK
+  sectionBlock: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 12
+    color: NAVY,
+    marginBottom: 12,
   },
-  quickActionsGrid: {
+
+  // QUICK ACTIONS — 4 equal buttons in a row
+  quickGrid: {
     flexDirection: "row",
     gap: 8,
-    flexWrap: "wrap"
   },
-  quickActionBtn: {
+  quickBtn: {
     flex: 1,
-    minWidth: "48%",
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: providerColors.white,
-    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 12,
-    shadowColor: "#000",
+    gap: 6,
+    shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F8FAFC"
   },
-  quickActionText: {
-    fontSize: 14,
+  quickBtnText: {
+    fontSize: 10,
     fontWeight: "600",
-    color: "#1E293B"
+    color: NAVY,
+    textAlign: "center",
   },
+
+  // CARDS
   card: {
-    backgroundColor: providerColors.white,
+    backgroundColor: "#fff",
     borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F1F5F9"
   },
-  cardHeader: {
+  cardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12
+    marginBottom: 12,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A"
+    color: NAVY,
   },
   linkText: {
     fontSize: 13,
-    color: "#2563EB",
-    fontWeight: "600"
+    color: BLUE,
+    fontWeight: "600",
   },
   bodyText: {
     fontSize: 14,
     lineHeight: 22,
-    color: "#475569"
+    color: "#475569",
   },
-  skillsWrap: {
+
+  // SKILLS
+  chipsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8
+    gap: 8,
   },
-  skillChip: {
+  chip: {
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#EEF2FF",
     paddingHorizontal: 14,
-    justifyContent: "center"
+    justifyContent: "center",
   },
-  skillChipText: {
+  chipText: {
     fontSize: 13,
-    color: "#2563EB",
-    fontWeight: "600"
+    fontWeight: "600",
+    color: BLUE,
   },
-  emptyText: {
-    fontSize: 14,
-    color: "#94A3B8"
-  },
-  portfolioScroll: {
-    gap: 12
+
+  // PORTFOLIO
+  portfolioGrid: {
+    flexDirection: "row",
+    gap: 12,
   },
   portfolioItem: {
-    width: 200,
-    gap: 10
+    flex: 1,
+    gap: 6,
   },
   portfolioImg: {
     width: "100%",
-    height: 120,
-    borderRadius: 16
+    height: 100,
+    borderRadius: 12,
   },
   portfolioPlaceholder: {
     width: "100%",
-    height: 120,
-    borderRadius: 16,
+    height: 100,
+    borderRadius: 12,
     backgroundColor: "#F1F5F9",
     alignItems: "center",
-    justifyContent: "center"
-  },
-  portfolioInfo: {
-    gap: 2
+    justifyContent: "center",
   },
   portfolioTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#1E293B"
+    color: NAVY,
+    lineHeight: 17,
   },
   portfolioCategory: {
-    fontSize: 12,
-    color: "#64748B"
+    fontSize: 11,
+    color: "#64748B",
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 24,
-    gap: 8
+    paddingVertical: 20,
+    gap: 8,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#1E293B"
+    color: NAVY,
   },
+  emptyText: {
+    fontSize: 13,
+    color: "#94A3B8",
+  },
+
+  // SERVICES
   servicesList: {
-    gap: 12
+    gap: 0,
   },
   serviceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    paddingVertical: 8
+    gap: 12,
+    paddingVertical: 12,
+  },
+  serviceBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
   serviceIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: "#F0FDF4",
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#ECFDF5",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0,
   },
   serviceInfo: {
     flex: 1,
-    gap: 4
+    gap: 3,
   },
   serviceTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#0F172A"
+    color: NAVY,
   },
   serviceDesc: {
-    fontSize: 13,
-    color: "#64748B"
+    fontSize: 12,
+    color: "#64748B",
+    lineHeight: 16,
   },
-  servicePriceWrap: {
+  servicePriceCol: {
     alignItems: "flex-end",
-    gap: 4
+    gap: 2,
+    flexShrink: 0,
   },
   servicePrice: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "800",
-    color: "#16A34A"
+    color: "#059669",
   },
-  settingsMenu: {
-    backgroundColor: providerColors.white,
-    borderRadius: 24,
-    paddingHorizontal: 20,
+  servicePriceSub: {
+    fontSize: 10,
+    color: "#94A3B8",
+  },
+
+  // SETTINGS MENU
+  menuCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 18,
     marginBottom: 32,
-    shadowColor: "#000",
+    shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F1F5F9"
   },
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 60,
-    gap: 16
+    height: 58,
+    gap: 14,
   },
   settingsRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9"
+    borderBottomColor: "#F1F5F9",
   },
-  settingsRowTitle: {
+  settingsRowLabel: {
     flex: 1,
     fontSize: 15,
-    color: "#1E293B",
-    fontWeight: "600"
-  }
+    fontWeight: "600",
+    color: NAVY,
+  },
 });

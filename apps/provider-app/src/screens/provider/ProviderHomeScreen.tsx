@@ -112,26 +112,28 @@ export function ProviderHomeScreen() {
         </View>
       </View>
 
-      <View style={styles.searchBar}>
-        <IconSymbol name="search-outline" size={20} color={providerColors.muted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search jobs, categories, skills"
-          placeholderTextColor={providerColors.muted}
-          value={searchInput}
-          onChangeText={setSearchInput}
-        />
-      </View>
-
       <View style={styles.banner}>
-        <View style={styles.bannerContent}>
-          <Text style={styles.bannerTitle}>Find better work opportunities</Text>
-          <Text style={styles.bannerSubtitle}>Connect with clients in Ethiopia.</Text>
+        <View style={styles.bannerTop}>
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerTitle}>Find better work opportunities</Text>
+            <Text style={styles.bannerSubtitle}>Connect with clients in Ethiopia.</Text>
+          </View>
+          <Pressable style={styles.bannerBtn} onPress={() => router.push("/tabs/jobs")}>
+            <Text style={styles.bannerBtnText}>Jobs</Text>
+            <IconSymbol name="chevron-forward" size={12} color={providerColors.navy} />
+          </Pressable>
         </View>
-        <Pressable style={styles.bannerBtn} onPress={() => router.push("/tabs/jobs")}>
-          <Text style={styles.bannerBtnText}>Explore Jobs</Text>
-          <IconSymbol name="chevron-forward" size={14} color={providerColors.navy} />
-        </Pressable>
+
+        <View style={styles.bannerSearch}>
+          <IconSymbol name="search-outline" size={18} color={providerColors.muted} />
+          <TextInput
+            style={styles.bannerSearchInput}
+            placeholder="Search jobs, skills..."
+            placeholderTextColor={providerColors.muted}
+            value={searchInput}
+            onChangeText={setSearchInput}
+          />
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -341,40 +343,25 @@ const styles = StyleSheet.create({
     color: providerColors.muted,
     marginTop: 1
   },
-  searchBar: {
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: providerColors.white,
-    borderWidth: 1,
-    borderColor: providerColors.border,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 8
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: providerColors.title
-  },
   banner: {
-    height: 64,
-    borderRadius: 12,
     backgroundColor: providerColors.blueDark,
-    padding: 10,
-    marginBottom: 10,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+    ...providerShadows.card
+  },
+  bannerTop: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10
   },
   bannerContent: {
     flex: 1,
     paddingRight: 8
   },
   bannerTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.white
   },
@@ -384,8 +371,8 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   bannerBtn: {
-    height: 32,
-    borderRadius: 10,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: providerColors.white,
     flexDirection: "row",
     alignItems: "center",
@@ -393,9 +380,24 @@ const styles = StyleSheet.create({
     gap: 4
   },
   bannerBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: providerColors.navy
+  },
+  bannerSearch: {
+    height: 38,
+    backgroundColor: providerColors.white,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 8
+  },
+  bannerSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: providerColors.navy,
+    paddingVertical: 0
   },
   section: {
     marginBottom: 12

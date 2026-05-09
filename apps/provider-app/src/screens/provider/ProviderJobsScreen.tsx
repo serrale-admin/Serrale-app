@@ -16,25 +16,26 @@ import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { IconSymbol } from "../../provider/components/IconSymbol";
 import { formatEtbRange } from "../../provider/format";
 
+const BLUE = "#1D4ED8";
+const DARK_BLUE = "#1E3A8A";
+const NAVY = "#0F172A";
+
 const CATEGORIES = [
-  { label: "Design", icon: "code-slash" },
+  { label: "All", icon: "apps" },
+  { label: "Design", icon: "color-palette" },
   { label: "Development", icon: "code-slash" },
   { label: "Marketing", icon: "megaphone" },
   { label: "Writing", icon: "pencil" },
   { label: "Construction", icon: "construct" },
-  { label: "Hospitality", icon: "restaurant" },
+  { label: "More", icon: "ellipsis-horizontal" },
 ];
-
-const BLUE = "#1D4ED8";
-const DARK_BLUE = "#1E3A8A";
-const NAVY = "#0F172A";
 
 export function ProviderJobsScreen() {
   const router = useRouter();
 
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Design");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -98,20 +99,20 @@ export function ProviderJobsScreen() {
               <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} />
             ) : (
               <View style={styles.headerAvatarFallback}>
-                <IconSymbol name="person" size={20} color="#fff" />
+                <IconSymbol name="person" size={18} color="#fff" />
               </View>
             )}
           </Pressable>
         </View>
       </View>
 
-      {/* Search Bar in Blue Area */}
+      {/* Search Bar */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <IconSymbol name="search" size={18} color="#94A3B8" />
+          <IconSymbol name="search" size={16} color="#94A3B8" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search for jobs, skills, companies..."
+            placeholder="Search projects, skills, or clients..."
             placeholderTextColor="#94A3B8"
             value={searchInput}
             onChangeText={setSearchInput}
@@ -125,37 +126,44 @@ export function ProviderJobsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Page Title */}
-        <View style={styles.pageTitleSection}>
-          <Text style={styles.pageTitle}>Jobs</Text>
+        <View style={styles.pageTitleWrap}>
+          <Text style={styles.pageTitle}>Projects</Text>
           <Text style={styles.pageSubtitle}>
-            Find opportunities that match your skills.
+            Find client projects that match your skills.
           </Text>
         </View>
 
-        {/* Category Icon Pills */}
+        {/* Category Vertical Icon Pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScroll}
-          style={styles.categoryScrollWrap}
+          contentContainerStyle={styles.categoryList}
+          style={styles.categoryRow}
         >
           {CATEGORIES.map((cat) => {
             const active = cat.label === selectedCategory;
             return (
               <Pressable
                 key={cat.label}
-                style={[styles.categoryPill, active && styles.categoryPillActive]}
+                style={styles.categoryItem}
                 onPress={() => setSelectedCategory(cat.label)}
               >
-                <IconSymbol
-                  name={cat.icon}
-                  size={18}
-                  color={active ? "#fff" : "#475569"}
-                />
+                <View
+                  style={[
+                    styles.categoryIconBox,
+                    active && styles.categoryIconBoxActive,
+                  ]}
+                >
+                  <IconSymbol
+                    name={cat.icon}
+                    size={22}
+                    color={active ? "#fff" : "#475569"}
+                  />
+                </View>
                 <Text
                   style={[
-                    styles.categoryPillText,
-                    active && styles.categoryPillTextActive,
+                    styles.categoryLabel,
+                    active && styles.categoryLabelActive,
                   ]}
                 >
                   {cat.label}
@@ -165,20 +173,20 @@ export function ProviderJobsScreen() {
           })}
         </ScrollView>
 
-        {/* Filter + Sort Bar */}
+        {/* Filter / Sort Bar */}
         <View style={styles.filterBar}>
-          <Pressable style={styles.filterBtn}>
-            <IconSymbol name="options" size={16} color={NAVY} />
-            <Text style={styles.filterBtnText}>Filters</Text>
+          <Pressable style={styles.filterSide}>
+            <IconSymbol name="options" size={15} color={NAVY} />
+            <Text style={styles.filterText}>Filters</Text>
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>2</Text>
             </View>
           </Pressable>
           <View style={styles.filterDivider} />
-          <Pressable style={styles.sortBtn}>
-            <IconSymbol name="swap-vertical" size={16} color={NAVY} />
-            <Text style={styles.sortBtnText}>Sort: Newest</Text>
-            <IconSymbol name="chevron-down" size={14} color="#64748B" />
+          <Pressable style={styles.sortSide}>
+            <IconSymbol name="swap-vertical" size={15} color={NAVY} />
+            <Text style={styles.sortText}>Sort: Newest</Text>
+            <IconSymbol name="chevron-down" size={13} color="#64748B" />
           </Pressable>
         </View>
 
@@ -187,35 +195,25 @@ export function ProviderJobsScreen() {
           {jobsQuery.isFetching && jobs.length === 0 ? (
             <View style={styles.centerState}>
               <ActivityIndicator size="large" color={BLUE} />
-              <Text style={styles.loadingText}>Finding jobs for you...</Text>
+              <Text style={styles.stateText}>Finding projects for you...</Text>
             </View>
           ) : jobsQuery.isError ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>Couldn't load jobs.</Text>
-              <Text style={styles.errorSubText}>
-                Check your connection and try again.
-              </Text>
-              <Pressable
-                style={styles.retryBtn}
-                onPress={() => jobsQuery.refetch()}
-              >
-                <Text style={styles.retryBtnText}>Retry</Text>
+            <View style={styles.stateCard}>
+              <Text style={styles.stateTitle}>Couldn't load projects.</Text>
+              <Text style={styles.stateSubText}>Check your connection.</Text>
+              <Pressable style={styles.stateBtn} onPress={() => jobsQuery.refetch()}>
+                <Text style={styles.stateBtnText}>Retry</Text>
               </Pressable>
             </View>
           ) : jobs.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No jobs found</Text>
-              <Text style={styles.emptySubText}>
-                Try another search or category.
-              </Text>
+            <View style={styles.stateCard}>
+              <Text style={styles.stateTitle}>No projects found</Text>
+              <Text style={styles.stateSubText}>Try another search or category.</Text>
               <Pressable
-                style={styles.retryBtn}
-                onPress={() => {
-                  setSearchInput("");
-                  setSelectedCategory("Design");
-                }}
+                style={styles.stateBtn}
+                onPress={() => { setSearchInput(""); setSelectedCategory("All"); }}
               >
-                <Text style={styles.retryBtnText}>Clear filters</Text>
+                <Text style={styles.stateBtnText}>Clear filters</Text>
               </Pressable>
             </View>
           ) : (
@@ -225,7 +223,7 @@ export function ProviderJobsScreen() {
                   ? savedJobs[job.id]
                   : (job as any).saved || false;
               return (
-                <JobCard
+                <ProjectCard
                   key={job.id}
                   job={job}
                   saved={isSaved}
@@ -248,9 +246,9 @@ export function ProviderJobsScreen() {
   );
 }
 
-// --- Job Card ---
+// --- Project Card ---
 
-function JobCard({
+function ProjectCard({
   job,
   saved,
   onToggleSave,
@@ -262,72 +260,84 @@ function JobCard({
   onOpen: () => void;
 }) {
   const budgetStr = formatEtbRange(job.budgetMin, job.budgetMax);
-  const exp = job.experienceLevel
-    ? job.experienceLevel === "Entry Levl"
-      ? "Entry Level"
-      : job.experienceLevel
-    : null;
+  const initial = (job.client || job.title || "J")[0].toUpperCase();
+
+  // pick a deterministic dark color for the logo background
+  const logoColors = ["#1E3A8A", "#065F46", "#6D28D9", "#92400E", "#831843"];
+  const logoColor = logoColors[(initial.charCodeAt(0)) % logoColors.length];
 
   return (
     <View style={styles.card}>
-      {/* Top Row: logo, company, premium, time, bookmark */}
-      <View style={styles.cardTopRow}>
-        <View style={styles.cardLogo}>
-          <Text style={styles.cardLogoText}>
-            {(job.client || job.title || "J")[0].toUpperCase()}
-          </Text>
+      {/* Row 1: logo | title + meta | time | bookmark */}
+      <View style={styles.cardHeader}>
+        <View style={[styles.cardLogo, { backgroundColor: logoColor }]}>
+          <Text style={styles.cardLogoText}>{initial}</Text>
         </View>
-        <View style={styles.cardCompanyWrap}>
+
+        <View style={styles.cardHeaderMid}>
+          <Text style={styles.cardTitle} numberOfLines={1}>{job.title}</Text>
           <View style={styles.cardCompanyRow}>
             <Text style={styles.cardCompany} numberOfLines={1}>
               {job.client || "Company"}
             </Text>
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumText}>Premium</Text>
-            </View>
+            <IconSymbol name="checkmark-circle" size={13} color={BLUE} />
           </View>
+          <View style={styles.cardLocationRow}>
+            <IconSymbol name="location" size={12} color="#94A3B8" />
+            <Text style={styles.cardLocation}>{job.location || "Ethiopia"}</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardHeaderRight}>
           <Text style={styles.cardTime}>{job.postedAt || "Recently"}</Text>
+          <Pressable onPress={onToggleSave} style={styles.bookmarkBtn}>
+            <IconSymbol
+              name={saved ? "bookmark" : "bookmark-outline"}
+              size={18}
+              color={saved ? BLUE : "#94A3B8"}
+            />
+          </Pressable>
         </View>
-        <Pressable onPress={onToggleSave} style={styles.bookmarkBtn}>
-          <IconSymbol
-            name={saved ? "bookmark" : "bookmark-outline"}
-            size={20}
-            color={saved ? BLUE : "#94A3B8"}
-          />
-        </Pressable>
       </View>
 
-      {/* Job Title */}
-      <Text style={styles.cardTitle}>{job.title}</Text>
+      {/* Description */}
+      {job.description ? (
+        <Text style={styles.cardDesc} numberOfLines={2}>
+          {job.description}
+        </Text>
+      ) : null}
 
-      {/* Location */}
-      <View style={styles.cardLocationRow}>
-        <IconSymbol name="location" size={13} color="#64748B" />
-        <Text style={styles.cardLocation}>{job.location || "Ethiopia"}</Text>
-      </View>
-
-      {/* Meta Chips + View Details */}
-      <View style={styles.cardBottom}>
-        <View style={styles.metaChips}>
-          {exp && (
-            <View style={styles.metaChip}>
+      {/* Bottom: budget + timeline + button */}
+      <View style={styles.cardFooter}>
+        <View style={styles.cardMeta}>
+          <View style={styles.metaBlock}>
+            <View style={styles.metaIconRow}>
               <IconSymbol name="briefcase" size={12} color="#64748B" />
-              <Text style={styles.metaChipText}>{exp}</Text>
+              <Text style={styles.metaLabel}>Budget</Text>
             </View>
-          )}
-          <View style={styles.metaChip}>
-            <IconSymbol name="time" size={12} color="#64748B" />
-            <Text style={styles.metaChipText}>Full-time</Text>
+            <Text style={styles.metaValue} numberOfLines={1}>
+              {budgetStr || "Negotiable"}
+            </Text>
           </View>
-          {budgetStr ? (
-            <View style={styles.metaChip}>
-              <IconSymbol name="pricetag" size={12} color="#64748B" />
-              <Text style={styles.metaChipText}>{budgetStr}</Text>
-            </View>
-          ) : null}
+
+          {job.duration && (
+            <>
+              <View style={styles.metaSep} />
+              <View style={styles.metaBlock}>
+                <View style={styles.metaIconRow}>
+                  <IconSymbol name="calendar" size={12} color="#64748B" />
+                  <Text style={styles.metaLabel}>Timeline</Text>
+                </View>
+                <View style={styles.timelinePill}>
+                  <Text style={styles.timelinePillText}>{job.duration}</Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
-        <Pressable style={styles.viewDetailsBtn} onPress={onOpen}>
-          <Text style={styles.viewDetailsBtnText}>View Details</Text>
+
+        <Pressable style={styles.viewBtn} onPress={onOpen}>
+          <Text style={styles.viewBtnText}>View Project</Text>
         </Pressable>
       </View>
     </View>
@@ -339,14 +349,14 @@ function JobCard({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#EEF2FF",
   },
 
   // HEADER
   header: {
     backgroundColor: BLUE,
     paddingTop: 52,
-    paddingBottom: 12,
+    paddingBottom: 10,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -358,28 +368,28 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   brandLogoWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
   brandLogoText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "900",
     color: "#fff",
     fontStyle: "italic",
   },
   brandName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "900",
     color: "#fff",
     letterSpacing: 1,
   },
   brandTagline: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.75)",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.7)",
     marginTop: 1,
   },
   headerRight: {
@@ -395,17 +405,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: "#38BDF8",
     borderWidth: 1.5,
     borderColor: BLUE,
   },
   avatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     overflow: "hidden",
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.4)",
@@ -426,16 +436,16 @@ const styles = StyleSheet.create({
   searchWrap: {
     backgroundColor: BLUE,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
   searchBar: {
-    height: 46,
-    borderRadius: 23,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#fff",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 14,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
@@ -453,53 +463,62 @@ const styles = StyleSheet.create({
   },
 
   // PAGE TITLE
-  pageTitleSection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+  pageTitleWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 14,
+    backgroundColor: "#EEF2FF",
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "900",
     color: NAVY,
   },
   pageSubtitle: {
     fontSize: 13,
     color: "#64748B",
-    marginTop: 4,
+    marginTop: 3,
   },
 
-  // CATEGORY PILLS WITH ICONS
-  categoryScrollWrap: {
-    marginBottom: 4,
+  // CATEGORIES - vertical icon+text
+  categoryRow: {
+    backgroundColor: "#EEF2FF",
   },
-  categoryScroll: {
+  categoryList: {
     paddingHorizontal: 16,
-    gap: 8,
     paddingRight: 24,
+    gap: 10,
   },
-  categoryPill: {
-    flexDirection: "row",
+  categoryItem: {
     alignItems: "center",
-    gap: 6,
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    gap: 5,
+    width: 62,
+  },
+  categoryIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  categoryPillActive: {
+  categoryIconBoxActive: {
     backgroundColor: DARK_BLUE,
-    borderColor: DARK_BLUE,
   },
-  categoryPillText: {
-    fontSize: 13,
+  categoryLabel: {
+    fontSize: 11,
     fontWeight: "600",
-    color: "#334155",
+    color: "#475569",
+    textAlign: "center",
   },
-  categoryPillTextActive: {
-    color: "#fff",
+  categoryLabelActive: {
+    color: DARK_BLUE,
+    fontWeight: "700",
   },
 
   // FILTER BAR
@@ -508,91 +527,92 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 16,
     marginTop: 14,
-    marginBottom: 14,
+    marginBottom: 12,
     backgroundColor: "#fff",
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
     overflow: "hidden",
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  filterBtn: {
+  filterSide: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     flex: 1,
   },
-  filterBtnText: {
-    fontSize: 14,
+  filterText: {
+    fontSize: 13,
     fontWeight: "600",
     color: NAVY,
     flex: 1,
   },
   filterBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: BLUE,
     alignItems: "center",
     justifyContent: "center",
   },
   filterBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: "#fff",
   },
   filterDivider: {
     width: 1,
-    height: 24,
+    height: 20,
     backgroundColor: "#E2E8F0",
   },
-  sortBtn: {
+  sortSide: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     flex: 1,
     justifyContent: "flex-end",
   },
-  sortBtnText: {
-    fontSize: 14,
+  sortText: {
+    fontSize: 13,
     fontWeight: "600",
     color: NAVY,
   },
 
-  // JOB LIST
+  // LIST
   listWrap: {
     paddingHorizontal: 16,
-    gap: 0,
-  },
-
-  // JOB CARD
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#1E3A8A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-  },
-  cardTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 10,
     gap: 10,
   },
+
+  // PROJECT CARD
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 2,
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  // Card Header Row
+  cardHeader: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 8,
+  },
   cardLogo: {
-    width: 52,
-    height: 52,
+    width: 50,
+    height: 50,
     borderRadius: 12,
-    backgroundColor: "#1E3A8A",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -602,96 +622,116 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#fff",
   },
-  cardCompanyWrap: {
+  cardHeaderMid: {
     flex: 1,
+    gap: 2,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: NAVY,
+    lineHeight: 19,
   },
   cardCompanyRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-    marginBottom: 2,
+    gap: 4,
   },
   cardCompany: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
-  },
-  premiumBadge: {
-    backgroundColor: BLUE,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  premiumText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  cardTime: {
     fontSize: 12,
-    color: "#94A3B8",
-  },
-  bookmarkBtn: {
-    padding: 4,
-    flexShrink: 0,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: NAVY,
-    marginBottom: 6,
-    lineHeight: 26,
+    fontWeight: "600",
+    color: "#334155",
   },
   cardLocationRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 14,
+    gap: 3,
+    marginTop: 1,
   },
   cardLocation: {
-    fontSize: 13,
-    color: "#64748B",
+    fontSize: 11,
+    color: "#94A3B8",
   },
-  cardBottom: {
+  cardHeaderRight: {
+    alignItems: "flex-end",
+    gap: 4,
+    flexShrink: 0,
+  },
+  cardTime: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "500",
+  },
+  bookmarkBtn: {
+    padding: 2,
+  },
+
+  // Description
+  cardDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#64748B",
+    marginBottom: 12,
+  },
+
+  // Footer
+  cardFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
   },
-  metaChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    flex: 1,
-  },
-  metaChip: {
+  cardMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#F8FAFC",
+    gap: 10,
+    flex: 1,
+  },
+  metaBlock: {
+    gap: 2,
+  },
+  metaIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  metaLabel: {
+    fontSize: 10,
+    color: "#94A3B8",
+    fontWeight: "500",
+  },
+  metaValue: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: BLUE,
+  },
+  metaSep: {
+    width: 1,
+    height: 28,
+    backgroundColor: "#E2E8F0",
+  },
+  timelinePill: {
+    backgroundColor: "#DBEAFE",
     borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    paddingVertical: 3,
   },
-  metaChipText: {
+  timelinePillText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: "#1D4ED8",
   },
-  viewDetailsBtn: {
-    backgroundColor: "#EFF6FF",
+  viewBtn: {
+    backgroundColor: BLUE,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexShrink: 0,
   },
-  viewDetailsBtnText: {
+  viewBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: BLUE,
+    color: "#fff",
   },
 
   // STATES
@@ -701,54 +741,34 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     gap: 12,
   },
-  loadingText: {
+  stateText: {
     fontSize: 14,
     color: "#64748B",
   },
-  errorCard: {
+  stateCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 24,
+    padding: 28,
     alignItems: "center",
     gap: 8,
-    borderWidth: 1,
-    borderColor: "#FEE2E2",
   },
-  errorText: {
+  stateTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: NAVY,
   },
-  errorSubText: {
+  stateSubText: {
     fontSize: 13,
     color: "#64748B",
   },
-  emptyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 32,
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: NAVY,
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: "#64748B",
-  },
-  retryBtn: {
+  stateBtn: {
     marginTop: 8,
     backgroundColor: BLUE,
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  retryBtnText: {
+  stateBtnText: {
     fontSize: 13,
     fontWeight: "700",
     color: "#fff",

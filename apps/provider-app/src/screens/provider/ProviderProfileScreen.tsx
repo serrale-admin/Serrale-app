@@ -1,15 +1,38 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { clearSession } from "@serrale/auth";
+import { useQuery } from "@tanstack/react-query";
+import { getProviderBootstrap } from "@serrale/api";
 
-import { providerProfile } from "../../provider/data";
 import { ProfileMenuRow } from "../../provider/components/ProviderCards";
 import { ProviderHeader } from "../../provider/components/ProviderHeader";
 import { ProviderScreen } from "../../provider/components/ProviderScreen";
 import { providerColors, providerRadius, providerShadows, providerSpacing, providerTypography } from "../../provider/theme";
+import { ProviderButton } from "../../provider/components/ProviderButton";
+import { ProviderLoadingScreen } from "./ProviderLoadingScreen";
 
 export function ProviderProfileScreen() {
   const router = useRouter();
+
+  const bootstrapQuery = useQuery({
+    queryKey: ["provider-bootstrap"],
+    queryFn: getProviderBootstrap,
+  });
+
+  if (bootstrapQuery.isLoading) {
+    return <ProviderLoadingScreen message="Loading profile..." />;
+  }
+
+  if (bootstrapQuery.isError) {
+    return (
+      <ProviderScreen>
+        <Text style={styles.errorText}>Unable to load profile. Please try again.</Text>
+        <ProviderButton label="Retry" onPress={() => bootstrapQuery.refetch()} />
+      </ProviderScreen>
+    );
+  }
+
+  const { user, profile, skills, portfolio, services } = bootstrapQuery.data!;
 
   return (
     <ProviderScreen contentContainerStyle={styles.content}>
@@ -18,93 +41,65 @@ export function ProviderProfileScreen() {
       <View style={styles.profileCard}>
         <View style={styles.topRow}>
           <View style={styles.avatarWrap}>
-            <Text style={styles.avatarText}>SD</Text>
+            {user.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {user.full_name.split(" ").map(n => n[0]).join("")}
+              </Text>
+            )}
             <View style={styles.onlineDot} />
           </View>
           <View style={styles.mainText}>
-            <Text style={styles.name}>{providerProfile.name} - Verified</Text>
-            <Text style={styles.specialty}>{providerProfile.specialty}</Text>
+            <Text style={styles.name}>{user.full_name} {profile.is_verified ? "- Verified" : ""}</Text>
+            <Text style={styles.specialty}>{profile.title || "Professional Provider"}</Text>
             <Text style={styles.subMeta}>
-              * {providerProfile.rating} ({providerProfile.reviews}) - {providerProfile.location}
+              {profile.rating ? `* ${profile.rating} (${profile.review_count})` : "No reviews yet"}
             </Text>
           </View>
         </View>
 
         <View style={styles.statRow}>
-          <ProfileStat label="Jobs" value={String(providerProfile.jobsCompleted)} />
-          <ProfileStat label="Reviews" value={String(providerProfile.reviews)} />
-          <ProfileStat label="Success" value={`${providerProfile.successRate}%`} />
-          <ProfileStat label="Earnings" value={providerProfile.earnings} />
+          <ProfileStat label="Jobs" value={String(profile.review_count || 0)} />
+          <ProfileStat label="Portfolio" value={String(portfolio.length)} />
+          <ProfileStat label="Services" value={String(services.length)} />
+          <ProfileStat label="Rate" value={profile.hourly_rate ? `${profile.hourly_rate} ETB` : "N/A"} />
         </View>
       </View>
 
       <View style={styles.completionCard}>
-        <Text style={styles.completionValue}>{providerProfile.profileCompletion}%</Text>
+        <Text style={styles.completionValue}>{profile.is_verified ? "100%" : "80%"}</Text>
         <View style={styles.completionTextWrap}>
-          <Text style={styles.completionTitle}>Profile completion</Text>
-          <Text style={styles.completionSubtitle}>Add 2 more skills to reach 100%</Text>
+          <Text style={styles.completionTitle}>Profile status</Text>
+          <Text style={styles.completionSubtitle}>
+            {profile.is_verified ? "Verified Professional" : "Complete verification to reach 100%"}
+          </Text>
         </View>
-        <Pressable style={styles.completionButton} onPress={() => router.push("/settings/profile")}>
-          <Text style={styles.completionButtonText}>Improve</Text>
-        </Pressable>
+        {!profile.is_verified && (
+          <Pressable style={styles.completionButton} onPress={() => router.push("/settings/profile")}>
+            <Text style={styles.completionButtonText}>Verify</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.menuCard}>
         <ProfileMenuRow
           icon="person-outline"
           title="Business Profile"
-          subtitle="Public details, bio, services"
+          subtitle={profile.bio ? "Edit your bio and details" : "Add a bio to your profile"}
           onPress={() => router.push("/settings/profile")}
         />
         <ProfileMenuRow
           icon="images-outline"
           title="Portfolio"
-          subtitle="3 items - updated recently"
+          subtitle={`${portfolio.length} items showcased`}
           onPress={() => router.push("/portfolio")}
         />
         <ProfileMenuRow
           icon="construct-outline"
           title="Services & Skills"
-          subtitle="12 skills - 5 services"
+          subtitle={`${skills.length} skills - ${services.length} services`}
           onPress={() => router.push("/settings/profile")}
-        />
-        <ProfileMenuRow
-          icon="calendar-outline"
-          title="Availability"
-          subtitle="Open weekdays"
-          onPress={() => router.push("/settings/availability")}
-        />
-        <ProfileMenuRow
-          icon="wallet-outline"
-          title="Pricing & Payouts"
-          subtitle="Bank - Telebirr"
-          onPress={() => router.push("/settings/pricing")}
-        />
-        <ProfileMenuRow
-          icon="document-text-outline"
-          title="Proposals"
-          subtitle="Manage edits and updates"
-          onPress={() => router.push("/proposals/edit")}
-        />
-        <ProfileMenuRow
-          icon="notifications-outline"
-          title="Notifications"
-          onPress={() => Alert.alert("Coming soon", "Notification preferences are in progress.")}
-        />
-        <ProfileMenuRow
-          icon="shield-outline"
-          title="Security"
-          onPress={() => Alert.alert("Coming soon", "Security controls are in progress.")}
-        />
-        <ProfileMenuRow
-          icon="help-circle-outline"
-          title="Help & Support"
-          onPress={() => Alert.alert("Coming soon", "Support center is in progress.")}
-        />
-        <ProfileMenuRow
-          icon="settings-outline"
-          title="App Preferences"
-          onPress={() => Alert.alert("Coming soon", "App preferences are in progress.")}
         />
         <ProfileMenuRow
           icon="log-out-outline"
@@ -116,6 +111,8 @@ export function ProviderProfileScreen() {
           }}
         />
       </View>
+      
+      <View style={{ height: 40 }} />
     </ProviderScreen>
   );
 }
@@ -156,6 +153,11 @@ const styles = StyleSheet.create({
   avatarText: {
     ...providerTypography.h3,
     color: providerColors.blue
+  },
+  avatarImage: {
+    width: 78,
+    height: 78,
+    borderRadius: 24,
   },
   onlineDot: {
     position: "absolute",
@@ -243,5 +245,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: providerSpacing.md,
     paddingVertical: providerSpacing.sm,
     ...providerShadows.card
+  },
+  errorText: {
+    ...providerTypography.body,
+    color: providerColors.dangerRed,
+    textAlign: 'center',
+    marginVertical: providerSpacing.xl
   }
 });

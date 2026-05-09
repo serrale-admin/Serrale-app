@@ -32,27 +32,28 @@ export function ProviderLoginScreen() {
       setLoading(true);
       setError(null);
 
-      // Attempt actual login
-      try {
-        const session = await createMobileSession({ ...values, intent: "login" });
-        await setSession({
-          accessToken: session.access_token,
-          refreshToken: session.refresh_token
-        });
+      // 1. Attempt backend login
+      const session = await createMobileSession({ ...values, intent: "login" });
+      
+      // 2. Save token
+      await setSession({
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token
+      });
 
-        const me = await fetchMe();
-        if (me.user.role !== "service_provider") {
-          await clearSession();
-          setError("This account belongs to a client. Please use the client app.");
-          return;
-        }
-      } catch (e) {
-        console.warn("Backend login failed, proceeding to home for UI testing:", e);
+      // 3. Verify identity and role
+      const me = await fetchMe();
+      
+      if (me.user.role !== "service_provider") {
+        await clearSession();
+        setError("This account belongs to a client. Please use the SERRALE Client app.");
+        return;
       }
 
-      // Always proceed to home for UI testing as requested
+      // 4. Success -> go to dashboard
       router.replace("/tabs/home");
     } catch (submissionError) {
+      // Login failed closed
       setError(
         submissionError instanceof Error ? submissionError.message : "Unable to sign in right now."
       );
@@ -134,14 +135,7 @@ export function ProviderLoginScreen() {
           label="Continue with Google"
           variant="secondary"
           icon="logo-google"
-          onPress={() => setError("Google sign-in will be connected in a later backend pass.")}
-        />
-
-        <ProviderButton
-          label="Skip Login (Development)"
-          variant="secondary"
-          onPress={() => router.replace("/tabs/home")}
-          style={{ marginTop: providerSpacing.xs, borderStyle: 'dashed' }}
+          onPress={() => setError("Google sign-in is not yet active.")}
         />
 
         <View style={styles.footerRow}>

@@ -181,3 +181,22 @@ export interface ClientHomeResponse {
   recommended_providers: RecommendedHomeProvider[];
   recent_project?: RecentClientProject;
 }
+
+export interface ProviderDashboard {
+  provider_name: string;
+  profile_completion: number;
+  verification_status: "not_started" | "pending" | "verified" | "rejected";
+  skills_count: number;
+  portfolio_count: number;
+  services_count: number;
+  next_actions: string[];
+}
+
+export interface ProviderBootstrap {
+  user: ApiUser;
+  profile: ProviderDetails;
+  skills: any[];
+  portfolio: PortfolioItem[];
+  services: ProviderService[];
+  settings: any;
+}

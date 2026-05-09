@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { ApiEnvelope, unwrapEnvelope } from "./index";
+import { ApiEnvelope, unwrapEnvelope } from "./utils";
 import type {
   PortfolioItem,
   ProviderBootstrap,
@@ -31,9 +31,7 @@ export async function updateProviderProfile(payload: Partial<ProviderDetails>) {
 }
 
 export async function updateProviderAvatar(formData: FormData) {
-  const response = await api.post<ApiEnvelope<{ avatar_url: string }>>("/api/provider/avatar", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<ApiEnvelope<{ avatar_url: string }>>("/api/provider/avatar", formData);
   return unwrapEnvelope(response.data);
 }
 
@@ -73,9 +71,7 @@ export async function deletePortfolioItem(itemId: string) {
 }
 
 export async function uploadPortfolioImage(itemId: string, formData: FormData) {
-  const response = await api.post<ApiEnvelope<{ media_url: string }>>(`/api/provider/portfolio/${itemId}/image`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<ApiEnvelope<{ media_url: string }>>(`/api/provider/portfolio/${itemId}/image`, formData);
   return unwrapEnvelope(response.data);
 }
 

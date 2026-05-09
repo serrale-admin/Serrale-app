@@ -21,6 +21,7 @@ export default function ProviderIndexScreen() {
         // Verify token and role with backend
         const me = await fetchMe();
 
+        // 1. Role Check
         if (me.user.role !== "service_provider") {
           console.warn("Invalid role for provider app:", me.user.role);
           await clearSession();
@@ -28,16 +29,34 @@ export default function ProviderIndexScreen() {
           return;
         }
 
-        // Check onboarding status (Step 4.6)
-        if (me.onboarding?.next_step && me.onboarding.next_step !== "completed") {
-          // If there is a specific intake screen, route there.
-          // For now, we'll assume they go to home or we can add logic for specific steps.
-          router.replace("/tabs/home"); 
-        } else {
-          router.replace("/tabs/home");
+        // 2. Onboarding / Intake State Machine
+        // Check if user has completed all mandatory onboarding steps
+        const onboarding = me.onboarding;
+        
+        if (onboarding && onboarding.next_step && onboarding.next_step !== "completed") {
+          const nextStep = onboarding.next_step;
+
+          switch (nextStep) {
+            case "identity_verification":
+              // router.replace("/onboarding/identity"); 
+              // For now, if screens don't exist, we fallback to home or a dedicated intake screen
+              router.replace("/tabs/home");
+              break;
+            case "business_details":
+              // router.replace("/onboarding/business");
+              router.replace("/tabs/home");
+              break;
+            default:
+              router.replace("/tabs/home");
+          }
+          return;
         }
+
+        // 3. Success -> Dashboard
+        router.replace("/tabs/home");
       } catch (error) {
         console.error("Boot verification failed:", error);
+        // If it's a 401 or 403, clear session
         await clearSession();
         router.replace("/auth/login");
       }

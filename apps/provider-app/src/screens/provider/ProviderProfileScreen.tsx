@@ -71,17 +71,12 @@ export function ProviderProfileScreen() {
               </View>
             )}
             <Pressable style={styles.cameraBadge}>
-              <IconSymbol name="camera-outline" size={16} color={providerColors.blue} />
+              <IconSymbol name="camera" size={16} color={providerColors.blue} />
             </Pressable>
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName} numberOfLines={1}>{fullName}</Text>
-            {profile?.title && (
-              <Text style={styles.profileSubtitle} numberOfLines={1}>{title}</Text>
-            )}
-            {(profile as any)?.location && (
-              <Text style={styles.profileLocation} numberOfLines={1}>{(profile as any).location}</Text>
-            )}
+            <Text style={styles.profileSubtitle}>{title}</Text>
             <View style={styles.badgesRow}>
               <View style={styles.badgeAvailable}>
                 <View style={styles.dotAvailable} />
@@ -89,11 +84,11 @@ export function ProviderProfileScreen() {
               </View>
               <View style={[styles.badgeVerified, !isVerified && styles.badgeNotVerified]}>
                 <IconSymbol 
-                  name={isVerified ? "shield-checkmark" : (verificationStatus === "Pending review" ? "time-outline" : "shield-outline")} 
+                  name={isVerified ? "shield-checkmark" : "shield-outline"} 
                   size={14} 
                   color={isVerified ? providerColors.blue : providerColors.muted} 
                 />
-                <Text style={[styles.badgeVerifiedText, !isVerified && { color: providerColors.muted }]}>{verificationStatus}</Text>
+                <Text style={[styles.badgeVerifiedText, !isVerified && { color: providerColors.muted }]}>Identity verified</Text>
               </View>
             </View>
           </View>
@@ -112,10 +107,10 @@ export function ProviderProfileScreen() {
       </View>
 
       <View style={styles.statsGrid}>
-        <StatCard label="Portfolio" value={portfolio?.length || 0} icon="folder-outline" />
-        <StatCard label="Services" value={services?.length || 0} icon="layers-outline" />
-        <StatCard label="Skills" value={skills?.length || 0} icon="document-text-outline" />
-        <StatCard label="Reviews" value={reviews?.length || profile?.review_count || 0} icon="star-outline" />
+        <StatCard label="Portfolio" value={portfolio?.length || 0} icon="briefcase" color="#E0E7FF" iconColor="#4F46E5" />
+        <StatCard label="Services" value={services?.length || 0} icon="cube" color="#ECFDF5" iconColor="#059669" />
+        <StatCard label="Skills" value={skills?.length || 0} icon="code-slash" color="#F5F3FF" iconColor="#7C3AED" />
+        <StatCard label="Reviews" value={reviews?.length || profile?.review_count || 0} icon="star" color="#FFF7ED" iconColor="#EA580C" />
       </View>
 
       <View style={styles.section}>
@@ -236,14 +231,16 @@ export function ProviderProfileScreen() {
 
 // Subcomponents
 
-function StatCard({ label, value, icon }: { label: string; value: number; icon: any }) {
+function StatCard({ label, value, icon, color, iconColor }: { label: string; value: number; icon: any; color: string; iconColor: string }) {
   return (
     <View style={styles.statCard}>
-      <View style={styles.statIconWrap}>
-        <IconSymbol name={icon} size={20} color={providerColors.blue} />
+      <View style={[styles.statIconWrap, { backgroundColor: color }]}>
+        <IconSymbol name={icon} size={18} color={iconColor} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.statTextWrap}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -270,7 +267,7 @@ function SettingsRow({ icon, title, hideBorder }: { icon: any; title: string; hi
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: providerColors.appBg,
+    backgroundColor: "#F8FAFC",
     justifyContent: "center",
     alignItems: "center"
   },
@@ -282,21 +279,26 @@ const styles = StyleSheet.create({
     color: providerColors.dangerRed
   },
   content: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 80,
-    backgroundColor: providerColors.appBg
+    backgroundColor: "#F8FAFC"
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 40,
-    marginBottom: 8
+    height: 48,
+    marginBottom: 12
   },
   headerLeft: {
     width: 40,
-    height: 40
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: providerColors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    ...providerShadows.card
   },
   headerTitle: {
     fontSize: 18,
@@ -306,55 +308,57 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 40,
     height: 40,
-    alignItems: "flex-end",
-    justifyContent: "center"
+    borderRadius: 20,
+    backgroundColor: providerColors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    ...providerShadows.card
   },
   mainCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: providerColors.border,
-    marginBottom: 10,
-    marginTop: 2,
+    borderColor: "#F1F5F9",
+    marginBottom: 16,
     ...providerShadows.card
   },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12
+    gap: 16
   },
   avatarWrap: {
     position: "relative"
   },
   avatarImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28
+    width: 84,
+    height: 84,
+    borderRadius: 42
   },
   avatarFallback: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: providerColors.sky,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#E0F2FE",
     alignItems: "center",
     justifyContent: "center"
   },
   avatarInitials: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: "700",
-    color: providerColors.blue
+    color: "#0284C7"
   },
   cameraBadge: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: providerColors.white,
     borderWidth: 1,
-    borderColor: providerColors.border,
+    borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
     ...providerShadows.card
@@ -363,234 +367,228 @@ const styles = StyleSheet.create({
     flex: 1
   },
   profileName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "700",
     color: providerColors.navy,
     marginBottom: 2
   },
   profileSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: providerColors.muted,
-    marginBottom: 2
-  },
-  profileLocation: {
-    fontSize: 12,
-    color: providerColors.muted,
-    marginBottom: 4
+    marginBottom: 6
   },
   badgesRow: {
-    gap: 4,
-    alignItems: "flex-start",
-    marginTop: 4
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap"
   },
   badgeAvailable: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: providerColors.successSoft,
+    backgroundColor: "#ECFDF5",
     paddingHorizontal: 8,
-    height: 24,
-    borderRadius: 12,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.15)",
-    alignSelf: "flex-start"
+    height: 26,
+    borderRadius: 13,
+    gap: 4
   },
   dotAvailable: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: providerColors.successGreen
+    backgroundColor: "#10B981"
   },
   badgeAvailableText: {
     fontSize: 11,
-    color: providerColors.successGreen,
-    fontWeight: "500"
+    color: "#059669",
+    fontWeight: "600"
   },
   badgeVerified: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: providerColors.sky,
+    backgroundColor: "#EFF6FF",
     paddingHorizontal: 8,
-    height: 24,
-    borderRadius: 12,
-    gap: 4,
-    alignSelf: "flex-start"
+    height: 26,
+    borderRadius: 13,
+    gap: 4
   },
   badgeNotVerified: {
-    backgroundColor: providerColors.softCard
+    backgroundColor: "#F1F5F9"
   },
   badgeVerifiedText: {
     fontSize: 11,
-    color: providerColors.blue,
-    fontWeight: "500"
+    color: "#2563EB",
+    fontWeight: "600"
   },
   divider: {
     height: 1,
-    backgroundColor: providerColors.border,
-    marginVertical: 12
+    backgroundColor: "#F1F5F9",
+    marginVertical: 16
   },
   completionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8
+    gap: 10
   },
   completionLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: providerColors.navy,
     fontWeight: "600"
   },
   progressBarWrap: {
     flex: 1,
-    height: 4,
-    backgroundColor: providerColors.softCard,
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 3,
     overflow: "hidden"
   },
   progressBarFill: {
-    height: 4,
-    backgroundColor: providerColors.blue,
-    borderRadius: 2
+    height: 6,
+    backgroundColor: "#2563EB",
+    borderRadius: 3
   },
   completionValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
-    color: providerColors.navy
+    color: "#2563EB"
   },
   statsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12
+    gap: 10,
+    marginBottom: 20
   },
   statCard: {
     flex: 1,
-    minWidth: "45%",
-    height: 52,
-    borderRadius: 10,
     backgroundColor: providerColors.white,
+    borderRadius: 16,
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     borderWidth: 1,
-    borderColor: providerColors.border,
-    padding: 8,
-    gap: 2,
+    borderColor: "#F1F5F9",
     ...providerShadows.card
   },
   statIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: providerColors.sky,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center"
   },
+  statTextWrap: {
+    flex: 1
+  },
   statValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.navy
   },
   statLabel: {
-    fontSize: 11,
-    color: providerColors.muted
+    fontSize: 10,
+    color: providerColors.muted,
+    marginTop: 1
   },
   section: {
-    marginBottom: 12
+    marginBottom: 20
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.navy,
-    marginBottom: 6
+    marginBottom: 12
   },
   quickActionsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8
+    gap: 10,
+    flexWrap: "wrap"
   },
   quickActionBtn: {
     flex: 1,
     minWidth: "45%",
-    height: 40,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
-    borderColor: providerColors.border,
+    borderColor: "#F1F5F9",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    gap: 6
+    paddingHorizontal: 12,
+    gap: 10,
+    ...providerShadows.card
   },
   quickActionText: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
     color: providerColors.navy
   },
   card: {
     backgroundColor: providerColors.white,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: providerColors.border,
-    marginBottom: 12,
+    borderColor: "#F1F5F9",
+    marginBottom: 16,
     ...providerShadows.card
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8
+    marginBottom: 12
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.navy
   },
   linkText: {
-    fontSize: 12,
-    color: providerColors.blue,
-    fontWeight: "500"
+    fontSize: 13,
+    color: "#2563EB",
+    fontWeight: "600"
   },
   bodyText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: providerColors.body
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#475569"
   },
   skillsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6
+    gap: 8
   },
   skillChip: {
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: providerColors.sky,
-    paddingHorizontal: 10,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
     justifyContent: "center"
   },
   skillChipText: {
     fontSize: 12,
-    color: providerColors.blue,
-    fontWeight: "500"
+    color: "#2563EB",
+    fontWeight: "600"
   },
   emptyText: {
-    fontSize: 12,
+    fontSize: 13,
     color: providerColors.muted
   },
   portfolioScroll: {
-    gap: 8
+    gap: 12
   },
   portfolioItem: {
-    width: 120,
-    gap: 6
+    width: 160,
+    gap: 8
   },
   portfolioImg: {
     width: "100%",
-    height: 80,
-    borderRadius: 10
+    height: 100,
+    borderRadius: 12
   },
   portfolioPlaceholder: {
     width: "100%",
-    height: 80,
-    borderRadius: 10,
-    backgroundColor: providerColors.softCard,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -598,37 +596,38 @@ const styles = StyleSheet.create({
     gap: 2
   },
   portfolioTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: providerColors.navy
-  },
-  portfolioCategory: {
-    fontSize: 11,
-    color: providerColors.muted
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 12,
-    gap: 8
-  },
-  emptyTitle: {
     fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
-  servicesList: {
+  portfolioCategory: {
+    fontSize: 12,
+    color: providerColors.muted
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 20,
     gap: 8
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: providerColors.navy
+  },
+  servicesList: {
+    gap: 12
   },
   serviceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8
+    gap: 12,
+    paddingVertical: 4
   },
   serviceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: providerColors.sky,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -637,47 +636,46 @@ const styles = StyleSheet.create({
     gap: 2
   },
   serviceTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: providerColors.navy
-  },
-  serviceDesc: {
-    fontSize: 11,
-    color: providerColors.muted
-  },
-  servicePriceWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6
-  },
-  servicePrice: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.navy
   },
+  serviceDesc: {
+    fontSize: 12,
+    color: providerColors.muted
+  },
+  servicePriceWrap: {
+    alignItems: "flex-end",
+    gap: 2
+  },
+  servicePrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669"
+  },
   settingsMenu: {
     backgroundColor: providerColors.white,
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: providerColors.border,
-    marginBottom: 12,
+    borderColor: "#F1F5F9",
+    marginBottom: 20,
     ...providerShadows.card
   },
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 44,
-    gap: 8
+    height: 56,
+    gap: 12
   },
   settingsRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: providerColors.border
+    borderBottomColor: "#F1F5F9"
   },
   settingsRowTitle: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: providerColors.navy,
-    fontWeight: "500"
+    fontWeight: "600"
   }
 });

@@ -21,12 +21,12 @@ const DARK_BLUE = "#1E3A8A";
 const NAVY = "#0F172A";
 
 const CATEGORIES = [
-  { label: "Sales &\nMarketing", icon: "briefcase", bg: "#DBEAFE", iconColor: "#1D4ED8" },
-  { label: "Construction\n& Trades", icon: "construct", bg: "#D1FAE5", iconColor: "#065F46" },
-  { label: "Health &\nCare", icon: "heart", bg: "#FCE7F3", iconColor: "#9D174D" },
-  { label: "Education &\nTraining", icon: "school", bg: "#FEF3C7", iconColor: "#92400E" },
-  { label: "Transport &\nLogistics", icon: "car", bg: "#EDE9FE", iconColor: "#5B21B6" },
-  { label: "Hospitality &\nTourism", icon: "restaurant", bg: "#FFE4E6", iconColor: "#9F1239" },
+  { label: "Sales &\nMarketing", icon: "briefcase", bg: "#DBEAFE", iconColor: "#1D4ED8", glass: "rgba(219,234,254,0.75)" },
+  { label: "Construction\n& Trades", icon: "construct", bg: "#D1FAE5", iconColor: "#065F46", glass: "rgba(209,250,229,0.75)" },
+  { label: "Health &\nCare", icon: "heart", bg: "#FCE7F3", iconColor: "#9D174D", glass: "rgba(252,231,243,0.75)" },
+  { label: "Education &\nTraining", icon: "school", bg: "#FEF3C7", iconColor: "#92400E", glass: "rgba(254,243,199,0.75)" },
+  { label: "Transport &\nLogistics", icon: "car", bg: "#EDE9FE", iconColor: "#5B21B6", glass: "rgba(237,233,254,0.75)" },
+  { label: "Hospitality &\nTourism", icon: "restaurant", bg: "#FFE4E6", iconColor: "#9F1239", glass: "rgba(255,228,230,0.75)" },
 ];
 
 const LOGO_COLORS = ["#1E3A8A", "#065F46", "#6D28D9", "#92400E", "#831843", "#1D4ED8"];
@@ -193,7 +193,13 @@ export function ProviderHomeScreen() {
                     styles.categoryCircle,
                     {
                       backgroundColor:
-                        selectedCategory === cat.label ? BLUE : cat.bg,
+                        selectedCategory === cat.label
+                          ? BLUE
+                          : cat.glass,
+                      borderColor:
+                        selectedCategory === cat.label
+                          ? BLUE
+                          : "rgba(255,255,255,0.9)",
                     },
                   ]}
                 >
@@ -364,7 +370,7 @@ function RecentJobRow({ job, onPress, isLast }: any) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F5FF",
   },
 
   // HEADER
@@ -480,6 +486,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+    backgroundColor: "#F0F5FF",
   },
 
   // WELCOME BANNER
@@ -563,7 +570,7 @@ const styles = StyleSheet.create({
     color: BLUE,
   },
 
-  // CATEGORIES
+  // CATEGORIES — liquid glass circles
   categoryScroll: {
     gap: 14,
     paddingRight: 16,
@@ -579,11 +586,15 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
+    // liquid glass base
+    backgroundColor: "rgba(255,255,255,0.65)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.9)",
     shadowColor: "#1E3A8A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   categoryLabel: {
     fontSize: 10,

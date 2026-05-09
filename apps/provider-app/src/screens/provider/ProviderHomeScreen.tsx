@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { ScrollView, StyleSheet, Switch, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProviderDashboard, getHotJobs, getOpenJobs, toggleSaveJob } from "@serrale/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getProviderDashboard, getOpenJobs, toggleSaveJob } from "@serrale/api";
 import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { IconSymbol } from "../../provider/components/IconSymbol";
 import { ProviderHeader } from "../../provider/components/ProviderHeader";
 import { ProviderScreen } from "../../provider/components/ProviderScreen";
-import { providerColors, providerRadius, providerShadows, providerSpacing, providerTypography } from "../../provider/theme";
+import { providerColors, providerShadows } from "../../provider/theme";
 import { ProviderButton } from "../../provider/components/ProviderButton";
 import { formatEtbRange } from "../../provider/format";
 
@@ -15,7 +15,6 @@ const CATEGORIES = ["All", "Design", "Development", "Marketing", "Writing", "Pho
 
 export function ProviderHomeScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [available, setAvailable] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -175,8 +174,8 @@ export function ProviderHomeScreen() {
             <HomeJobCard
               key={job.id}
               job={job}
-              isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : job.saved || false}
-              onToggleSave={() => handleToggleSave(job.id, job.saved || false)}
+              isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : (job as any).saved || false}
+              onToggleSave={() => handleToggleSave(job.id, (job as any).saved || false)}
               onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
             />
           ))
@@ -199,8 +198,8 @@ export function ProviderHomeScreen() {
               <CompactJobCard
                 key={job.id}
                 job={job}
-                isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : job.saved || false}
-                onToggleSave={() => handleToggleSave(job.id, job.saved || false)}
+                isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : (job as any).saved || false}
+                onToggleSave={() => handleToggleSave(job.id, (job as any).saved || false)}
                 onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
               />
             ))}
@@ -220,7 +219,7 @@ export function ProviderHomeScreen() {
 
 function HomeJobCard({ job, isSaved, onToggleSave, onPress }: any) {
   return (
-    <Pressable style={styles.homeJobCard} onPress={onPress}>
+    <Pressable style={styles.homeJobCard as any} onPress={onPress}>
       <View style={styles.hjcTopRow}>
         <View style={styles.hjcIconBlock}>
           <IconSymbol name="briefcase-outline" size={32} color={providerColors.blue} />
@@ -250,7 +249,7 @@ function HomeJobCard({ job, isSaved, onToggleSave, onPress }: any) {
 
 function CompactJobCard({ job, isSaved, onToggleSave, onPress }: any) {
   return (
-    <Pressable style={styles.compactCard} onPress={onPress}>
+    <Pressable style={styles.compactCard as any} onPress={onPress}>
       <View style={styles.ccTopRow}>
         <View style={styles.ccIconBlock}>
           <IconSymbol name="star-outline" size={24} color={providerColors.warningOrange} />

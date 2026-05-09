@@ -110,7 +110,7 @@ export function ProviderJobDetailScreen({ jobId }: ProviderJobDetailScreenProps)
             </View>
             <View>
               <View style={styles.clientNameRow}>
-                <Text style={styles.clientName}>{job.client}</Text>
+                <Text style={styles.clientNameText}>{job.client}</Text>
                 {job.clientVerified && (
                   <IconSymbol name="shield-checkmark" size={14} color={providerColors.blue} />
                 )}
@@ -261,6 +261,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: providerSpacing.xs
+  },
+  clientNameText: {
+    ...providerTypography.title,
+    color: providerColors.navy
   },
   clientMeta: {
     ...providerTypography.caption,

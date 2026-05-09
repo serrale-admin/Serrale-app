@@ -115,9 +115,15 @@ export function ProviderProfileScreen() {
                   <View style={styles.greenDot} />
                   <Text style={styles.badgeGreenText}>Available for work</Text>
                 </View>
-                <View style={styles.badgeBlue}>
-                  <IconSymbol name="shield-checkmark" size={12} color="#93C5FD" />
-                  <Text style={styles.badgeBlueText}>Identity verified</Text>
+                <View style={[styles.badgeBlue, !isVerified && styles.badgeGrey]}>
+                  <IconSymbol
+                    name={isVerified ? "shield-checkmark" : "shield-outline"}
+                    size={12}
+                    color={isVerified ? "#93C5FD" : "rgba(255,255,255,0.4)"}
+                  />
+                  <Text style={[styles.badgeBlueText, !isVerified && styles.badgeGreyText]}>
+                    {isVerified ? "Identity verified" : "Not verified"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -474,8 +480,16 @@ const styles = StyleSheet.create({
     color: "#93C5FD",
     fontWeight: "600",
   },
+  badgeGrey: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  badgeGreyText: {
+    color: "rgba(255,255,255,0.4)",
+  },
 
   // COMPLETENESS
+
   completionRow: {
     flexDirection: "row",
     alignItems: "center",

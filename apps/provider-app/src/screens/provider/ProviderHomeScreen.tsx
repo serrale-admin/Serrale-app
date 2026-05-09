@@ -204,7 +204,7 @@ export function ProviderHomeScreen() {
                   ]}
                 >
                   <IconSymbol
-                    name={cat.icon}
+                    name={cat.icon as any}
                     size={26}
                     color={selectedCategory === cat.label ? "#fff" : cat.iconColor}
                   />
@@ -370,7 +370,7 @@ function RecentJobRow({ job, onPress, isLast }: any) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F0F5FF",
+    backgroundColor: "#FFFFFF",
   },
 
   // HEADER
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
-    backgroundColor: "#F0F5FF",
+    backgroundColor: "#FFFFFF",
   },
 
   // WELCOME BANNER

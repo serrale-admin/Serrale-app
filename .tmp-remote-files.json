@@ -1,0 +1,14 @@
+[
+    {
+        "path":  ".codex-write-test.txt",
+        "sha":  "56583d4b3e710746c3d92dc9d2c16466bac65cb1"
+    },
+    {
+        "path":  "README.md",
+        "sha":  "0fb1af11d37eb9969fa845af5705ae8ca076f530"
+    },
+    {
+        "path":  "serrale-mobile/packages/ui/components/EmptyState.tsx",
+        "sha":  "1be810c166c18ea9521b3a5ddd79ea36593e9f37"
+    }
+]

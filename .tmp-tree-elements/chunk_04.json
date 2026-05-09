@@ -1,0 +1,122 @@
+[
+    {
+        "path":  "packages\\ui\\src\\components\\AppHeader.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface AppHeaderProps {\n  title: string;\n  subtitle?: string;\n}\n\nexport function AppHeader({ title, subtitle }: AppHeaderProps) {\n  return (\n    \u003cView style={styles.container}\u003e\n      \u003cText style={styles.title}\u003e{title}\u003c/Text\u003e\n      {subtitle ? \u003cText style={styles.subtitle}\u003e{subtitle}\u003c/Text\u003e : null}\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    gap: spacing.xs,\n    marginBottom: spacing.lg\n  },\n  title: {\n    ...typography.h2,\n    color: colors.text\n  },\n  subtitle: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\AppCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, View, type ViewProps } from \"react-native\";\n\nimport { colors, radius, shadows, spacing } from \"../theme\";\n\nexport function AppCard({ style, ...props }: ViewProps) {\n  return \u003cView style={[styles.card, style]} {...props} /\u003e;\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    borderWidth: 1,\n    borderColor: colors.border,\n    borderRadius: radius.md,\n    padding: spacing.lg,\n    backgroundColor: colors.surface,\n    ...shadows.soft\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\AppButton.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Pressable, StyleSheet, Text, type PressableProps } from \"react-native\";\n\nimport { colors, radius, spacing, typography } from \"../theme\";\n\ntype AppButtonVariant = \"primary\" | \"secondary\" | \"danger\";\n\nexport interface AppButtonProps extends PressableProps {\n  label: string;\n  variant?: AppButtonVariant;\n}\n\nconst variantStyles = {\n  primary: {\n    backgroundColor: colors.primary,\n    color: colors.white\n  },\n  secondary: {\n    backgroundColor: colors.surfaceSoft,\n    color: colors.text\n  },\n  danger: {\n    backgroundColor: colors.danger,\n    color: colors.white\n  }\n} as const;\n\nexport function AppButton({ label, variant = \"primary\", style, ...props }: AppButtonProps) {\n  const selected = variantStyles[variant];\n  const buttonStyle: PressableProps[\"style\"] = (state) =\u003e {\n    const resolved = typeof style === \"function\" ? style(state) : style;\n    return [styles.button, { backgroundColor: selected.backgroundColor }, resolved];\n  };\n\n  return (\n    \u003cPressable style={buttonStyle} {...props}\u003e\n      \u003cText style={[styles.text, { color: selected.color }]}\u003e{label}\u003c/Text\u003e\n    \u003c/Pressable\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  button: {\n    minHeight: 44,\n    alignItems: \"center\",\n    justifyContent: \"center\",\n    borderRadius: radius.md,\n    paddingHorizontal: spacing.lg,\n    paddingVertical: spacing.sm\n  },\n  text: {\n    ...typography.label\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\babel.config.js",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "module.exports = function (api) {\n  api.cache(true);\n  return {\n    presets: [\"babel-preset-expo\"]\n  };\n};\n"
+    },
+    {
+        "path":  "apps\\client-app\\app.json",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "{\n  \"expo\": {\n    \"name\": \"SERRALE Client\",\n    \"slug\": \"serrale-client-app\",\n    \"scheme\": \"serrale-client\",\n    \"version\": \"1.0.0\",\n    \"orientation\": \"portrait\",\n    \"userInterfaceStyle\": \"light\",\n    \"splash\": {\n      \"backgroundColor\": \"#F8FBFF\"\n    },\n    \"assetBundlePatterns\": [\"**/*\"],\n    \"plugins\": [\"expo-router\"]\n  }\n}\n"
+    },
+    {
+        "path":  "apps\\client-app\\src\\state\\auth-store.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { create } from \"zustand\";\n\nimport type { UserRole } from \"@serrale/auth\";\n\ninterface AuthStore {\n  role: UserRole | null;\n  displayName: string;\n  setRole: (role: UserRole | null) =\u003e void;\n  setDisplayName: (value: string) =\u003e void;\n}\n\nexport const useAuthStore = create\u003cAuthStore\u003e((set) =\u003e ({\n  role: null,\n  displayName: \"Nati\",\n  setRole: (role) =\u003e set({ role }),\n  setDisplayName: (displayName) =\u003e set({ displayName })\n}));\n"
+    },
+    {
+        "path":  "apps\\provider-app\\app\\_layout.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Stack } from \"expo-router\";\n\nimport { AppProviders } from \"../src/providers/AppProviders\";\n\nexport default function RootLayout() {\n  return (\n    \u003cAppProviders\u003e\n      \u003cStack\n        screenOptions={{\n          headerShown: false,\n          animation: \"fade\",\n          contentStyle: { backgroundColor: \"#F8FBFF\" }\n        }}\n      /\u003e\n    \u003c/AppProviders\u003e\n  );\n}\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\_layout.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Stack } from \"expo-router\";\n\nimport { AppProviders } from \"../src/providers/AppProviders\";\n\nexport default function RootLayout() {\n  return (\n    \u003cAppProviders\u003e\n      \u003cStack\n        screenOptions={{\n          headerShown: false,\n          animation: \"fade\",\n          contentStyle: { backgroundColor: \"#F8FBFF\" }\n        }}\n      /\u003e\n    \u003c/AppProviders\u003e\n  );\n}\n"
+    },
+    {
+        "path":  "apps\\client-app\\src\\screens\\ClientHomeScreen.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { useMemo, useState } from \"react\";\nimport { ScrollView, StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, spacing, typography } from \"@serrale/ui\";\n\nimport { ClientCategoryCard } from \"../components/ClientCategoryCard\";\nimport { ClientHomeHeader } from \"../components/ClientHomeHeader\";\nimport { ClientProjectCard } from \"../components/ClientProjectCard\";\nimport { CommunityHeroBanner } from \"../components/CommunityHeroBanner\";\nimport { PostProjectCTA } from \"../components/PostProjectCTA\";\nimport { RecommendedProviderCard } from \"../components/RecommendedProviderCard\";\nimport { SearchFilterBar } from \"../components/SearchFilterBar\";\nimport { useClientHomeData } from \"../hooks/useClientHomeData\";\n\nfunction firstName(value?: string) {\n  if (!value) {\n    return \"Nati\";\n  }\n\n  const [first] = value.split(\" \");\n  return first || \"Nati\";\n}\n\nexport function ClientHomeScreen() {\n  const [search, setSearch] = useState(\"\");\n  const homeQuery = useClientHomeData();\n\n  const name = useMemo(() =\u003e firstName(homeQuery.data?.user.full_name), [homeQuery.data?.user.full_name]);\n  const categories = homeQuery.data?.featured_categories ?? [];\n  const providers = homeQuery.data?.recommended_providers ?? [];\n  const recentProject = homeQuery.data?.recent_project;\n\n  return (\n    \u003cView style={styles.root}\u003e\n      \u003cScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}\u003e\n        \u003cClientHomeHeader\n          fullName={homeQuery.data?.user.full_name ?? \"Nati\"}\n          avatarUrl={homeQuery.data?.user.avatar_url}\n          unreadCount={homeQuery.data?.unread_notifications_count ?? 0}\n        /\u003e\n\n        \u003cText style={styles.greeting}\u003eHello, {name}\u003c/Text\u003e\n        \u003cText style={styles.subheading}\u003eFind trusted experts for your next project\u003c/Text\u003e\n\n        \u003cSearchFilterBar value={search} onChangeText={setSearch} /\u003e\n        \u003cCommunityHeroBanner /\u003e\n\n        \u003cView style={styles.sectionHeader}\u003e\n          \u003cText style={styles.sectionTitle}\u003ePopular Categories\u003c/Text\u003e\n          \u003cText style={styles.sectionLink}\u003eView More\u003c/Text\u003e\n        \u003c/View\u003e\n        \u003cScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalRow}\u003e\n          {categories.slice(0, 4).map((category) =\u003e (\n            \u003cClientCategoryCard\n              key={category.id}\n              icon={category.icon || \"⭐\"}\n              title={category.name}\n              subtitle={category.subtitle}\n            /\u003e\n          ))}\n        \u003c/ScrollView\u003e\n\n        \u003cView style={styles.sectionHeader}\u003e\n          \u003cText style={styles.sectionTitle}\u003eRecommended Providers\u003c/Text\u003e\n          \u003cText style={styles.sectionLink}\u003eView More\u003c/Text\u003e\n        \u003c/View\u003e\n        \u003cScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalRow}\u003e\n          {providers.slice(0, 3).map((provider) =\u003e (\n            \u003cRecommendedProviderCard\n              key={provider.id}\n              name={provider.full_name}\n              specialty={provider.specialty}\n              rating={provider.rating}\n              reviews={provider.review_count}\n              verified={provider.is_verified}\n              avatarUrl={provider.avatar_url}\n              buttonLabel={recentProject ? \"Invite\" : \"View\"}\n            /\u003e\n          ))}\n        \u003c/ScrollView\u003e\n\n        \u003cView style={styles.sectionHeader}\u003e\n          \u003cText style={styles.sectionTitle}\u003eYour Projects\u003c/Text\u003e\n          \u003cText style={styles.sectionLink}\u003eView All\u003c/Text\u003e\n        \u003c/View\u003e\n        {recentProject ? (\n          \u003cClientProjectCard\n            title={recentProject.title}\n            category={recentProject.category}\n            status={recentProject.status}\n            proposalCount={recentProject.proposal_count}\n          /\u003e\n        ) : (\n          \u003cView style={styles.emptyProjectCard}\u003e\n            \u003cText style={styles.emptyProjectText}\u003eNo active project yet.\u003c/Text\u003e\n          \u003c/View\u003e\n        )}\n\n        \u003cPostProjectCTA /\u003e\n      \u003c/ScrollView\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  root: {\n    flex: 1,\n    backgroundColor: colors.background\n  },\n  content: {\n    paddingHorizontal: spacing.lg,\n    paddingTop: spacing.xxl,\n    paddingBottom: spacing.xl,\n    gap: spacing.md\n  },\n  greeting: {\n    ...typography.h1,\n    color: colors.primaryDark\n  },\n  subheading: {\n    ...typography.body,\n    color: colors.textMuted,\n    marginBottom: spacing.sm\n  },\n  sectionHeader: {\n    flexDirection: \"row\",\n    justifyContent: \"space-between\",\n    alignItems: \"center\"\n  },\n  sectionTitle: {\n    ...typography.h3,\n    color: colors.text\n  },\n  sectionLink: {\n    ...typography.label,\n    color: colors.primary\n  },\n  horizontalRow: {\n    gap: spacing.sm,\n    paddingBottom: spacing.sm\n  },\n  emptyProjectCard: {\n    borderRadius: 10,\n    borderWidth: 1,\n    borderColor: colors.border,\n    backgroundColor: colors.surface,\n    padding: spacing.md\n  },\n  emptyProjectText: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\_layout.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Tabs, type Href, useRouter } from \"expo-router\";\n\nimport { ClientBottomTabBar } from \"../../src/components/ClientBottomTabBar\";\n\nconst keyByRoute: Record\u003cstring, \"home\" | \"categories\" | \"post\" | \"messages\" | \"profile\"\u003e = {\n  home: \"home\",\n  categories: \"categories\",\n  \"post-project\": \"post\",\n  messages: \"messages\",\n  profile: \"profile\"\n};\n\nconst hrefByKey: Record\u003c\"home\" | \"categories\" | \"post\" | \"messages\" | \"profile\", Href\u003e = {\n  home: \"/tabs/home\",\n  categories: \"/tabs/categories\",\n  post: \"/projects/create\",\n  messages: \"/tabs/messages\",\n  profile: \"/tabs/profile\"\n};\n\nexport default function ClientTabsLayout() {\n  const router = useRouter();\n\n  return (\n    \u003cTabs\n      screenOptions={{ headerShown: false }}\n      tabBar={({ state }) =\u003e (\n        \u003cClientBottomTabBar\n          activeKey={keyByRoute[state.routes[state.index]?.name] ?? \"home\"}\n          onSelect={(key) =\u003e router.push(hrefByKey[key])}\n        /\u003e\n      )}\n    \u003e\n      \u003cTabs.Screen name=\"home\" options={{ title: \"Home\" }} /\u003e\n      \u003cTabs.Screen name=\"categories\" options={{ title: \"Categories\" }} /\u003e\n      \u003cTabs.Screen name=\"post-project\" options={{ title: \"Post\" }} /\u003e\n      \u003cTabs.Screen name=\"messages\" options={{ title: \"Messages\" }} /\u003e\n      \u003cTabs.Screen name=\"profile\" options={{ title: \"Profile\" }} /\u003e\n    \u003c/Tabs\u003e\n  );\n}\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\profile.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { useRouter } from \"expo-router\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { fetchMe } from \"@serrale/api\";\nimport { clearSession } from \"@serrale/auth\";\nimport {\n  AppButton,\n  AppCard,\n  LoadingScreen,\n  ProfileAvatar,\n  colors,\n  spacing,\n  typography\n} from \"@serrale/ui\";\nimport { StyleSheet, Text, View } from \"react-native\";\n\nexport default function ProfileTabScreen() {\n  const router = useRouter();\n  const meQuery = useQuery({\n    queryKey: [\"client-profile\"],\n    queryFn: fetchMe\n  });\n\n  if (meQuery.isPending) {\n    return \u003cLoadingScreen message=\"Loading profile...\" /\u003e;\n  }\n\n  if (meQuery.isError || !meQuery.data) {\n    return (\n      \u003cView style={styles.screen}\u003e\n        \u003cText style={styles.error}\u003eUnable to load profile.\u003c/Text\u003e\n      \u003c/View\u003e\n    );\n  }\n\n  return (\n    \u003cView style={styles.screen}\u003e\n      \u003cAppCard style={styles.card}\u003e\n        \u003cProfileAvatar\n          fullName={meQuery.data.user.full_name}\n          avatarUrl={meQuery.data.user.avatar_url}\n          size={56}\n        /\u003e\n        \u003cText style={styles.name}\u003e{meQuery.data.user.full_name}\u003c/Text\u003e\n        \u003cText style={styles.email}\u003e{meQuery.data.user.email}\u003c/Text\u003e\n        \u003cAppButton label=\"Profile Settings\" variant=\"secondary\" onPress={() =\u003e router.push(\"/settings/profile\")} /\u003e\n        \u003cAppButton\n          label=\"Log Out\"\n          variant=\"danger\"\n          onPress={async () =\u003e {\n            await clearSession();\n            router.replace(\"/auth/login\");\n          }}\n        /\u003e\n      \u003c/AppCard\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  screen: {\n    flex: 1,\n    backgroundColor: colors.background,\n    padding: spacing.lg\n  },\n  card: {\n    gap: spacing.sm,\n    alignItems: \"center\"\n  },\n  name: {\n    ...typography.h2,\n    color: colors.primaryDark\n  },\n  email: {\n    ...typography.body,\n    color: colors.textMuted\n  },\n  error: {\n    ...typography.body,\n    color: colors.danger\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\post-project.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { useRouter } from \"expo-router\";\nimport { AppButton, AppCard, colors, spacing, typography } from \"@serrale/ui\";\nimport { StyleSheet, Text, View } from \"react-native\";\n\nexport default function PostProjectTabScreen() {\n  const router = useRouter();\n\n  return (\n    \u003cView style={styles.screen}\u003e\n      \u003cAppCard style={styles.card}\u003e\n        \u003cText style={styles.title}\u003ePost your project and get matched\u003c/Text\u003e\n        \u003cText style={styles.body}\u003e\n          Tell us what you need. We\u0026apos;ll connect you with verified experts.\n        \u003c/Text\u003e\n        \u003cAppButton label=\"Post a Project\" onPress={() =\u003e router.push(\"/projects/create\")} /\u003e\n      \u003c/AppCard\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  screen: {\n    flex: 1,\n    backgroundColor: colors.background,\n    padding: spacing.lg\n  },\n  card: {\n    gap: spacing.sm\n  },\n  title: {\n    ...typography.h2,\n    color: colors.primaryDark\n  },\n  body: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\messages.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { useQuery } from \"@tanstack/react-query\";\nimport { getConversations } from \"@serrale/api\";\nimport { AppCard, LoadingScreen, colors, spacing, typography } from \"@serrale/ui\";\nimport { ScrollView, StyleSheet, Text } from \"react-native\";\n\nexport default function MessagesTabScreen() {\n  const conversationsQuery = useQuery({\n    queryKey: [\"client-conversations\"],\n    queryFn: getConversations\n  });\n\n  if (conversationsQuery.isPending) {\n    return \u003cLoadingScreen message=\"Loading conversations...\" /\u003e;\n  }\n\n  return (\n    \u003cScrollView contentContainerStyle={styles.content}\u003e\n      \u003cText style={styles.title}\u003eMessages\u003c/Text\u003e\n      {(conversationsQuery.data ?? []).map((conversation) =\u003e (\n        \u003cAppCard key={conversation.id} style={styles.card}\u003e\n          \u003cText style={styles.preview}\u003e\n            {conversation.last_message_preview || \"Start a conversation\"}\n          \u003c/Text\u003e\n          \u003cText style={styles.meta}\u003e{new Date(conversation.updated_at).toLocaleString()}\u003c/Text\u003e\n        \u003c/AppCard\u003e\n      ))}\n    \u003c/ScrollView\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  content: {\n    padding: spacing.lg,\n    gap: spacing.sm,\n    backgroundColor: colors.background\n  },\n  title: {\n    ...typography.h2,\n    color: colors.primaryDark\n  },\n  card: {\n    gap: spacing.xs\n  },\n  preview: {\n    ...typography.body,\n    color: colors.text\n  },\n  meta: {\n    ...typography.label,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\home.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { ClientHomeScreen } from \"../../src/screens/ClientHomeScreen\";\n\nexport default function HomeTabScreen() {\n  return \u003cClientHomeScreen /\u003e;\n}\n"
+    },
+    {
+        "path":  "apps\\client-app\\app\\tabs\\categories.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { useQuery } from \"@tanstack/react-query\";\nimport { getCategories } from \"@serrale/api\";\nimport { CategoryCard, LoadingScreen, colors, spacing, typography } from \"@serrale/ui\";\nimport { ScrollView, StyleSheet, Text, View } from \"react-native\";\n\nexport default function CategoriesTabScreen() {\n  const categoriesQuery = useQuery({\n    queryKey: [\"categories\"],\n    queryFn: getCategories\n  });\n\n  if (categoriesQuery.isPending) {\n    return \u003cLoadingScreen message=\"Loading categories...\" /\u003e;\n  }\n\n  return (\n    \u003cScrollView contentContainerStyle={styles.content}\u003e\n      \u003cText style={styles.title}\u003eBrowse Categories\u003c/Text\u003e\n      \u003cView style={styles.grid}\u003e\n        {(categoriesQuery.data ?? []).map((category) =\u003e (\n          \u003cCategoryCard\n            key={category.id}\n            name={category.name}\n            description=\"Find verified experts\"\n          /\u003e\n        ))}\n      \u003c/View\u003e\n    \u003c/ScrollView\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  content: {\n    padding: spacing.lg,\n    gap: spacing.md,\n    backgroundColor: colors.background\n  },\n  title: {\n    ...typography.h2,\n    color: colors.primaryDark\n  },\n  grid: {\n    gap: spacing.sm\n  }\n});\n"
+    },
+    {
+        "path":  "apps\\client-app\\src\\providers\\AppProviders.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { type ReactNode } from \"react\";\nimport { QueryClientProvider } from \"@tanstack/react-query\";\nimport { SafeAreaProvider } from \"react-native-safe-area-context\";\n\nimport { queryClient } from \"../lib/query-client\";\n\ninterface AppProvidersProps {\n  children: ReactNode;\n}\n\nexport function AppProviders({ children }: AppProvidersProps) {\n  return (\n    \u003cSafeAreaProvider\u003e\n      \u003cQueryClientProvider client={queryClient}\u003e{children}\u003c/QueryClientProvider\u003e\n    \u003c/SafeAreaProvider\u003e\n  );\n}\n"
+    },
+    {
+        "path":  "apps\\provider-app\\app\\tabs\\_layout.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Tabs, type Href, useRouter } from \"expo-router\";\n\nimport {\n  ProviderBottomTabBar,\n  type ProviderTabKey\n} from \"../../src/provider/components/ProviderBottomTabBar\";\n\nconst keyByRoute: Record\u003cstring, ProviderTabKey\u003e = {\n  home: \"home\",\n  jobs: \"jobs\",\n  proposals: \"proposals\",\n  messages: \"messages\",\n  profile: \"profile\"\n};\n\nconst hrefByKey: Record\u003cProviderTabKey, Href\u003e = {\n  home: \"/tabs/home\",\n  jobs: \"/tabs/jobs\",\n  proposals: \"/tabs/proposals\",\n  messages: \"/tabs/messages\",\n  profile: \"/tabs/profile\"\n};\n\nexport default function ProviderTabsLayout() {\n  const router = useRouter();\n\n  return (\n    \u003cTabs\n      screenOptions={{ headerShown: false }}\n      tabBar={({ state }) =\u003e (\n        \u003cProviderBottomTabBar\n          activeKey={keyByRoute[state.routes[state.index]?.name] ?? \"home\"}\n          onSelect={(key) =\u003e router.push(hrefByKey[key])}\n        /\u003e\n      )}\n    \u003e\n      \u003cTabs.Screen name=\"home\" options={{ title: \"Home\" }} /\u003e\n      \u003cTabs.Screen name=\"jobs\" options={{ title: \"Jobs\" }} /\u003e\n      \u003cTabs.Screen name=\"proposals\" options={{ title: \"Proposals\" }} /\u003e\n      \u003cTabs.Screen name=\"messages\" options={{ title: \"Messages\" }} /\u003e\n      \u003cTabs.Screen name=\"profile\" options={{ title: \"Profile\" }} /\u003e\n    \u003c/Tabs\u003e\n  );\n}\n"
+    },
+    {
+        "path":  "apps\\provider-app\\app\\tabs\\proposals.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { ProviderProposalsScreen } from \"../../src/screens/provider/ProviderProposalsScreen\";\n\nexport default function ProposalsRoute() {\n  return \u003cProviderProposalsScreen /\u003e;\n}\n"
+    },
+    {
+        "path":  "apps\\provider-app\\app\\tabs\\profile.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { ProviderProfileScreen } from \"../../src/screens/provider/ProviderProfileScreen\";\n\nexport default function ProfileRoute() {\n  return \u003cProviderProfileScreen /\u003e;\n}\n"
+    },
+    {
+        "path":  "apps\\provider-app\\app\\tabs\\messages.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { ProviderMessagesScreen } from \"../../src/screens/provider/ProviderMessagesScreen\";\n\nexport default function MessagesRoute() {\n  return \u003cProviderMessagesScreen /\u003e;\n}\n"
+    }
+]

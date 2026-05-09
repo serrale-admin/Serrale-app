@@ -1,0 +1,122 @@
+[
+    {
+        "path":  "packages\\auth\\package.json",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "{\n  \"name\": \"@serrale/auth\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"main\": \"src/index.ts\",\n  \"types\": \"src/index.ts\",\n  \"scripts\": {\n    \"lint\": \"tsc --noEmit -p tsconfig.json\",\n    \"typecheck\": \"tsc --noEmit -p tsconfig.json\"\n  },\n  \"dependencies\": {\n    \"@serrale/config\": \"workspace:*\",\n    \"@supabase/supabase-js\": \"^2.49.1\",\n    \"expo-secure-store\": \"^13.0.2\"\n  }\n}\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\typography.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export const typography = {\n  h1: {\n    fontSize: 28,\n    fontWeight: \"700\" as const\n  },\n  h2: {\n    fontSize: 22,\n    fontWeight: \"700\" as const\n  },\n  h3: {\n    fontSize: 18,\n    fontWeight: \"600\" as const\n  },\n  body: {\n    fontSize: 15,\n    fontWeight: \"400\" as const\n  },\n  label: {\n    fontSize: 13,\n    fontWeight: \"600\" as const\n  }\n} as const;\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\spacing.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export const spacing = {\n  xs: 4,\n  sm: 8,\n  md: 12,\n  lg: 16,\n  xl: 20,\n  xxl: 28\n} as const;\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\shadows.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export const shadows = {\n  soft: {\n    shadowColor: \"#0B1F3A\",\n    shadowOpacity: 0.08,\n    shadowRadius: 8,\n    shadowOffset: { width: 0, height: 3 },\n    elevation: 2\n  },\n  medium: {\n    shadowColor: \"#0B1F3A\",\n    shadowOpacity: 0.14,\n    shadowRadius: 14,\n    shadowOffset: { width: 0, height: 5 },\n    elevation: 4\n  }\n} as const;\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\radius.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export const radius = {\n  sm: 6,\n  md: 8,\n  lg: 10,\n  full: 999\n} as const;\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\index.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export * from \"./colors\";\nexport * from \"./radius\";\nexport * from \"./shadows\";\nexport * from \"./spacing\";\nexport * from \"./typography\";\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\theme\\colors.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export const colors = {\n  primary: \"#2563EB\",\n  primaryDark: \"#0B2A5B\",\n  primaryLight: \"#EAF2FF\",\n  background: \"#F8FBFF\",\n  surface: \"#FFFFFF\",\n  surfaceSoft: \"#F3F7FF\",\n  text: \"#0B1F3A\",\n  textMuted: \"#64748B\",\n  border: \"#E2E8F0\",\n  success: \"#16A34A\",\n  warning: \"#F59E0B\",\n  danger: \"#EF4444\",\n  white: \"#FFFFFF\",\n  black: \"#000000\"\n} as const;\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\index.ts",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "export * from \"./components/AppButton\";\nexport * from \"./components/AppCard\";\nexport * from \"./components/AppHeader\";\nexport * from \"./components/AppInput\";\nexport * from \"./components/BottomTabBar\";\nexport * from \"./components/CategoryCard\";\nexport * from \"./components/JobCard\";\nexport * from \"./components/LoadingScreen\";\nexport * from \"./components/ProfileAvatar\";\nexport * from \"./components/ProjectCard\";\nexport * from \"./components/ProposalCard\";\nexport * from \"./components/ProviderCard\";\nexport * from \"./components/Rating\";\nexport * from \"./components/VerifiedBadge\";\nexport * from \"./theme\";\n"
+    },
+    {
+        "path":  "apps\\client-app\\tsconfig.json",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "{\n  \"extends\": \"../../tsconfig.base.json\",\n  \"compilerOptions\": {\n    \"types\": [\"expo-router/types\"],\n    \"baseUrl\": \".\"\n  },\n  \"include\": [\"app/**/*.ts\", \"app/**/*.tsx\", \"src/**/*.ts\", \"src/**/*.tsx\", \"expo-env.d.ts\"]\n}\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\VerifiedBadge.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, radius, spacing, typography } from \"../theme\";\n\nexport function VerifiedBadge() {\n  return (\n    \u003cView style={styles.badge}\u003e\n      \u003cText style={styles.text}\u003eVerified\u003c/Text\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  badge: {\n    alignSelf: \"flex-start\",\n    borderRadius: radius.full,\n    backgroundColor: colors.success,\n    paddingHorizontal: spacing.sm,\n    paddingVertical: 2\n  },\n  text: {\n    ...typography.label,\n    color: colors.white\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\Rating.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface RatingProps {\n  value?: number;\n  reviews?: number;\n}\n\nexport function Rating({ value = 0, reviews = 0 }: RatingProps) {\n  return (\n    \u003cView style={styles.row}\u003e\n      \u003cText style={styles.value}\u003e{\"★\"} {value.toFixed(1)}\u003c/Text\u003e\n      \u003cText style={styles.meta}\u003e({reviews})\u003c/Text\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  row: {\n    flexDirection: \"row\",\n    alignItems: \"center\",\n    gap: spacing.xs\n  },\n  value: {\n    ...typography.label,\n    color: colors.warning\n  },\n  meta: {\n    ...typography.label,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\ProviderCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text, View } from \"react-native\";\n\nimport { AppCard } from \"./AppCard\";\nimport { ProfileAvatar } from \"./ProfileAvatar\";\nimport { Rating } from \"./Rating\";\nimport { VerifiedBadge } from \"./VerifiedBadge\";\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface ProviderCardProps {\n  id: string;\n  fullName: string;\n  title?: string;\n  avatarUrl?: string;\n  rating?: number;\n  reviewCount?: number;\n  verified?: boolean;\n}\n\nexport function ProviderCard({\n  fullName,\n  title,\n  avatarUrl,\n  rating,\n  reviewCount,\n  verified\n}: ProviderCardProps) {\n  return (\n    \u003cAppCard style={styles.card}\u003e\n      \u003cView style={styles.row}\u003e\n        \u003cProfileAvatar fullName={fullName} avatarUrl={avatarUrl} /\u003e\n        \u003cView style={styles.body}\u003e\n          \u003cText style={styles.name}\u003e{fullName}\u003c/Text\u003e\n          {title ? \u003cText style={styles.title}\u003e{title}\u003c/Text\u003e : null}\n          \u003cRating value={rating} reviews={reviewCount} /\u003e\n        \u003c/View\u003e\n      \u003c/View\u003e\n      {verified ? \u003cVerifiedBadge /\u003e : null}\n    \u003c/AppCard\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    gap: spacing.md\n  },\n  row: {\n    flexDirection: \"row\",\n    gap: spacing.md\n  },\n  body: {\n    flex: 1,\n    gap: spacing.xs\n  },\n  name: {\n    ...typography.h3,\n    color: colors.text\n  },\n  title: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\ProposalCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text } from \"react-native\";\n\nimport { AppCard } from \"./AppCard\";\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface ProposalCardProps {\n  title: string;\n  status: string;\n  amountLabel?: string;\n}\n\nexport function ProposalCard({ title, status, amountLabel }: ProposalCardProps) {\n  return (\n    \u003cAppCard style={styles.card}\u003e\n      \u003cText style={styles.title}\u003e{title}\u003c/Text\u003e\n      \u003cText style={styles.meta}\u003eStatus: {status}\u003c/Text\u003e\n      {amountLabel ? \u003cText style={styles.amount}\u003e{amountLabel}\u003c/Text\u003e : null}\n    \u003c/AppCard\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    gap: spacing.xs\n  },\n  title: {\n    ...typography.h3,\n    color: colors.text\n  },\n  meta: {\n    ...typography.body,\n    color: colors.textMuted\n  },\n  amount: {\n    ...typography.label,\n    color: colors.primary\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\ProjectCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text } from \"react-native\";\n\nimport { AppCard } from \"./AppCard\";\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface ProjectCardProps {\n  title: string;\n  description: string;\n  status: string;\n}\n\nexport function ProjectCard({ title, description, status }: ProjectCardProps) {\n  return (\n    \u003cAppCard style={styles.card}\u003e\n      \u003cText style={styles.title}\u003e{title}\u003c/Text\u003e\n      \u003cText style={styles.description}\u003e{description}\u003c/Text\u003e\n      \u003cText style={styles.meta}\u003eStatus: {status}\u003c/Text\u003e\n    \u003c/AppCard\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    gap: spacing.xs\n  },\n  title: {\n    ...typography.h3,\n    color: colors.text\n  },\n  description: {\n    ...typography.body,\n    color: colors.textMuted\n  },\n  meta: {\n    ...typography.label,\n    color: colors.primary\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\ProfileAvatar.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Image, StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, radius, typography } from \"../theme\";\n\nexport interface ProfileAvatarProps {\n  fullName: string;\n  avatarUrl?: string;\n  size?: number;\n}\n\nexport function ProfileAvatar({ fullName, avatarUrl, size = 44 }: ProfileAvatarProps) {\n  const initials = fullName\n    .split(\" \")\n    .map((part) =\u003e part[0])\n    .join(\"\")\n    .slice(0, 2)\n    .toUpperCase();\n\n  if (avatarUrl) {\n    return (\n      \u003cImage\n        source={{ uri: avatarUrl }}\n        style={{\n          width: size,\n          height: size,\n          borderRadius: radius.full,\n          backgroundColor: colors.surfaceSoft\n        }}\n      /\u003e\n    );\n  }\n\n  return (\n    \u003cView style={[styles.fallback, { width: size, height: size, borderRadius: size / 2 }]}\u003e\n      \u003cText style={styles.initials}\u003e{initials}\u003c/Text\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  fallback: {\n    alignItems: \"center\",\n    justifyContent: \"center\",\n    backgroundColor: colors.primaryLight\n  },\n  initials: {\n    ...typography.label,\n    color: colors.primaryDark\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\LoadingScreen.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { ActivityIndicator, StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface LoadingScreenProps {\n  message?: string;\n}\n\nexport function LoadingScreen({ message = \"Loading...\" }: LoadingScreenProps) {\n  return (\n    \u003cView style={styles.container}\u003e\n      \u003cActivityIndicator size=\"large\" color={colors.primary} /\u003e\n      \u003cText style={styles.message}\u003e{message}\u003c/Text\u003e\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    flex: 1,\n    alignItems: \"center\",\n    justifyContent: \"center\",\n    gap: spacing.md,\n    backgroundColor: colors.background\n  },\n  message: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\JobCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text } from \"react-native\";\n\nimport { AppCard } from \"./AppCard\";\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface JobCardProps {\n  title: string;\n  description: string;\n  budgetLabel?: string;\n}\n\nexport function JobCard({ title, description, budgetLabel }: JobCardProps) {\n  return (\n    \u003cAppCard style={styles.card}\u003e\n      \u003cText style={styles.title}\u003e{title}\u003c/Text\u003e\n      \u003cText style={styles.description}\u003e{description}\u003c/Text\u003e\n      {budgetLabel ? \u003cText style={styles.meta}\u003e{budgetLabel}\u003c/Text\u003e : null}\n    \u003c/AppCard\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    gap: spacing.xs\n  },\n  title: {\n    ...typography.h3,\n    color: colors.text\n  },\n  description: {\n    ...typography.body,\n    color: colors.textMuted\n  },\n  meta: {\n    ...typography.label,\n    color: colors.primary\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\CategoryCard.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text } from \"react-native\";\n\nimport { AppCard } from \"./AppCard\";\nimport { colors, spacing, typography } from \"../theme\";\n\nexport interface CategoryCardProps {\n  name: string;\n  description?: string;\n}\n\nexport function CategoryCard({ name, description }: CategoryCardProps) {\n  return (\n    \u003cAppCard style={styles.card}\u003e\n      \u003cText style={styles.title}\u003e{name}\u003c/Text\u003e\n      {description ? \u003cText style={styles.description}\u003e{description}\u003c/Text\u003e : null}\n    \u003c/AppCard\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  card: {\n    gap: spacing.xs\n  },\n  title: {\n    ...typography.h3,\n    color: colors.text\n  },\n  description: {\n    ...typography.body,\n    color: colors.textMuted\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\BottomTabBar.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { Pressable, StyleSheet, Text, View } from \"react-native\";\n\nimport { colors, radius, shadows, spacing, typography } from \"../theme\";\n\nexport interface BottomTabItem {\n  key: string;\n  label: string;\n  active?: boolean;\n  centerAction?: boolean;\n  onPress?: () =\u003e void;\n}\n\nexport interface BottomTabBarProps {\n  items: BottomTabItem[];\n}\n\nexport function BottomTabBar({ items }: BottomTabBarProps) {\n  return (\n    \u003cView style={styles.container}\u003e\n      {items.map((item) =\u003e (\n        \u003cPressable\n          key={item.key}\n          onPress={item.onPress}\n          style={[styles.item, item.centerAction ? styles.centerItem : null]}\n        \u003e\n          {item.centerAction ? \u003cView style={styles.plusDot}\u003e\u003cText style={styles.plusText}\u003e+\u003c/Text\u003e\u003c/View\u003e : null}\n          \u003cText style={[styles.label, item.active ? styles.activeLabel : null]}\u003e{item.label}\u003c/Text\u003e\n        \u003c/Pressable\u003e\n      ))}\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    flexDirection: \"row\",\n    alignItems: \"flex-end\",\n    justifyContent: \"space-between\",\n    borderTopWidth: 1,\n    borderTopColor: colors.border,\n    backgroundColor: colors.surface,\n    paddingHorizontal: spacing.md,\n    paddingBottom: spacing.sm,\n    paddingTop: spacing.sm,\n    ...shadows.soft\n  },\n  item: {\n    minWidth: 56,\n    alignItems: \"center\",\n    gap: 2\n  },\n  centerItem: {\n    marginTop: -16\n  },\n  plusDot: {\n    width: 44,\n    height: 44,\n    borderRadius: radius.full,\n    alignItems: \"center\",\n    justifyContent: \"center\",\n    backgroundColor: colors.primary\n  },\n  plusText: {\n    ...typography.h3,\n    color: colors.white\n  },\n  label: {\n    ...typography.label,\n    color: colors.textMuted\n  },\n  activeLabel: {\n    color: colors.primary\n  }\n});\n"
+    },
+    {
+        "path":  "packages\\ui\\src\\components\\AppInput.tsx",
+        "mode":  "100644",
+        "type":  "blob",
+        "content":  "import { StyleSheet, Text, TextInput, View, type TextInputProps } from \"react-native\";\n\nimport { colors, radius, spacing, typography } from \"../theme\";\n\nexport interface AppInputProps extends TextInputProps {\n  label?: string;\n  error?: string;\n}\n\nexport function AppInput({ label, error, style, ...props }: AppInputProps) {\n  return (\n    \u003cView style={styles.container}\u003e\n      {label ? \u003cText style={styles.label}\u003e{label}\u003c/Text\u003e : null}\n      \u003cTextInput\n        placeholderTextColor={colors.textMuted}\n        style={[styles.input, style]}\n        {...props}\n      /\u003e\n      {error ? \u003cText style={styles.error}\u003e{error}\u003c/Text\u003e : null}\n    \u003c/View\u003e\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    gap: spacing.xs\n  },\n  label: {\n    ...typography.label,\n    color: colors.text\n  },\n  input: {\n    minHeight: 44,\n    borderWidth: 1,\n    borderColor: colors.border,\n    borderRadius: radius.md,\n    paddingHorizontal: spacing.md,\n    color: colors.text,\n    backgroundColor: colors.surface\n  },\n  error: {\n    ...typography.label,\n    color: colors.danger\n  }\n});\n"
+    }
+]

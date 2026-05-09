@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SERRALE — Service Provider App (Print)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEAE5; font-family: 'Inter', system-ui, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+  * { box-sizing: border-box; }
+  .page {
+    width: 100%; min-height: 100vh; padding: 28px 36px 36px;
+    display: flex; flex-direction: column; align-items: center;
+    background: #ECEAE5;
+    page-break-after: always; break-after: page;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .page-title { font-size: 26px; font-weight: 900; color: #071D3C; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .page-sub { font-size: 13px; font-weight: 600; color: #64748B; margin: 0 0 22px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+  .frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; break-inside: avoid; }
+  .frame-label { font-size: 12px; font-weight: 700; color: #40506A; letter-spacing: 0.3px; }
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: linear-gradient(135deg, #EAF3FF 0%, #F8FBFF 60%, #fff 100%);
+    text-align: center; padding: 60px;
+    page-break-after: always; break-after: page;
+  }
+  .cover h1 { font-size: 64px; font-weight: 900; color: #071D3C; letter-spacing: -2px; margin: 24px 0 8px; }
+  .cover h2 { font-size: 22px; font-weight: 600; color: #40506A; margin: 0 0 8px; letter-spacing: -0.3px; }
+  .cover .meta { font-size: 13px; color: #64748B; font-weight: 700; letter-spacing: 1.5px; margin-top: 28px; }
+  @page { size: A3 landscape; margin: 0.5cm; }
+  @media print {
+    body { background: #fff; }
+    .page, .cover { background: #ECEAE5; }
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="app/tokens.jsx"></script>
+<script type="text/babel" src="app/icons.jsx"></script>
+<script type="text/babel" src="app/components.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/screens-auth.jsx"></script>
+<script type="text/babel" src="app/screens-home.jsx"></script>
+<script type="text/babel" src="app/screens-jobs.jsx"></script>
+<script type="text/babel" src="app/screens-rest.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const SA = window.SerraleAuth;
+const SHm = window.SerraleHome;
+const SJ = window.SerraleJobs;
+const SS = window.SerraleScreens;
+const { SerraleMark } = window.SerraleUI;
+
+function FrameWrap({ label, children }) {
+  return (
+    <div className="frame-wrap">
+      {children}
+      <div className="frame-label">{label}</div>
+    </div>
+  );
+}
+
+function PrintApp() {
+  return (
+    <div>
+      {/* Cover */}
+      <div className="cover">
+        <SerraleMark size={96} />
+        <h1>SERRALE</h1>
+        <h2>Service Provider · Mobile App</h2>
+        <div style={{ fontSize: 15, color: '#40506A', maxWidth: 520, lineHeight: 1.6, marginTop: 12 }}>
+          A premium light-theme marketplace app for Ethiopian professionals — find work,
+          send proposals, manage profile, and grow reputation.
+        </div>
+        <div className="meta">11 SCREENS · DESIGN REVIEW</div>
+      </div>
+
+      {/* Auth */}
+      <div className="page">
+        <h3 className="page-title">01 · Onboarding & Auth</h3>
+        <div className="page-sub">Loading · Login · Signup</div>
+        <div className="grid">
+          <FrameWrap label="Loading"><SA.LoadingScreen /></FrameWrap>
+          <FrameWrap label="Login"><SA.LoginScreen /></FrameWrap>
+          <FrameWrap label="Signup"><SA.SignupScreen /></FrameWrap>
+        </div>
+      </div>
+
+      {/* Home */}
+      <div className="page">
+        <h3 className="page-title">02 · Home — the daily work hub</h3>
+        <div className="page-sub">Greeting, availability, search, hero banner, summary cards, recommended jobs, recent proposals, profile tip</div>
+        <div className="grid">
+          <FrameWrap label="Provider Home"><SHm.HomeScreen /></FrameWrap>
+        </div>
+      </div>
+
+      {/* Jobs */}
+      <div className="page">
+        <h3 className="page-title">03 · Browse & apply</h3>
+        <div className="page-sub">Jobs list → Job detail → Send proposal</div>
+        <div className="grid">
+          <FrameWrap label="Jobs · list"><SJ.JobsScreen /></FrameWrap>
+          <FrameWrap label="Job detail"><SJ.JobDetailScreen jobId="j1" /></FrameWrap>
+          <FrameWrap label="Send proposal"><SJ.SendProposalScreen jobId="j1" /></FrameWrap>
+        </div>
+      </div>
+
+      {/* Track */}
+      <div className="page">
+        <h3 className="page-title">04 · Track & communicate</h3>
+        <div className="page-sub">Proposals tracker, message inbox, chat thread</div>
+        <div className="grid">
+          <FrameWrap label="Proposals"><SS.ProposalsScreen /></FrameWrap>
+          <FrameWrap label="Messages · inbox"><SS.MessagesScreen /></FrameWrap>
+          <FrameWrap label="Chat thread"><SS.ChatScreen chatId="m1" /></FrameWrap>
+        </div>
+      </div>
+
+      {/* Profile */}
+      <div className="page">
+        <h3 className="page-title">05 · Profile & settings</h3>
+        <div className="page-sub">Identity, stats, completion, settings menu</div>
+        <div className="grid">
+          <FrameWrap label="Profile"><SS.ProfileScreen /></FrameWrap>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<PrintApp />);
+
+// Auto-print after fonts and JSX have loaded
+(async () => {
+  try { await document.fonts.ready; } catch (e) {}
+  setTimeout(() => window.print(), 800);
+})();
+</script>
+</body>
+</html>

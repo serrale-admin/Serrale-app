@@ -1,0 +1,4 @@
+interface:
+  display_name: "SERRALE Design Guidelines"
+  short_description: "Enforce SERRALE UI consistency in mobile interfaces"
+  default_prompt: "Use $serrale-design-guidelines to design and review SERRALE client and provider screens for theme consistency."

@@ -1,0 +1,29 @@
+{
+  "name": "serrale-mobile",
+  "private": true,
+  "packageManager": "pnpm@9.12.3",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "client": "pnpm --filter client-app start",
+    "provider": "pnpm --filter provider-app start",
+    "client:android": "pnpm --filter client-app android",
+    "client:ios": "pnpm --filter client-app ios",
+    "provider:android": "pnpm --filter provider-app android",
+    "provider:ios": "pnpm --filter provider-app ios",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@expo/metro-runtime": "~6.1.2",
+      "expo-linking": "~8.0.11"
+    }
+  }
+}

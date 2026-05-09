@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SERRALE — Service Provider App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEAE5; font-family: 'Inter', system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  body { overflow: hidden; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="app/tokens.jsx"></script>
+<script type="text/babel" src="app/icons.jsx"></script>
+<script type="text/babel" src="app/components.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/screens-auth.jsx"></script>
+<script type="text/babel" src="app/screens-home.jsx"></script>
+<script type="text/babel" src="app/screens-jobs.jsx"></script>
+<script type="text/babel" src="app/screens-rest.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const SA = window.SerraleAuth;
+const SHm = window.SerraleHome;
+const SJ = window.SerraleJobs;
+const SS = window.SerraleScreens;
+
+// ─── Interactive prototype ──────────────────────────────────
+// A single mobile that the user can navigate through. Lives at the top of
+// the canvas so they can play with it before scrolling through static frames.
+function InteractivePrototype() {
+  const [route, setRoute] = React.useState({ screen: 'home', jobId: 'j1', chatId: 'm1' });
+
+  const onNav = (id) => setRoute(r => ({ ...r, screen: id }));
+  const onJob = (jobId) => setRoute(r => ({ ...r, screen: 'job-detail', jobId }));
+  const onApply = () => setRoute(r => ({ ...r, screen: 'send-proposal' }));
+  const onChat = (chatId) => setRoute(r => ({ ...r, screen: 'chat', chatId }));
+  const back = (to) => setRoute(r => ({ ...r, screen: to }));
+
+  switch (route.screen) {
+    case 'loading': return <SA.LoadingScreen />;
+    case 'login': return <SA.LoginScreen onLogin={() => onNav('home')} onSignup={() => onNav('signup')} />;
+    case 'signup': return <SA.SignupScreen onBack={() => onNav('login')} onSubmit={() => onNav('home')} />;
+    case 'home': return <SHm.HomeScreen onNav={onNav} onJob={onJob} />;
+    case 'jobs': return <SJ.JobsScreen onNav={onNav} onJob={onJob} />;
+    case 'job-detail': return <SJ.JobDetailScreen jobId={route.jobId} onBack={() => back('jobs')} onApply={onApply} />;
+    case 'send-proposal': return <SJ.SendProposalScreen jobId={route.jobId} onBack={() => back('job-detail')} onSent={() => onNav('proposals')} />;
+    case 'proposals': return <SS.ProposalsScreen onNav={onNav} />;
+    case 'messages': return <SS.MessagesScreen onNav={onNav} onChat={onChat} />;
+    case 'chat': return <SS.ChatScreen chatId={route.chatId} onBack={() => back('messages')} />;
+    case 'profile': return <SS.ProfileScreen onNav={onNav} />;
+    default: return <SHm.HomeScreen onNav={onNav} onJob={onJob} />;
+  }
+}
+
+// ─── Static frames for design review ───────────────────────
+const PHONE_W = 390, PHONE_H = 844;
+
+function Frame({ children }) {
+  return (
+    <div style={{ width: PHONE_W, height: PHONE_H, display: 'flex',
+      alignItems: 'center', justifyContent: 'center' }}>
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="prototype" title="Interactive prototype"
+        subtitle="Tap the bottom nav, banner CTAs, jobs, messages — everything is wired up.">
+        <DCArtboard id="proto" label="Live prototype · start here" width={PHONE_W} height={PHONE_H}>
+          <Frame><InteractivePrototype /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="auth" title="01 · Onboarding & Auth"
+        subtitle="Loading, Login, Signup">
+        <DCArtboard id="loading" label="Loading" width={PHONE_W} height={PHONE_H}>
+          <Frame><SA.LoadingScreen /></Frame>
+        </DCArtboard>
+        <DCArtboard id="login" label="Login" width={PHONE_W} height={PHONE_H}>
+          <Frame><SA.LoginScreen /></Frame>
+        </DCArtboard>
+        <DCArtboard id="signup" label="Signup" width={PHONE_W} height={PHONE_H}>
+          <Frame><SA.SignupScreen /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="home" title="02 · Home — the daily work hub"
+        subtitle="Greeting, availability, search, hero, summary, jobs, proposals, profile tip">
+        <DCArtboard id="home-frame" label="Provider Home" width={PHONE_W} height={PHONE_H}>
+          <Frame><SHm.HomeScreen /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="jobs" title="03 · Browse & apply"
+        subtitle="Jobs list → Job detail → Send proposal">
+        <DCArtboard id="jobs-list" label="Jobs · list" width={PHONE_W} height={PHONE_H}>
+          <Frame><SJ.JobsScreen /></Frame>
+        </DCArtboard>
+        <DCArtboard id="jobs-detail" label="Job detail" width={PHONE_W} height={PHONE_H}>
+          <Frame><SJ.JobDetailScreen jobId="j1" /></Frame>
+        </DCArtboard>
+        <DCArtboard id="send-proposal" label="Send proposal" width={PHONE_W} height={PHONE_H}>
+          <Frame><SJ.SendProposalScreen jobId="j1" /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="track" title="04 · Track & communicate"
+        subtitle="Proposals tracker, message inbox, chat thread">
+        <DCArtboard id="proposals" label="Proposals" width={PHONE_W} height={PHONE_H}>
+          <Frame><SS.ProposalsScreen /></Frame>
+        </DCArtboard>
+        <DCArtboard id="messages" label="Messages · inbox" width={PHONE_W} height={PHONE_H}>
+          <Frame><SS.MessagesScreen /></Frame>
+        </DCArtboard>
+        <DCArtboard id="chat" label="Chat thread" width={PHONE_W} height={PHONE_H}>
+          <Frame><SS.ChatScreen chatId="m1" /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="me" title="05 · Profile & settings"
+        subtitle="Identity, stats, completion, settings menu">
+        <DCArtboard id="profile" label="Profile" width={PHONE_W} height={PHONE_H}>
+          <Frame><SS.ProfileScreen /></Frame>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

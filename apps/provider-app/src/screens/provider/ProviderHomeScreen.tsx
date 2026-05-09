@@ -198,7 +198,7 @@ export function ProviderHomeScreen() {
       {hotJobs.length > 0 && (
         <View style={styles.horizontalSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 Hot Projects</Text>
+            <Text style={styles.sectionTitle}>Hot Projects</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {hotJobs.map(job => (

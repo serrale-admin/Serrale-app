@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import { providerJobs } from "../../provider/data";
-import type { ProviderJob } from "../../provider/types";
-import { formatEtbRange } from "../../provider/format";
+import { getJobById } from "@serrale/api";
+import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { ProviderButton } from "../../provider/components/ProviderButton";
 import { IconSymbol } from "../../provider/components/IconSymbol";
 import { ProviderScreen } from "../../provider/components/ProviderScreen";
 import { providerColors, providerRadius, providerSpacing, providerTypography } from "../../provider/theme";
+import { formatEtbRange } from "../../provider/format";
 
 interface ProviderSendProposalScreenProps {
   jobId: string;
@@ -16,20 +17,55 @@ interface ProviderSendProposalScreenProps {
 
 export function ProviderSendProposalScreen({ jobId }: ProviderSendProposalScreenProps) {
   const router = useRouter();
-  const job: ProviderJob = useMemo(
-    () => providerJobs.find((entry) => entry.id === jobId) ?? providerJobs[0],
-    [jobId]
-  );
 
-  const [message, setMessage] = useState(
-    "Hello Buna House team,\n\nI'd love to bring your coffee brand to life. I've worked on hospitality identities with strong local storytelling.\n\nMy proposal includes:\n- Logo system + 2 concepts\n- Color & typography guide\n- Packaging mockups\n\nLooking forward to chatting,\nSamuel"
-  );
-  const [price, setPrice] = useState("10000");
-  const [days, setDays] = useState("14");
+  const jobQuery = useQuery({
+    queryKey: ["provider-job-detail", jobId],
+    queryFn: () => getJobById(jobId),
+    enabled: Boolean(jobId)
+  });
+
+  const [message, setMessage] = useState("");
+  const [price, setPrice] = useState("");
+  const [days, setDays] = useState("");
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      // Placeholder for real submission API
+      // await api.post(`/api/jobs/${jobId}/proposals`, { message, price: Number(price), days: Number(days) });
+      return new Promise(resolve => setTimeout(resolve, 1000));
+    },
+    onSuccess: () => {
+      router.replace("/tabs/proposals");
+    }
+  });
+
+  if (jobQuery.isLoading) {
+    return (
+      <View style={styles.root}>
+        <ProviderScreen contentContainerStyle={styles.centerState}>
+          <ActivityIndicator size="large" color={providerColors.blue} />
+        </ProviderScreen>
+      </View>
+    );
+  }
+
+  if (jobQuery.isError || !jobQuery.data) {
+    return (
+      <View style={styles.root}>
+        <ProviderScreen contentContainerStyle={styles.centerState}>
+          <Text style={styles.errorText}>Unable to load project details.</Text>
+          <ProviderButton label="Go Back" onPress={() => router.back()} full={false} />
+        </ProviderScreen>
+      </View>
+    );
+  }
+
+  const rawJob = jobQuery.data.job || jobQuery.data;
+  const job = mapBackendJobToProviderJob(rawJob);
 
   return (
     <View style={styles.root}>
-      <ProviderScreen contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headRow}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <IconSymbol name="chevron-back" size={18} color={providerColors.title} />
@@ -53,6 +89,8 @@ export function ProviderSendProposalScreen({ jobId }: ProviderSendProposalScreen
           <TextInput
             value={message}
             onChangeText={setMessage}
+            placeholder={`Hi ${job.client},\n\nI'm interested in working on this project...`}
+            placeholderTextColor={providerColors.muted}
             multiline
             textAlignVertical="top"
             style={styles.textarea}
@@ -65,14 +103,28 @@ export function ProviderSendProposalScreen({ jobId }: ProviderSendProposalScreen
             <Text style={styles.fieldLabel}>YOUR PRICE (ETB)</Text>
             <View style={styles.inlineField}>
               <IconSymbol name="wallet-outline" size={16} color={providerColors.muted} />
-              <TextInput value={price} onChangeText={setPrice} keyboardType="numeric" style={styles.inlineInput} />
+              <TextInput 
+                value={price} 
+                onChangeText={setPrice} 
+                keyboardType="numeric" 
+                placeholder="e.g. 5000"
+                placeholderTextColor={providerColors.muted}
+                style={styles.inlineInput} 
+              />
             </View>
           </View>
           <View style={styles.col}>
             <Text style={styles.fieldLabel}>DELIVERY (DAYS)</Text>
             <View style={styles.inlineField}>
               <IconSymbol name="time-outline" size={16} color={providerColors.muted} />
-              <TextInput value={days} onChangeText={setDays} keyboardType="numeric" style={styles.inlineInput} />
+              <TextInput 
+                value={days} 
+                onChangeText={setDays} 
+                keyboardType="numeric" 
+                placeholder="e.g. 7"
+                placeholderTextColor={providerColors.muted}
+                style={styles.inlineInput} 
+              />
             </View>
           </View>
         </View>
@@ -94,14 +146,15 @@ export function ProviderSendProposalScreen({ jobId }: ProviderSendProposalScreen
             </Text>
           </View>
         </View>
-      </ProviderScreen>
+      </ScrollView>
 
       <View style={styles.stickyBar}>
         <ProviderButton label="Review" variant="secondary" full={false} style={styles.reviewBtn} />
         <ProviderButton
-          label="Send Proposal"
+          label={submitMutation.isPending ? "Sending..." : "Send Proposal"}
           icon="paper-plane-outline"
-          onPress={() => router.replace("/tabs/proposals")}
+          disabled={submitMutation.isPending || !message || !price || !days}
+          onPress={() => submitMutation.mutate()}
         />
       </View>
     </View>
@@ -263,5 +316,16 @@ const styles = StyleSheet.create({
   },
   reviewBtn: {
     minHeight: 50
+  },
+  centerState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: providerSpacing.xl,
+    gap: providerSpacing.md
+  },
+  errorText: {
+    ...providerTypography.body,
+    color: providerColors.dangerRed
   }
 });

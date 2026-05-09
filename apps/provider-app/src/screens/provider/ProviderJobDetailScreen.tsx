@@ -1,15 +1,16 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View, ActivityIndicator, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { providerJobs } from "../../provider/data";
-import type { ProviderJob } from "../../provider/types";
-import { formatEtbRange } from "../../provider/format";
+import { getJobById, toggleSaveJob } from "@serrale/api";
+import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { ProviderButton } from "../../provider/components/ProviderButton";
 import { MatchBadge } from "../../provider/components/ProviderBadges";
 import { IconSymbol } from "../../provider/components/IconSymbol";
 import { ProviderScreen } from "../../provider/components/ProviderScreen";
 import { providerColors, providerRadius, providerShadows, providerSpacing, providerTypography } from "../../provider/theme";
+import { formatEtbRange } from "../../provider/format";
 
 interface ProviderJobDetailScreenProps {
   jobId: string;
@@ -17,44 +18,105 @@ interface ProviderJobDetailScreenProps {
 
 export function ProviderJobDetailScreen({ jobId }: ProviderJobDetailScreenProps) {
   const router = useRouter();
-  const [saved, setSaved] = useState(false);
+  const queryClient = useQueryClient();
+  const [optimisticSaved, setOptimisticSaved] = useState<boolean | null>(null);
 
-  const job: ProviderJob = useMemo(
-    () => providerJobs.find((entry) => entry.id === jobId) ?? providerJobs[0],
-    [jobId]
-  );
+  const jobQuery = useQuery({
+    queryKey: ["provider-job-detail", jobId],
+    queryFn: () => getJobById(jobId),
+    enabled: Boolean(jobId)
+  });
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: ({ save }: { save: boolean }) => toggleSaveJob(jobId, save),
+    onMutate: async ({ save }) => {
+      setOptimisticSaved(save);
+    },
+    onError: () => {
+      setOptimisticSaved(null); // Revert on error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["provider-job-detail", jobId] });
+      queryClient.invalidateQueries({ queryKey: ["provider-home-open-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["provider-jobs"] });
+    }
+  });
+
+  if (jobQuery.isLoading) {
+    return (
+      <View style={styles.root}>
+        <ProviderScreen contentContainerStyle={styles.centerState}>
+          <ActivityIndicator size="large" color={providerColors.blue} />
+          <Text style={styles.loadingText}>Loading project details...</Text>
+        </ProviderScreen>
+      </View>
+    );
+  }
+
+  if (jobQuery.isError || !jobQuery.data) {
+    return (
+      <View style={styles.root}>
+        <ProviderScreen contentContainerStyle={styles.centerState}>
+          <Text style={styles.errorText}>Unable to load project.</Text>
+          <ProviderButton label="Go Back" onPress={() => router.back()} full={false} />
+        </ProviderScreen>
+      </View>
+    );
+  }
+
+  const rawJob = jobQuery.data.job || jobQuery.data;
+  const alreadyApplied = Boolean(jobQuery.data.alreadyApplied);
+  const job = mapBackendJobToProviderJob(rawJob);
+  
+  // Use optimistic state if present, otherwise use real saved state from rawJob (assuming rawJob has a saved field)
+  // If backend doesn't return saved state on detail yet, we fallback to false
+  const isSaved = optimisticSaved !== null ? optimisticSaved : Boolean(rawJob.saved);
+
+  const handleToggleSave = () => {
+    toggleSaveMutation.mutate({ save: !isSaved });
+  };
+
+  const handleApply = () => {
+    if (!alreadyApplied) {
+      router.push({ pathname: "/jobs/apply" as any, params: { jobId: job.id } });
+    }
+  };
 
   return (
     <View style={styles.root}>
-      <ProviderScreen contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.navRow}>
           <Pressable onPress={() => router.back()} style={styles.navButton}>
             <IconSymbol name="chevron-back" size={18} color={providerColors.title} />
           </Pressable>
-          <Pressable onPress={() => setSaved((value) => !value)} style={styles.navButton}>
+          <Pressable onPress={handleToggleSave} style={styles.navButton}>
             <IconSymbol
-              name={saved ? "bookmark" : "bookmark-outline"}
+              name={isSaved ? "bookmark" : "bookmark-outline"}
               size={18}
-              color={saved ? providerColors.blue : providerColors.title}
+              color={isSaved ? providerColors.blue : providerColors.title}
             />
           </Pressable>
         </View>
 
-        <MatchBadge percentage={job.match} />
-        <Text style={styles.title}>{job.title}</Text>
+        <View style={styles.glassHeader}>
+          <MatchBadge percentage={job.match} />
+          <Text style={styles.title}>{job.title}</Text>
 
-        <View style={styles.clientRow}>
-          <View style={[styles.clientBadge, { backgroundColor: job.catBg }]}>
-            <Text style={[styles.clientBadgeText, { color: job.catColor }]}>
-              {job.client.slice(0, 2).toUpperCase()}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.clientName}>
-              {job.client}
-              {job.clientVerified ? " - Verified" : ""}
-            </Text>
-            <Text style={styles.clientMeta}>{job.location}</Text>
+          <View style={styles.clientRow}>
+            <View style={[styles.clientBadge, { backgroundColor: job.catBg }]}>
+              <Text style={[styles.clientBadgeText, { color: job.catColor }]}>
+                {job.client.slice(0, 2).toUpperCase()}
+              </Text>
+            </View>
+            <View>
+              <View style={styles.clientNameRow}>
+                <Text style={styles.clientName}>{job.client}</Text>
+                {job.clientVerified && (
+                  <IconSymbol name="shield-checkmark" size={14} color={providerColors.blue} />
+                )}
+              </View>
+              <Text style={styles.clientMeta}>{job.location}</Text>
+            </View>
           </View>
         </View>
 
@@ -68,51 +130,53 @@ export function ProviderJobDetailScreen({ jobId }: ProviderJobDetailScreenProps)
           <Text style={styles.body}>{job.description}</Text>
         </Section>
 
-        <Section title="Skills Needed">
-          <View style={styles.skillWrap}>
-            {job.skills.map((skill) => (
-              <View key={skill} style={styles.skillChip}>
-                <Text style={styles.skillLabel}>{skill}</Text>
+        {job.skills && job.skills.length > 0 && (
+          <Section title="Skills Needed">
+            <View style={styles.skillWrap}>
+              {job.skills.map((skill: string) => (
+                <View key={skill} style={styles.skillChip}>
+                  <Text style={styles.skillLabel}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </Section>
+        )}
+
+        {rawJob.screening_questions && rawJob.screening_questions.length > 0 && (
+          <Section title="Screening Questions">
+            {rawJob.screening_questions.map((question: string, index: number) => (
+              <View key={index} style={styles.requirementRow}>
+                <IconSymbol name="help-circle-outline" size={16} color={providerColors.blue} />
+                <Text style={styles.body}>{question}</Text>
               </View>
             ))}
-          </View>
-        </Section>
+          </Section>
+        )}
 
-        <Section title="Requirements">
-          {[
-            "Portfolio of recent brand work",
-            "Available to start within 1 week",
-            "2+ rounds of revisions included",
-            "Provide source files (.ai / .fig)"
-          ].map((requirement) => (
-            <View key={requirement} style={styles.requirementRow}>
-              <IconSymbol name="checkmark" size={14} color={providerColors.successGreen} />
-              <Text style={styles.body}>{requirement}</Text>
+        {rawJob.attachments && rawJob.attachments.length > 0 && (
+          <Section title="Attachments">
+            <View style={styles.requirementRow}>
+              <IconSymbol name="document-attach-outline" size={16} color={providerColors.muted} />
+              <Text style={styles.body}>{rawJob.attachments.length} file(s) attached</Text>
             </View>
-          ))}
-        </Section>
+          </Section>
+        )}
 
-        <Section title="About the client">
-          <Text style={styles.body}>
-            Buna House is a new specialty coffee concept based in Bole, opening three locations
-            in 2026. The team values local craftsmanship and modern design.
-          </Text>
-          <Text style={styles.clientFoot}>* 4.8 rating - 6 hires - Member since 2024</Text>
-        </Section>
-      </ProviderScreen>
+      </ScrollView>
 
       <View style={styles.stickyBar}>
         <ProviderButton
-          label="Save"
+          label={isSaved ? "Saved" : "Save"}
           variant="secondary"
           full={false}
           style={styles.saveButton}
-          onPress={() => setSaved((value) => !value)}
+          onPress={handleToggleSave}
         />
         <ProviderButton
-          label="Send Proposal"
+          label={alreadyApplied ? "Proposal Sent" : "Send Proposal"}
           full
-          onPress={() => router.push({ pathname: "/jobs/apply", params: { jobId: job.id } })}
+          disabled={alreadyApplied}
+          onPress={handleApply}
         />
       </View>
     </View>
@@ -193,9 +257,10 @@ const styles = StyleSheet.create({
   clientBadgeText: {
     ...providerTypography.label
   },
-  clientName: {
-    ...providerTypography.title,
-    color: providerColors.navy
+  clientNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: providerSpacing.xs
   },
   clientMeta: {
     ...providerTypography.caption,
@@ -226,7 +291,8 @@ const styles = StyleSheet.create({
     color: providerColors.navy
   },
   section: {
-    gap: providerSpacing.sm
+    gap: providerSpacing.sm,
+    marginTop: providerSpacing.md
   },
   sectionTitle: {
     ...providerTypography.h3,
@@ -258,11 +324,11 @@ const styles = StyleSheet.create({
   requirementRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: providerSpacing.sm
-  },
-  clientFoot: {
-    ...providerTypography.caption,
-    color: providerColors.muted
+    gap: providerSpacing.sm,
+    backgroundColor: providerColors.white,
+    padding: providerSpacing.md,
+    borderRadius: providerRadius.md,
+    ...providerShadows.card
   },
   stickyBar: {
     position: "absolute",
@@ -281,5 +347,28 @@ const styles = StyleSheet.create({
   saveButton: {
     minHeight: 50,
     paddingHorizontal: providerSpacing.md
+  },
+  centerState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: providerSpacing.xl,
+    gap: providerSpacing.md
+  },
+  loadingText: {
+    ...providerTypography.body,
+    color: providerColors.muted
+  },
+  errorText: {
+    ...providerTypography.body,
+    color: providerColors.dangerRed
+  },
+  glassHeader: {
+    backgroundColor: providerColors.white,
+    borderRadius: providerRadius.xl,
+    padding: providerSpacing.lg,
+    gap: providerSpacing.sm,
+    marginTop: providerSpacing.md,
+    ...providerShadows.elevated
   }
 });

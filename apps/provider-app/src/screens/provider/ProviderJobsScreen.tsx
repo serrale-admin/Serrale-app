@@ -144,49 +144,29 @@ export function ProviderJobsScreen() {
 }
 
 function JobFullCard({ job, saved, onToggleSave, onOpen }: { job: any; saved: boolean; onToggleSave: () => void; onOpen: () => void }) {
-  const getCategoryIcon = (cat: string) => {
-    const c = cat?.toLowerCase() || "";
-    if (c.includes("design")) return "color-palette-outline";
-    if (c.includes("develop")) return "code-slash-outline";
-    if (c.includes("market")) return "megaphone-outline";
-    if (c.includes("writ")) return "pencil-outline";
-    return "briefcase-outline";
-  };
-
   const formattedBudget = new Intl.NumberFormat("en-US").format(Number(job.budgetMax || job.budgetMin || 0));
 
   return (
-    <View style={styles.jobCard}>
+    <Pressable style={styles.jobCard} onPress={onOpen}>
       <View style={styles.jobTopRow}>
-        <View style={styles.jobIconWrap}>
-          <IconSymbol name={getCategoryIcon(job.category)} size={32} color={providerColors.blue} />
-        </View>
         <View style={styles.jobInfoWrap}>
-          <Text style={styles.jobTitle} numberOfLines={2}>{job.title}</Text>
-          <Text style={styles.jobCategory}>{job.category || "General"}</Text>
+          <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
           <View style={styles.jobMetaRow}>
-            <View style={styles.jobMetaItem}>
-              <IconSymbol name="location-outline" size={14} color={providerColors.muted} />
-              <Text style={styles.jobMetaText}>{job.location || "Remote"}</Text>
-            </View>
-            <View style={styles.jobMetaItem}>
-              <IconSymbol name="time-outline" size={14} color={providerColors.muted} />
-              <Text style={styles.jobMetaText}>{job.postedAt || "Recently"}</Text>
-            </View>
+            <Text style={styles.jobCategory}>{job.category || "General"}</Text>
+            <Text style={styles.jobMetaDivider}>•</Text>
+            <Text style={styles.jobMetaText}>{job.location || "Remote"}</Text>
+            <Text style={styles.jobMetaDivider}>•</Text>
+            <Text style={styles.jobMetaText}>{job.postedAt || "Recently"}</Text>
           </View>
         </View>
         <Pressable onPress={onToggleSave} style={styles.jobBookmark}>
-          <IconSymbol name={saved ? "bookmark" : "bookmark-outline"} size={24} color={saved ? providerColors.blue : providerColors.muted} />
+          <IconSymbol name={saved ? "bookmark" : "bookmark-outline"} size={18} color={saved ? providerColors.blue : providerColors.muted} />
         </Pressable>
       </View>
 
-      <Text style={styles.jobDesc} numberOfLines={2}>{job.description}</Text>
-
       <View style={styles.jobBottomRow}>
         <View style={styles.jobPills}>
-          <View style={styles.budgetPill}>
-            <Text style={styles.budgetPillText}>ETB {formattedBudget}</Text>
-          </View>
+          <Text style={styles.budgetText}>ETB {formattedBudget}</Text>
           {job.experienceLevel && (
             <View style={styles.expChip}>
               <Text style={styles.expChipText}>{job.experienceLevel === "Entry Levl" ? "Entry Level" : job.experienceLevel}</Text>
@@ -194,18 +174,16 @@ function JobFullCard({ job, saved, onToggleSave, onOpen }: { job: any; saved: bo
           )}
         </View>
         
-        {job.matchScore ? (
-          <View style={styles.matchWrap}>
-            <Text style={styles.matchLabel}>Match</Text>
+        <View style={styles.jobActions}>
+          {job.matchScore ? (
             <Text style={[styles.matchScore, { color: job.matchScore >= 85 ? providerColors.successGreen : providerColors.warningOrange }]}>
-              {job.matchScore}%
+              {job.matchScore}% Match
             </Text>
-          </View>
-        ) : null}
+          ) : null}
+          <ProviderButton label="View" onPress={onOpen} style={styles.viewBtn} full={false} />
+        </View>
       </View>
-
-      <ProviderButton label="View Details" onPress={onOpen} style={styles.viewBtn} />
-    </View>
+    </Pressable>
   );
 }
 
@@ -226,7 +204,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   pageTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "800",
     color: providerColors.navy
   },
@@ -351,115 +329,94 @@ const styles = StyleSheet.create({
   },
   jobCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 8,
+    marginBottom: 6,
     ...providerShadows.card
   },
   jobTopRow: {
     flexDirection: "row",
-    gap: 10
-  },
-  jobIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: providerColors.sky,
-    alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 6
   },
   jobInfoWrap: {
-    flex: 1,
-    paddingTop: 0
+    flex: 1
   },
   jobTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: providerColors.navy,
-    lineHeight: 20
+    lineHeight: 18
   },
   jobCategory: {
-    fontSize: 12,
-    color: providerColors.blue,
-    marginTop: 2
+    fontSize: 11,
+    fontWeight: "600",
+    color: providerColors.blue
   },
   jobMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 4
-  },
-  jobMetaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4
+    gap: 4,
+    marginTop: 2
   },
   jobMetaText: {
     fontSize: 11,
     color: providerColors.muted
   },
+  jobMetaDivider: {
+    fontSize: 10,
+    color: providerColors.border,
+    marginHorizontal: 2
+  },
   jobBookmark: {
     padding: 2
-  },
-  jobDesc: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: providerColors.body,
-    marginTop: 8
   },
   jobBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 8
+    marginTop: 6
   },
   jobPills: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 6
   },
-  budgetPill: {
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: providerColors.successSoft,
-    paddingHorizontal: 10,
-    justifyContent: "center"
-  },
-  budgetPillText: {
+  budgetText: {
     fontSize: 13,
     fontWeight: "700",
     color: providerColors.successGreen
   },
   expChip: {
-    height: 28,
-    borderRadius: 14,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1,
     borderColor: providerColors.border,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     justifyContent: "center"
   },
   expChipText: {
-    fontSize: 11,
-    color: providerColors.blue,
+    fontSize: 10,
+    color: providerColors.muted,
     fontWeight: "500"
   },
-  matchWrap: {
-    alignItems: "flex-end"
-  },
-  matchLabel: {
-    fontSize: 10,
-    color: providerColors.muted
+  jobActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
   },
   matchScore: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700"
   },
   viewBtn: {
-    height: 34,
-    minWidth: 100,
-    borderRadius: 10
+    height: 30,
+    minWidth: 70,
+    borderRadius: 8,
+    paddingHorizontal: 10
   },
   centerState: {
     alignItems: 'center',

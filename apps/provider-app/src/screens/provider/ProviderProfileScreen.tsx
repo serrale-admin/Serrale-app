@@ -311,12 +311,12 @@ const styles = StyleSheet.create({
   },
   mainCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 12,
-    marginTop: 4,
+    marginBottom: 10,
+    marginTop: 2,
     ...providerShadows.card
   },
   profileRow: {
@@ -328,20 +328,20 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32
+    width: 56,
+    height: 56,
+    borderRadius: 28
   },
   avatarFallback: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   avatarInitials: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
     color: providerColors.blue
   },
@@ -465,25 +465,25 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: "45%",
-    height: 64,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 10,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    padding: 10,
-    gap: 4,
+    padding: 8,
+    gap: 2,
     ...providerShadows.card
   },
   statIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.navy
   },
@@ -495,10 +495,10 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.navy,
-    marginBottom: 8
+    marginBottom: 6
   },
   quickActionsGrid: {
     flexDirection: "row",

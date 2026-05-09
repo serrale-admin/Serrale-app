@@ -85,8 +85,8 @@ export function ProviderHomeScreen() {
               <View style={styles.statusDotGreen} />
             </View>
             <View style={styles.statusTextWrap}>
-              <Text style={styles.statusTitle}>Available for work</Text>
-              <Text style={styles.statusSubtitle}>You are visible to clients</Text>
+              <Text style={styles.statusTitle} numberOfLines={1}>Available for work</Text>
+              <Text style={styles.statusSubtitle} numberOfLines={1}>Visible to clients</Text>
             </View>
           </View>
           <Switch
@@ -94,18 +94,18 @@ export function ProviderHomeScreen() {
             onValueChange={setAvailable}
             trackColor={{ false: "#CBD5E1", true: providerColors.successGreen }}
             thumbColor={providerColors.white}
-            style={{ transform: [{ scale: 0.8 }] }}
+            style={{ transform: [{ scale: 0.7 }] }}
           />
         </View>
 
         <View style={styles.statusCard}>
           <View style={styles.statusCardLeft}>
             <View style={styles.statusIconWrapBlue}>
-              <IconSymbol name="shield-checkmark" size={16} color={providerColors.blue} />
+              <IconSymbol name="shield-checkmark" size={14} color={providerColors.blue} />
             </View>
             <View style={styles.statusTextWrap}>
-              <Text style={styles.statusTitle}>Identity verified</Text>
-              <Text style={styles.statusSubtitle}>{isVerified ? "Your identity is verified" : "Pending verification"}</Text>
+              <Text style={styles.statusTitle} numberOfLines={1}>Identity verified</Text>
+              <Text style={styles.statusSubtitle} numberOfLines={1}>{isVerified ? "Verified" : "Pending"}</Text>
             </View>
           </View>
           <IconSymbol name="chevron-forward" size={16} color={providerColors.muted} />
@@ -221,27 +221,21 @@ function HomeJobCard({ job, isSaved, onToggleSave, onPress }: any) {
   return (
     <Pressable style={styles.homeJobCard as any} onPress={onPress}>
       <View style={styles.hjcTopRow}>
-        <View style={styles.hjcIconBlock}>
-          <IconSymbol name="briefcase-outline" size={32} color={providerColors.blue} />
-        </View>
         <View style={styles.hjcContent}>
           <Text style={styles.hjcTitle} numberOfLines={1}>{job.title}</Text>
-          <Text style={styles.hjcCategory}>{job.client}</Text>
           <View style={styles.hjcMetaRow}>
-            <IconSymbol name="location-outline" size={12} color={providerColors.muted} />
+            <Text style={styles.hjcCategory}>{job.client}</Text>
+            <Text style={styles.hjcMetaDivider}>•</Text>
             <Text style={styles.hjcMetaText}>{job.location}</Text>
           </View>
         </View>
         <Pressable onPress={onToggleSave} style={styles.hjcBookmark}>
-          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={20} color={isSaved ? providerColors.blue : providerColors.muted} />
+          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={18} color={isSaved ? providerColors.blue : providerColors.muted} />
         </Pressable>
       </View>
-      <Text style={styles.hjcDesc} numberOfLines={2}>{job.description}</Text>
       <View style={styles.hjcBottomRow}>
         <Text style={styles.hjcBudget}>{formatEtbRange(job.budgetMin, job.budgetMax)}</Text>
-        <Pressable style={styles.hjcBtn} onPress={onPress}>
-          <Text style={styles.hjcBtnText}>View Details</Text>
-        </Pressable>
+        <ProviderButton label="View" onPress={onPress} style={styles.hjcBtn} full={false} />
       </View>
     </Pressable>
   );
@@ -366,11 +360,11 @@ const styles = StyleSheet.create({
     color: providerColors.title
   },
   banner: {
-    height: 76,
-    borderRadius: 14,
+    height: 64,
+    borderRadius: 12,
     backgroundColor: providerColors.blueDark,
-    padding: 12,
-    marginBottom: 12,
+    padding: 10,
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"
@@ -468,10 +462,9 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   homeJobCard: {
-    minHeight: 100,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 6,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
@@ -479,72 +472,58 @@ const styles = StyleSheet.create({
   },
   hjcTopRow: {
     flexDirection: "row",
-    gap: 10
-  },
-  hjcIconBlock: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: providerColors.sky,
-    alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 6
   },
   hjcContent: {
-    flex: 1,
-    paddingTop: 0
+    flex: 1
   },
   hjcTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: providerColors.navy
+    color: providerColors.navy,
+    lineHeight: 18
   },
   hjcCategory: {
     fontSize: 11,
-    color: providerColors.blue,
-    marginTop: 2
+    fontWeight: "600",
+    color: providerColors.blue
   },
   hjcMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 4
+    marginTop: 2
   },
   hjcMetaText: {
-    fontSize: 10,
+    fontSize: 11,
     color: providerColors.muted
+  },
+  hjcMetaDivider: {
+    fontSize: 10,
+    color: providerColors.border,
+    marginHorizontal: 2
   },
   hjcBookmark: {
     padding: 2
   },
-  hjcDesc: {
-    fontSize: 12,
-    color: providerColors.body,
-    marginTop: 8,
-    lineHeight: 16
-  },
   hjcBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginTop: 10
+    alignItems: "center",
+    marginTop: 6
   },
   hjcBudget: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: providerColors.successGreen
   },
   hjcBtn: {
-    height: 32,
-    minWidth: 90,
-    borderRadius: 10,
-    backgroundColor: providerColors.blue,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  hjcBtnText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: providerColors.white
+    height: 30,
+    minWidth: 70,
+    borderRadius: 8,
+    paddingHorizontal: 10
   },
   popularGrid: {
     flexDirection: "row",
@@ -552,41 +531,42 @@ const styles = StyleSheet.create({
   },
   compactCard: {
     flex: 1,
-    height: 110,
-    borderRadius: 14,
+    height: 90,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    padding: 10,
+    padding: 8,
     ...providerShadows.card
   },
   ccTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 6
+    alignItems: "center",
+    marginBottom: 4
   },
   ccIconBlock: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     backgroundColor: providerColors.warningSoft,
     alignItems: "center",
     justifyContent: "center"
   },
   ccTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: providerColors.navy,
+    lineHeight: 14,
     marginBottom: 2
   },
   ccCategory: {
     fontSize: 10,
     color: providerColors.muted,
-    marginBottom: 4
+    marginBottom: 2
   },
   ccBudget: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: providerColors.successGreen
   }

@@ -14,17 +14,25 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { getProviderDashboard, getOpenJobs, toggleSaveJob, getProviderBootstrap } from "@serrale/api";
 import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { IconSymbol } from "../../provider/components/IconSymbol";
-import { providerColors, providerShadows } from "../../provider/theme";
 import { formatEtbRange } from "../../provider/format";
 
+const BLUE = "#1D4ED8";
+const DARK_BLUE = "#1E3A8A";
+const NAVY = "#0F172A";
+
 const CATEGORIES = [
-  { label: "Sales &\nMarketing", icon: "briefcase", color: "#E8F4FD" },
-  { label: "Construction\n& Trades", icon: "construct", color: "#E8F4FD" },
-  { label: "Health &\nCare", icon: "heart", color: "#E8F4FD" },
-  { label: "Education &\nTraining", icon: "school", color: "#E8F4FD" },
-  { label: "Transport &\nLogistics", icon: "car", color: "#E8F4FD" },
-  { label: "Hospitality &\nTourism", icon: "restaurant", color: "#E8F4FD" },
+  { label: "Sales &\nMarketing", icon: "briefcase", bg: "#DBEAFE", iconColor: "#1D4ED8" },
+  { label: "Construction\n& Trades", icon: "construct", bg: "#D1FAE5", iconColor: "#065F46" },
+  { label: "Health &\nCare", icon: "heart", bg: "#FCE7F3", iconColor: "#9D174D" },
+  { label: "Education &\nTraining", icon: "school", bg: "#FEF3C7", iconColor: "#92400E" },
+  { label: "Transport &\nLogistics", icon: "car", bg: "#EDE9FE", iconColor: "#5B21B6" },
+  { label: "Hospitality &\nTourism", icon: "restaurant", bg: "#FFE4E6", iconColor: "#9F1239" },
 ];
+
+const LOGO_COLORS = ["#1E3A8A", "#065F46", "#6D28D9", "#92400E", "#831843", "#1D4ED8"];
+function logoColor(initial: string) {
+  return LOGO_COLORS[initial.charCodeAt(0) % LOGO_COLORS.length];
+}
 
 export function ProviderHomeScreen() {
   const router = useRouter();
@@ -125,7 +133,7 @@ export function ProviderHomeScreen() {
       {/* Search Bar */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <IconSymbol name="search" size={18} color="#94A3B8" />
+          <IconSymbol name="search" size={16} color="#94A3B8" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for jobs, skills, companies..."
@@ -183,15 +191,16 @@ export function ProviderHomeScreen() {
                 <View
                   style={[
                     styles.categoryCircle,
-                    selectedCategory === cat.label && styles.categoryCircleActive,
+                    {
+                      backgroundColor:
+                        selectedCategory === cat.label ? BLUE : cat.bg,
+                    },
                   ]}
                 >
                   <IconSymbol
                     name={cat.icon}
-                    size={24}
-                    color={
-                      selectedCategory === cat.label ? "#fff" : "#1E40AF"
-                    }
+                    size={26}
+                    color={selectedCategory === cat.label ? "#fff" : cat.iconColor}
                   />
                 </View>
                 <Text style={styles.categoryLabel}>{cat.label}</Text>
@@ -209,7 +218,7 @@ export function ProviderHomeScreen() {
             </Pressable>
           </View>
           {featuredJobsQuery.isLoading ? (
-            <ActivityIndicator size="small" color="#1D4ED8" style={{ marginTop: 16 }} />
+            <ActivityIndicator size="small" color={BLUE} style={{ marginTop: 16 }} />
           ) : featuredJobs.length === 0 ? (
             <Text style={styles.emptyText}>No featured jobs right now.</Text>
           ) : (
@@ -243,7 +252,7 @@ export function ProviderHomeScreen() {
         </View>
 
         {/* Recent Job Openings */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingBottom: 8 }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Job Openings</Text>
             <Pressable onPress={() => router.push("/tabs/jobs")}>
@@ -251,15 +260,16 @@ export function ProviderHomeScreen() {
             </Pressable>
           </View>
           {recentJobsQuery.isLoading ? (
-            <ActivityIndicator size="small" color="#1D4ED8" style={{ marginTop: 16 }} />
+            <ActivityIndicator size="small" color={BLUE} style={{ marginTop: 16 }} />
           ) : recentJobs.length === 0 ? (
             <Text style={styles.emptyText}>No job openings right now.</Text>
           ) : (
-            <View style={styles.recentList}>
-              {recentJobs.slice(0, 5).map((job) => (
+            <View style={styles.recentCard}>
+              {recentJobs.slice(0, 5).map((job, i) => (
                 <RecentJobRow
                   key={job.id}
                   job={job}
+                  isLast={i === Math.min(recentJobs.length, 5) - 1}
                   onPress={() =>
                     router.push({
                       pathname: "/jobs/[jobId]" as any,
@@ -276,17 +286,17 @@ export function ProviderHomeScreen() {
   );
 }
 
-// --- Sub-components ---
+// ─── Sub-components ─────────────────────────────────────────────────────────
 
 function FeaturedJobCard({ job, isSaved, onToggleSave, onPress }: any) {
   const budget = formatEtbRange(job.budgetMin, job.budgetMax);
+  const initial = (job.client || job.title || "J")[0].toUpperCase();
+  const lc = logoColor(initial);
   return (
     <Pressable style={styles.featuredCard} onPress={onPress}>
       <View style={styles.fcTopRow}>
-        <View style={styles.fcLogoWrap}>
-          <Text style={styles.fcLogoText}>
-            {(job.client || job.title || "J")[0].toUpperCase()}
-          </Text>
+        <View style={[styles.fcLogoWrap, { backgroundColor: lc }]}>
+          <Text style={styles.fcLogoText}>{initial}</Text>
         </View>
         <View style={styles.fcCompanyInfo}>
           <Text style={styles.fcCompany} numberOfLines={1}>
@@ -300,7 +310,7 @@ function FeaturedJobCard({ job, isSaved, onToggleSave, onPress }: any) {
           <IconSymbol
             name={isSaved ? "bookmark" : "bookmark-outline"}
             size={18}
-            color={isSaved ? "#1D4ED8" : "#94A3B8"}
+            color={isSaved ? BLUE : "#94A3B8"}
           />
         </Pressable>
       </View>
@@ -309,6 +319,7 @@ function FeaturedJobCard({ job, isSaved, onToggleSave, onPress }: any) {
         <IconSymbol name="location" size={13} color="#64748B" />
         <Text style={styles.fcLocation}>{job.location || "Ethiopia"}</Text>
       </View>
+      <View style={styles.fcDivider} />
       <View style={styles.fcBottomRow}>
         <Text style={styles.fcSalaryLabel}>
           Salary • <Text style={styles.fcSalaryValue}>{budget}</Text>
@@ -321,47 +332,46 @@ function FeaturedJobCard({ job, isSaved, onToggleSave, onPress }: any) {
   );
 }
 
-function RecentJobRow({ job, onPress }: any) {
+function RecentJobRow({ job, onPress, isLast }: any) {
+  const initial = (job.client || job.title || "J")[0].toUpperCase();
+  const lc = logoColor(initial);
   return (
-    <View style={styles.recentRow}>
-      <View style={styles.recentLogoWrap}>
-        <Text style={styles.recentLogoText}>
-          {(job.client || job.title || "J")[0].toUpperCase()}
-        </Text>
+    <Pressable
+      style={[styles.recentRow, !isLast && styles.recentRowBorder]}
+      onPress={onPress}
+    >
+      <View style={[styles.recentLogoWrap, { backgroundColor: lc }]}>
+        <Text style={styles.recentLogoText}>{initial}</Text>
       </View>
       <View style={styles.recentInfo}>
         <Text style={styles.recentTitle} numberOfLines={1}>{job.title}</Text>
         <View style={styles.recentMeta}>
           <Text style={styles.recentCompany}>{job.client || "Company"}</Text>
           <Text style={styles.recentDot}>•</Text>
-          <IconSymbol name="location" size={11} color="#64748B" />
+          <IconSymbol name="location" size={11} color="#94A3B8" />
           <Text style={styles.recentLocation}>{job.location || "Ethiopia"}</Text>
         </View>
       </View>
       <Pressable style={styles.applyBtn} onPress={onPress}>
         <Text style={styles.applyBtnText}>Apply Now</Text>
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
-// --- Styles ---
-
-const BLUE = "#1D4ED8";
-const DARK_BLUE = "#1E3A8A";
-const NAVY = "#0F172A";
+// ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#EEF2FF",
   },
 
   // HEADER
   header: {
     backgroundColor: BLUE,
     paddingTop: 52,
-    paddingBottom: 12,
+    paddingBottom: 10,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -373,28 +383,28 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   brandLogoWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
   brandLogoText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "900",
     color: "#fff",
     fontStyle: "italic",
   },
   brandName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "900",
     color: "#fff",
     letterSpacing: 1,
   },
   brandTagline: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.75)",
+    fontSize: 10,
+    color: "rgba(255,255,255,0.7)",
     marginTop: 1,
   },
   headerRight: {
@@ -410,20 +420,20 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: "#38BDF8",
     borderWidth: 1.5,
     borderColor: BLUE,
   },
   avatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     overflow: "hidden",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.4)",
+    borderColor: "rgba(255,255,255,0.5)",
   },
   headerAvatar: {
     width: "100%",
@@ -437,7 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerAvatarInitial: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#fff",
   },
@@ -446,16 +456,16 @@ const styles = StyleSheet.create({
   searchWrap: {
     backgroundColor: BLUE,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
   searchBar: {
-    height: 46,
-    borderRadius: 23,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#fff",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 14,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
@@ -474,49 +484,56 @@ const styles = StyleSheet.create({
 
   // WELCOME BANNER
   welcomeBanner: {
-    margin: 16,
-    borderRadius: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    borderRadius: 20,
     backgroundColor: DARK_BLUE,
     padding: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     overflow: "hidden",
+    shadowColor: DARK_BLUE,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 8,
   },
   welcomeTextWrap: {
     flex: 1,
   },
   welcomeTitle: {
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "900",
     color: "#fff",
   },
   welcomeSubtitle: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.7)",
     marginTop: 4,
   },
   langToggle: {
     flexDirection: "row",
     backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 3,
     gap: 2,
   },
   langActive: {
     backgroundColor: "#fff",
-    borderRadius: 17,
+    borderRadius: 19,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   langActiveText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
     color: DARK_BLUE,
   },
   langInactive: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   langInactiveText: {
     fontSize: 13,
@@ -526,7 +543,6 @@ const styles = StyleSheet.create({
 
   // SECTIONS
   section: {
-    marginBottom: 4,
     paddingHorizontal: 16,
   },
   sectionHeader: {
@@ -534,7 +550,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 14,
-    marginTop: 12,
+    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -549,24 +565,25 @@ const styles = StyleSheet.create({
 
   // CATEGORIES
   categoryScroll: {
-    gap: 16,
+    gap: 14,
     paddingRight: 16,
   },
   categoryItem: {
     alignItems: "center",
-    width: 72,
+    width: 70,
+    gap: 6,
   },
   categoryCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#E8F0FE",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
-  },
-  categoryCircleActive: {
-    backgroundColor: BLUE,
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   categoryLabel: {
     fontSize: 10,
@@ -576,23 +593,21 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
-  // FEATURED JOBS
+  // FEATURED CARDS
   featuredScroll: {
     gap: 12,
     paddingRight: 16,
   },
   featuredCard: {
-    width: 195,
+    width: 210,
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
     shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
   },
   fcTopRow: {
     flexDirection: "row",
@@ -601,19 +616,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fcLogoWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#EFF6FF",
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
   },
   fcLogoText: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: BLUE,
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#fff",
   },
   fcCompanyInfo: {
     flex: 1,
@@ -638,21 +650,26 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   fcTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "800",
     color: NAVY,
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 21,
+    marginBottom: 6,
   },
   fcLocationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   fcLocation: {
     fontSize: 12,
     color: "#64748B",
+  },
+  fcDivider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginBottom: 10,
   },
   fcBottomRow: {
     flexDirection: "row",
@@ -667,6 +684,7 @@ const styles = StyleSheet.create({
   fcSalaryValue: {
     fontWeight: "700",
     color: NAVY,
+    fontSize: 12,
   },
   fcTypePill: {
     backgroundColor: "#EFF6FF",
@@ -680,35 +698,40 @@ const styles = StyleSheet.create({
     color: BLUE,
   },
 
-  // RECENT JOB ROWS
-  recentList: {
-    gap: 0,
+  // RECENT JOBS — wrapped white card
+  recentCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 3,
   },
   recentRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 14,
+    gap: 12,
+  },
+  recentRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
-    gap: 12,
   },
   recentLogoWrap: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
     flexShrink: 0,
   },
   recentLogoText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: BLUE,
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#fff",
   },
   recentInfo: {
     flex: 1,
@@ -740,8 +763,8 @@ const styles = StyleSheet.create({
   applyBtn: {
     backgroundColor: "#EFF6FF",
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexShrink: 0,
   },
   applyBtnText: {

@@ -71,7 +71,7 @@ export function ProviderProfileScreen() {
               </View>
             )}
             <Pressable style={styles.cameraBadge}>
-              <IconSymbol name="camera" size={16} color={providerColors.blue} />
+              <IconSymbol name="camera" size={14} color={providerColors.blue} />
             </Pressable>
           </View>
           <View style={styles.profileInfo}>
@@ -82,13 +82,9 @@ export function ProviderProfileScreen() {
                 <View style={styles.dotAvailable} />
                 <Text style={styles.badgeAvailableText}>Available for work</Text>
               </View>
-              <View style={[styles.badgeVerified, !isVerified && styles.badgeNotVerified]}>
-                <IconSymbol 
-                  name={isVerified ? "shield-checkmark" : "shield-outline"} 
-                  size={14} 
-                  color={isVerified ? providerColors.blue : providerColors.muted} 
-                />
-                <Text style={[styles.badgeVerifiedText, !isVerified && { color: providerColors.muted }]}>Identity verified</Text>
+              <View style={styles.badgeVerified}>
+                <IconSymbol name="shield-checkmark" size={12} color="#2563EB" />
+                <Text style={styles.badgeVerifiedText}>Identity verified</Text>
               </View>
             </View>
           </View>
@@ -102,7 +98,7 @@ export function ProviderProfileScreen() {
             <View style={[styles.progressBarFill, { width: `${completion}%` }]} />
           </View>
           <Text style={styles.completionValue}>{completion}%</Text>
-          <IconSymbol name="chevron-forward" size={16} color={providerColors.muted} />
+          <IconSymbol name="chevron-forward" size={16} color="#94A3B8" />
         </View>
       </View>
 
@@ -280,7 +276,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 80,
     backgroundColor: "#F8FAFC"
   },
@@ -288,40 +284,52 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 48,
-    marginBottom: 12
+    height: 56,
+    marginBottom: 4
   },
   headerLeft: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: providerColors.white,
     alignItems: "center",
     justifyContent: "center",
-    ...providerShadows.card
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
-    color: providerColors.navy
+    color: "#0F172A"
   },
   headerRight: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: providerColors.white,
     alignItems: "center",
     justifyContent: "center",
-    ...providerShadows.card
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2
   },
   mainCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
-    ...providerShadows.card
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F1F5F9"
   },
   profileRow: {
     flexDirection: "row",
@@ -332,22 +340,22 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   avatarImage: {
-    width: 84,
-    height: 84,
-    borderRadius: 42
+    width: 90,
+    height: 90,
+    borderRadius: 45
   },
   avatarFallback: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: "#E0F2FE",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center"
   },
   avatarInitials: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
-    color: "#0284C7"
+    color: "#3B82F6"
   },
   cameraBadge: {
     position: "absolute",
@@ -361,131 +369,140 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
-    ...providerShadows.card
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
   },
   profileInfo: {
     flex: 1
   },
   profileName: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: providerColors.navy,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#0F172A",
     marginBottom: 2
   },
   profileSubtitle: {
     fontSize: 14,
-    color: providerColors.muted,
-    marginBottom: 6
+    color: "#64748B",
+    marginBottom: 8
   },
   badgesRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap"
   },
   badgeAvailable: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 8,
-    height: 26,
-    borderRadius: 13,
-    gap: 4
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 10,
+    height: 28,
+    borderRadius: 14,
+    gap: 6
   },
   dotAvailable: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#10B981"
+    backgroundColor: "#22C55E"
   },
   badgeAvailableText: {
     fontSize: 11,
-    color: "#059669",
+    color: "#166534",
     fontWeight: "600"
   },
   badgeVerified: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#EFF6FF",
-    paddingHorizontal: 8,
-    height: 26,
-    borderRadius: 13,
-    gap: 4
+    paddingHorizontal: 10,
+    height: 28,
+    borderRadius: 14,
+    gap: 6
   },
   badgeNotVerified: {
     backgroundColor: "#F1F5F9"
   },
   badgeVerifiedText: {
     fontSize: 11,
-    color: "#2563EB",
+    color: "#1E40AF",
     fontWeight: "600"
   },
   divider: {
     height: 1,
     backgroundColor: "#F1F5F9",
-    marginVertical: 16
+    marginVertical: 20
   },
   completionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10
+    gap: 12
   },
   completionLabel: {
-    fontSize: 13,
-    color: providerColors.navy,
+    fontSize: 14,
+    color: "#1E293B",
     fontWeight: "600"
   },
   progressBarWrap: {
     flex: 1,
-    height: 6,
+    height: 8,
     backgroundColor: "#F1F5F9",
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: "hidden"
   },
   progressBarFill: {
-    height: 6,
+    height: 8,
     backgroundColor: "#2563EB",
-    borderRadius: 3
+    borderRadius: 4
   },
   completionValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: "#2563EB"
   },
   statsGrid: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     marginBottom: 20
   },
   statCard: {
     flex: 1,
     backgroundColor: providerColors.white,
     borderRadius: 16,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    padding: 8,
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    ...providerShadows.card
+    borderColor: "#F8FAFC"
   },
   statIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center"
   },
   statTextWrap: {
-    flex: 1
+    marginTop: 2
   },
   statValue: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: providerColors.navy
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0F172A"
   },
   statLabel: {
     fontSize: 10,
-    color: providerColors.muted,
+    color: "#64748B",
+    fontWeight: "500",
     marginTop: 1
   },
   section: {
@@ -494,41 +511,49 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: providerColors.navy,
+    color: "#0F172A",
     marginBottom: 12
   },
   quickActionsGrid: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     flexWrap: "wrap"
   },
   quickActionBtn: {
     flex: 1,
-    minWidth: "45%",
-    height: 48,
-    borderRadius: 12,
+    minWidth: "48%",
+    height: 52,
+    borderRadius: 16,
     backgroundColor: providerColors.white,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    gap: 10,
-    ...providerShadows.card
+    paddingHorizontal: 16,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F8FAFC"
   },
   quickActionText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
-    color: providerColors.navy
+    color: "#1E293B"
   },
   card: {
     backgroundColor: providerColors.white,
     borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
+    padding: 20,
     marginBottom: 16,
-    ...providerShadows.card
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F1F5F9"
   },
   cardHeader: {
     flexDirection: "row",
@@ -539,7 +564,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: providerColors.navy
+    color: "#0F172A"
   },
   linkText: {
     fontSize: 13,
@@ -548,7 +573,7 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 22,
     color: "#475569"
   },
   skillsWrap: {
@@ -557,37 +582,37 @@ const styles = StyleSheet.create({
     gap: 8
   },
   skillChip: {
-    height: 32,
-    borderRadius: 16,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#EFF6FF",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     justifyContent: "center"
   },
   skillChipText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#2563EB",
     fontWeight: "600"
   },
   emptyText: {
-    fontSize: 13,
-    color: providerColors.muted
+    fontSize: 14,
+    color: "#94A3B8"
   },
   portfolioScroll: {
     gap: 12
   },
   portfolioItem: {
-    width: 160,
-    gap: 8
+    width: 200,
+    gap: 10
   },
   portfolioImg: {
     width: "100%",
-    height: 100,
-    borderRadius: 12
+    height: 120,
+    borderRadius: 16
   },
   portfolioPlaceholder: {
     width: "100%",
-    height: 100,
-    borderRadius: 12,
+    height: 120,
+    borderRadius: 16,
     backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center"
@@ -596,23 +621,23 @@ const styles = StyleSheet.create({
     gap: 2
   },
   portfolioTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: providerColors.navy
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B"
   },
   portfolioCategory: {
     fontSize: 12,
-    color: providerColors.muted
+    color: "#64748B"
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 20,
+    paddingVertical: 24,
     gap: 8
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
-    color: providerColors.navy
+    color: "#1E293B"
   },
   servicesList: {
     gap: 12
@@ -620,53 +645,57 @@ const styles = StyleSheet.create({
   serviceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 4
+    gap: 16,
+    paddingVertical: 8
   },
   serviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#ECFDF5",
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#F0FDF4",
     alignItems: "center",
     justifyContent: "center"
   },
   serviceInfo: {
     flex: 1,
-    gap: 2
+    gap: 4
   },
   serviceTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    color: providerColors.navy
+    color: "#0F172A"
   },
   serviceDesc: {
-    fontSize: 12,
-    color: providerColors.muted
+    fontSize: 13,
+    color: "#64748B"
   },
   servicePriceWrap: {
     alignItems: "flex-end",
-    gap: 2
+    gap: 4
   },
   servicePrice: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#059669"
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#16A34A"
   },
   settingsMenu: {
     backgroundColor: providerColors.white,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    marginBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    marginBottom: 20,
-    ...providerShadows.card
+    borderColor: "#F1F5F9"
   },
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 56,
-    gap: 12
+    height: 60,
+    gap: 16
   },
   settingsRowBorder: {
     borderBottomWidth: 1,
@@ -675,7 +704,7 @@ const styles = StyleSheet.create({
   settingsRowTitle: {
     flex: 1,
     fontSize: 15,
-    color: providerColors.navy,
+    color: "#1E293B",
     fontWeight: "600"
   }
 });

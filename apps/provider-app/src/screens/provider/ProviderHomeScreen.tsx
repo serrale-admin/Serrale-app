@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { StyleSheet, Switch, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { getProviderDashboard } from "@serrale/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getProviderDashboard, getHotJobs, getOpenJobs, toggleSaveJob } from "@serrale/api";
+import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
+import { IconSymbol } from "../../provider/components/IconSymbol";
 
 import { JobCard, ProposalCard, SummaryCard } from "../../provider/components/ProviderCards";
 import { ProviderHeader } from "../../provider/components/ProviderHeader";
@@ -16,10 +18,34 @@ export function ProviderHomeScreen() {
   const [available, setAvailable] = useState(true);
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
+  const queryClient = useQueryClient();
+
   const dashboardQuery = useQuery({
     queryKey: ["provider-dashboard"],
     queryFn: getProviderDashboard,
   });
+
+  const hotJobsQuery = useQuery({
+    queryKey: ["provider-hot-jobs"],
+    queryFn: () => getHotJobs(5),
+  });
+
+  const openJobsQuery = useQuery({
+    queryKey: ["provider-home-open-jobs"],
+    queryFn: () => getOpenJobs({ limit: 5 }),
+  });
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: ({ jobId, save }: { jobId: string; save: boolean }) => toggleSaveJob(jobId, save),
+    onSuccess: (_, variables) => {
+      setSavedJobs(prev => ({ ...prev, [variables.jobId]: variables.save }));
+    }
+  });
+
+  const handleToggleSave = (jobId: string) => {
+    const isSaved = savedJobs[jobId] || false;
+    toggleSaveMutation.mutate({ jobId, save: !isSaved });
+  };
 
   if (dashboardQuery.isLoading) {
     return <ProviderLoadingScreen message="Loading dashboard..." />;
@@ -29,12 +55,18 @@ export function ProviderHomeScreen() {
     return (
       <ProviderScreen>
         <Text style={styles.errorText}>Unable to load dashboard. Please try again.</Text>
-        <ProviderButton label="Retry" onPress={() => dashboardQuery.refetch()} />
+        <ProviderButton label="Retry" onPress={() => {
+          dashboardQuery.refetch();
+          hotJobsQuery.refetch();
+          openJobsQuery.refetch();
+        }} />
       </ProviderScreen>
     );
   }
 
   const dashboard = dashboardQuery.data!;
+  const hotJobs = (hotJobsQuery.data || []).map(mapBackendJobToProviderJob);
+  const openJobs = (openJobsQuery.data || []).map(mapBackendJobToProviderJob);
 
   return (
     <ProviderScreen contentContainerStyle={styles.content}>
@@ -115,11 +147,22 @@ export function ProviderHomeScreen() {
         <Text style={styles.sectionTitle}>Verification Status</Text>
       </View>
       <View style={styles.statusBox}>
-        <Text style={styles.statusLabel}>
-          {dashboard.verification_status === "verified" ? "✅ Verified" : 
-           dashboard.verification_status === "pending" ? "⏳ Pending Review" :
-           "❌ Not Verified"}
-        </Text>
+        {dashboard.verification_status === "verified" ? (
+          <View style={styles.badgeRow}>
+            <IconSymbol name="shield-checkmark" size={20} color={providerColors.blue} />
+            <Text style={styles.statusLabel}>Verified Professional</Text>
+          </View>
+        ) : dashboard.verification_status === "pending" ? (
+          <View style={styles.badgeRow}>
+            <IconSymbol name="time-outline" size={20} color={providerColors.warningOrange} />
+            <Text style={[styles.statusLabel, { color: providerColors.warningOrange }]}>Pending Review</Text>
+          </View>
+        ) : (
+          <View style={styles.badgeRow}>
+            <IconSymbol name="shield-outline" size={20} color={providerColors.muted} />
+            <Text style={[styles.statusLabel, { color: providerColors.muted }]}>Not Verified</Text>
+          </View>
+        )}
       </View>
 
       {dashboard.next_actions.length > 0 && (
@@ -151,6 +194,48 @@ export function ProviderHomeScreen() {
           onPress={() => router.push("/tabs/profile")}
         />
       </View>
+
+      {hotJobs.length > 0 && (
+        <View style={styles.horizontalSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🔥 Hot Projects</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {hotJobs.map(job => (
+              <View key={job.id} style={styles.horizontalCardWrap}>
+                <JobCard
+                  job={job}
+                  saved={savedJobs[job.id] || false}
+                  onToggleSave={() => handleToggleSave(job.id)}
+                  onOpen={() => router.push(`/jobs/${job.id}` as any)}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {openJobs.length > 0 && (
+        <View style={styles.verticalSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recommended for You</Text>
+            <Pressable onPress={() => router.push("/tabs/jobs")}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </Pressable>
+          </View>
+          <View style={styles.stack}>
+            {openJobs.map(job => (
+              <JobCard
+                key={job.id}
+                job={job}
+                saved={savedJobs[job.id] || false}
+                onToggleSave={() => handleToggleSave(job.id)}
+                onOpen={() => router.push(`/jobs/${job.id}` as any)}
+              />
+            ))}
+          </View>
+        </View>
+      )}
       
       <View style={{ height: 40 }} />
     </ProviderScreen>
@@ -310,5 +395,29 @@ const styles = StyleSheet.create({
     color: providerColors.dangerRed,
     textAlign: 'center',
     marginVertical: providerSpacing.xl
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: providerSpacing.xs
+  },
+  horizontalSection: {
+    marginTop: providerSpacing.lg,
+    marginHorizontal: -providerSpacing.md
+  },
+  scrollContent: {
+    paddingHorizontal: providerSpacing.md,
+    gap: providerSpacing.md,
+    paddingVertical: providerSpacing.xs
+  },
+  horizontalCardWrap: {
+    width: 300
+  },
+  verticalSection: {
+    marginTop: providerSpacing.lg
+  },
+  seeAllText: {
+    ...providerTypography.label,
+    color: providerColors.blue
   }
 });

@@ -32,7 +32,7 @@ export function ProviderProfileScreen() {
     );
   }
 
-  const { user, profile, skills, portfolio, services } = bootstrapQuery.data!;
+  const { user, profile, completeness, skills, portfolio, services } = bootstrapQuery.data!;
 
   return (
     <ProviderScreen contentContainerStyle={styles.content}>
@@ -68,7 +68,7 @@ export function ProviderProfileScreen() {
       </View>
 
       <View style={styles.completionCard}>
-        <Text style={styles.completionValue}>{profile.is_verified ? "100%" : "80%"}</Text>
+        <Text style={styles.completionValue}>{completeness.score || profile.completeness_score || 0}%</Text>
         <View style={styles.completionTextWrap}>
           <Text style={styles.completionTitle}>Profile status</Text>
           <Text style={styles.completionSubtitle}>
@@ -80,6 +80,30 @@ export function ProviderProfileScreen() {
             <Text style={styles.completionButtonText}>Verify</Text>
           </Pressable>
         )}
+      </View>
+
+      <View style={styles.quickActionsRow}>
+        <ProviderButton
+          label="Edit Profile"
+          variant="secondary"
+          full={false}
+          onPress={() => router.push("/settings/profile")}
+          style={styles.quickActionBtn}
+        />
+        <ProviderButton
+          label="Add Portfolio"
+          variant="secondary"
+          full={false}
+          onPress={() => router.push("/portfolio")}
+          style={styles.quickActionBtn}
+        />
+        <ProviderButton
+          label="Add Service"
+          variant="secondary"
+          full={false}
+          onPress={() => router.push("/settings/profile")}
+          style={styles.quickActionBtn}
+        />
       </View>
 
       <View style={styles.menuCard}>
@@ -251,5 +275,19 @@ const styles = StyleSheet.create({
     color: providerColors.dangerRed,
     textAlign: 'center',
     marginVertical: providerSpacing.xl
+  },
+  menuDangerText: {
+    color: providerColors.dangerRed
+  },
+  quickActionsRow: {
+    flexDirection: "row",
+    gap: providerSpacing.xs,
+    justifyContent: "space-between",
+    paddingHorizontal: providerSpacing.xs
+  },
+  quickActionBtn: {
+    flex: 1,
+    minHeight: 40,
+    paddingHorizontal: providerSpacing.xs
   }
 });

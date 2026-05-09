@@ -199,4 +199,15 @@ export interface ProviderBootstrap {
   portfolio: PortfolioItem[];
   services: ProviderService[];
   settings: any;
+  completeness?: {
+    score: number;
+    state: string;
+  };
+  reviews?: any[];
+  catalog?: any[];
+  verification?: {
+    verification_status: string;
+    verified_identity: boolean;
+    requests: any[];
+  };
 }

@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { ApiEnvelope, unwrapEnvelope } from "./utils";
+import { ApiEnvelope, unwrapEnvelope, unwrapMaybeEnvelope } from "./utils";
 import type {
   PortfolioItem,
   ProviderBootstrap,
@@ -8,10 +8,59 @@ import type {
   ProviderService,
 } from "./types";
 
+export function normalizeProviderBootstrap(raw: any): ProviderBootstrap {
+  const profile = raw.profile || {};
+
+  const user = raw.user || {
+    id: profile.id,
+    email: profile.email,
+    role: profile.role,
+    full_name: profile.full_name || profile.name || "Provider",
+    avatar_url: profile.avatar_url || null
+  };
+
+  return {
+    user,
+    profile: {
+      ...profile,
+      full_name: profile.full_name || profile.name || "Provider",
+      is_verified: Boolean(
+        profile.is_verified ||
+        profile.verified_identity ||
+        raw.verification?.verified_identity
+      ),
+      verification_status:
+        profile.verification_status ||
+        raw.verification?.verification_status ||
+        "not_requested",
+      completeness_score:
+        profile.completeness_score ||
+        raw.completeness?.score ||
+        0
+    },
+    completeness: raw.completeness || {
+      score: profile.completeness_score || 0,
+      state: profile.completeness_state || "INCOMPLETE"
+    },
+    reviews: Array.isArray(raw.reviews) ? raw.reviews : [],
+    skills: Array.isArray(raw.skills) ? raw.skills : [],
+    catalog: Array.isArray(raw.catalog) ? raw.catalog : [],
+    portfolio: Array.isArray(raw.portfolio) ? raw.portfolio : [],
+    services: Array.isArray(raw.services) ? raw.services : [],
+    verification: raw.verification || {
+      verification_status: profile.verification_status || "not_requested",
+      verified_identity: Boolean(profile.verified_identity),
+      requests: []
+    },
+    settings: raw.settings || {}
+  };
+}
+
 // Core Provider APIs
 export async function getProviderBootstrap() {
-  const response = await api.get<ApiEnvelope<ProviderBootstrap>>("/api/provider/bootstrap");
-  return unwrapEnvelope(response.data);
+  const response = await api.get<ApiEnvelope<any> | any>("/api/provider/bootstrap");
+  const raw = unwrapMaybeEnvelope(response.data);
+  return normalizeProviderBootstrap(raw);
 }
 
 export async function getProviderDashboard() {
@@ -81,8 +130,11 @@ export async function deletePortfolioItem(itemId: string) {
   await api.delete(`/api/provider/portfolio/${itemId}`);
 }
 
-export async function uploadPortfolioImage(itemId: string, formData: FormData) {
-  const response = await api.post<ApiEnvelope<{ media_url: string }>>(`/api/provider/portfolio/${itemId}/image`, formData);
+export async function uploadPortfolioImage(formData: FormData) {
+  const response = await api.post<ApiEnvelope<{ media_url?: string; image_url?: string; url?: string }>>(
+    "/api/provider/portfolio/image",
+    formData
+  );
   return unwrapEnvelope(response.data);
 }
 
@@ -126,4 +178,62 @@ export async function getProviderSettings() {
 export async function updateProviderSettings(payload: any) {
   const response = await api.patch<ApiEnvelope<any>>("/api/provider/settings", payload);
   return unwrapEnvelope(response.data);
+}
+
+// Jobs
+export async function getOpenJobs(params?: {
+  limit?: number;
+  search?: string;
+  category?: string;
+  location?: string;
+  experience?: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  matchesFor?: string;
+}) {
+  const response = await api.get<ApiEnvelope<any[]> | any[]>("/api/jobs", {
+    params: {
+      status: "open",
+      ...params
+    }
+  });
+
+  return unwrapMaybeEnvelope<any[]>(response.data);
+}
+
+export async function getHotJobs(limit = 5) {
+  const response = await api.get<ApiEnvelope<any[]> | any[]>("/api/jobs", {
+    params: {
+      status: "open",
+      limit,
+      budgetMin: 10000
+    }
+  });
+
+  return unwrapMaybeEnvelope<any[]>(response.data);
+}
+
+export async function getSavedJobs() {
+  const response = await api.get<ApiEnvelope<any[]> | any[]>("/api/jobs", {
+    params: {
+      saved: true,
+      status: "open"
+    }
+  });
+
+  return unwrapMaybeEnvelope<any[]>(response.data);
+}
+
+export async function getJobById(jobId: string) {
+  const response = await api.get<ApiEnvelope<any> | any>(`/api/jobs/${jobId}`);
+  return unwrapMaybeEnvelope<any>(response.data);
+}
+
+export async function toggleSaveJob(jobId: string, save: boolean) {
+  const response = await api.post<ApiEnvelope<{ success: boolean }> | { success: boolean }>(
+    "/api/jobs/save",
+    { jobId, save }
+  );
+
+  return unwrapMaybeEnvelope(response.data);
 }

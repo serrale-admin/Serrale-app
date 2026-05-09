@@ -14,7 +14,7 @@ export function SummaryCard({
   hint,
   iconBg
 }: {
-  icon: "briefcase-outline" | "document-text-outline" | "chatbubble-ellipses-outline" | "rocket-outline";
+  icon: any; // Allow any valid IconSymbol string
   number: string;
   label: string;
   hint: string;

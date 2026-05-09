@@ -41,20 +41,20 @@ export function ProviderProfileScreen() {
       <View style={styles.profileCard}>
         <View style={styles.topRow}>
           <View style={styles.avatarWrap}>
-            {user.avatar_url ? (
+            {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>
-                {user.full_name.split(" ").map(n => n[0]).join("")}
+                {user?.full_name ? user.full_name.split(" ").map((n: string) => n[0]).join("") : "P"}
               </Text>
             )}
             <View style={styles.onlineDot} />
           </View>
           <View style={styles.mainText}>
-            <Text style={styles.name}>{user.full_name} {profile.is_verified ? "- Verified" : ""}</Text>
-            <Text style={styles.specialty}>{profile.title || "Professional Provider"}</Text>
+            <Text style={styles.name}>{user?.full_name || "Provider"} {profile?.is_verified ? "- Verified" : ""}</Text>
+            <Text style={styles.specialty}>{profile?.title || "Professional Provider"}</Text>
             <Text style={styles.subMeta}>
-              {profile.rating ? `* ${profile.rating} (${profile.review_count})` : "No reviews yet"}
+              {profile?.rating ? `* ${profile.rating} (${profile.review_count})` : "No reviews yet"}
             </Text>
           </View>
         </View>

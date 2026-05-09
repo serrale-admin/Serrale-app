@@ -1,38 +1,53 @@
-import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Switch, Text, View, Pressable } from "react-native";
+import { useState, useEffect } from "react";
+import { ScrollView, StyleSheet, Switch, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getProviderDashboard, getHotJobs, getOpenJobs, toggleSaveJob } from "@serrale/api";
 import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { IconSymbol } from "../../provider/components/IconSymbol";
-
-import { JobCard, ProposalCard, SummaryCard } from "../../provider/components/ProviderCards";
 import { ProviderHeader } from "../../provider/components/ProviderHeader";
 import { ProviderScreen } from "../../provider/components/ProviderScreen";
 import { providerColors, providerRadius, providerShadows, providerSpacing, providerTypography } from "../../provider/theme";
 import { ProviderButton } from "../../provider/components/ProviderButton";
-import { ProviderLoadingScreen } from "./ProviderLoadingScreen";
+import { formatEtbRange } from "../../provider/format";
+
+const CATEGORIES = ["All", "Design", "Development", "Marketing", "Writing", "Photo & Video", "More"];
 
 export function ProviderHomeScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [available, setAvailable] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
-  const queryClient = useQueryClient();
+  useEffect(() => {
+    const t = setTimeout(() => setSearchTerm(searchInput), 500);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const dashboardQuery = useQuery({
     queryKey: ["provider-dashboard"],
     queryFn: getProviderDashboard,
   });
 
-  const hotJobsQuery = useQuery({
-    queryKey: ["provider-hot-jobs"],
-    queryFn: () => getHotJobs(5),
+  const openJobsQuery = useQuery({
+    queryKey: ["provider-home-open-jobs", searchTerm, selectedCategory],
+    queryFn: () => getOpenJobs({ 
+      limit: 5, 
+      search: searchTerm || undefined,
+      category: selectedCategory === "All" ? undefined : selectedCategory
+    }),
   });
 
-  const openJobsQuery = useQuery({
-    queryKey: ["provider-home-open-jobs"],
-    queryFn: () => getOpenJobs({ limit: 5 }),
+  const hotJobsQuery = useQuery({
+    queryKey: ["provider-home-hot-jobs", selectedCategory],
+    queryFn: () => getOpenJobs({ 
+      limit: 4, 
+      category: selectedCategory === "All" ? "Design" : selectedCategory 
+    }),
   });
 
   const toggleSaveMutation = useMutation({
@@ -42,382 +57,536 @@ export function ProviderHomeScreen() {
     }
   });
 
-  const handleToggleSave = (jobId: string) => {
-    const isSaved = savedJobs[jobId] || false;
-    toggleSaveMutation.mutate({ jobId, save: !isSaved });
+  const handleToggleSave = (jobId: string, currentSavedState: boolean) => {
+    const isCurrentlySaved = savedJobs[jobId] !== undefined ? savedJobs[jobId] : currentSavedState;
+    setSavedJobs(prev => ({ ...prev, [jobId]: !isCurrentlySaved }));
+    toggleSaveMutation.mutate({ jobId, save: !isCurrentlySaved });
   };
 
-  if (dashboardQuery.isLoading) {
-    return <ProviderLoadingScreen message="Loading dashboard..." />;
-  }
+  const dashboard = dashboardQuery.data;
+  const providerName = dashboard?.provider_name || "Provider";
+  const isVerified = dashboard?.verification_status === "verified";
 
-  if (dashboardQuery.isError) {
-    return (
-      <ProviderScreen>
-        <Text style={styles.errorText}>Unable to load dashboard. Please try again.</Text>
-        <ProviderButton label="Retry" onPress={() => {
-          dashboardQuery.refetch();
-          hotJobsQuery.refetch();
-          openJobsQuery.refetch();
-        }} />
-      </ProviderScreen>
-    );
-  }
-
-  const dashboard = dashboardQuery.data!;
-  const hotJobs = (hotJobsQuery.data || []).map(mapBackendJobToProviderJob);
   const openJobs = (openJobsQuery.data || []).map(mapBackendJobToProviderJob);
+  const popularJobs = (hotJobsQuery.data || []).map(mapBackendJobToProviderJob);
 
   return (
     <ProviderScreen contentContainerStyle={styles.content}>
       <ProviderHeader showNotification unread={0} />
 
-      <View>
-        <Text style={styles.greeting}>Welcome back, {dashboard.provider_name}</Text>
-        <Text style={styles.subheading}>
-          Find opportunities, manage proposals, and grow your work.
-        </Text>
+      <View style={styles.greetingSection}>
+        <Text style={styles.greetingTitle}>Welcome back, {providerName.split(' ')[0]}</Text>
+        <Text style={styles.greetingSubtitle}>Find opportunities, grow your business.</Text>
       </View>
 
-      <View style={styles.availabilityCard}>
-        <View style={[styles.statusPulseWrap, available ? styles.statusOn : styles.statusOff]}>
-          <View style={[styles.statusPulse, available ? styles.pulseOn : styles.pulseOff]} />
-        </View>
-        <View style={styles.availabilityTextWrap}>
-          <Text style={styles.availabilityTitle}>{available ? "Available for work" : "Busy"}</Text>
-          <Text style={styles.availabilitySubtitle}>
-            {available
-              ? "You are visible to potential clients."
-              : "Clients can still view your profile."}
-          </Text>
-        </View>
-        <Switch
-          value={available}
-          onValueChange={setAvailable}
-          trackColor={{ false: "#CBD5E1", true: providerColors.blue }}
-          thumbColor={providerColors.white}
-        />
-      </View>
-
-      <View style={styles.heroCard}>
-        <Text style={styles.heroTag}>COMMUNITY</Text>
-        <Text style={styles.heroTitle}>Grow with Ethiopia&apos;s service community</Text>
-        <Text style={styles.heroBody}>Connect. Grow. Succeed together.</Text>
-        <ProviderButton
-          label="Explore Jobs"
-          full={false}
-          variant="secondary"
-          style={styles.heroCta}
-          onPress={() => router.push("/tabs/jobs")}
-        />
-      </View>
-
-      <View style={styles.summaryGrid}>
-        <SummaryCard
-          icon="document-text-outline"
-          number={(dashboard?.skills_count ?? 0).toString()}
-          label="Skills"
-          hint="Verified"
-          iconBg={providerColors.sky}
-        />
-        <SummaryCard
-          icon="folder-outline"
-          number={(dashboard?.portfolio_count ?? 0).toString()}
-          label="Portfolio"
-          hint="Items"
-          iconBg={providerColors.purpleSoft}
-        />
-        <SummaryCard
-          icon="layers-outline"
-          number={(dashboard?.services_count ?? 0).toString()}
-          label="Services"
-          hint="Offered"
-          iconBg={providerColors.successSoft}
-        />
-        <SummaryCard
-          icon="rocket-outline"
-          number={`${dashboard?.profile_completion ?? 0}%`}
-          label="Profile"
-          hint="Completion"
-          iconBg={providerColors.warningSoft}
-        />
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Verification Status</Text>
-      </View>
-      <View style={styles.statusBox}>
-        {dashboard.verification_status === "verified" ? (
-          <View style={styles.badgeRow}>
-            <IconSymbol name="shield-checkmark" size={20} color={providerColors.blue} />
-            <Text style={styles.statusLabel}>Verified Professional</Text>
+      <View style={styles.statusRow}>
+        <View style={styles.statusCard}>
+          <View style={styles.statusCardLeft}>
+            <View style={styles.statusIconWrapGreen}>
+              <View style={styles.statusDotGreen} />
+            </View>
+            <View style={styles.statusTextWrap}>
+              <Text style={styles.statusTitle}>Available for work</Text>
+              <Text style={styles.statusSubtitle}>You are visible to clients</Text>
+            </View>
           </View>
-        ) : dashboard.verification_status === "pending" ? (
-          <View style={styles.badgeRow}>
-            <IconSymbol name="time-outline" size={20} color={providerColors.warningOrange} />
-            <Text style={[styles.statusLabel, { color: providerColors.warningOrange }]}>Pending Review</Text>
+          <Switch
+            value={available}
+            onValueChange={setAvailable}
+            trackColor={{ false: "#CBD5E1", true: providerColors.successGreen }}
+            thumbColor={providerColors.white}
+            style={{ transform: [{ scale: 0.8 }] }}
+          />
+        </View>
+
+        <View style={styles.statusCard}>
+          <View style={styles.statusCardLeft}>
+            <View style={styles.statusIconWrapBlue}>
+              <IconSymbol name="shield-checkmark" size={16} color={providerColors.blue} />
+            </View>
+            <View style={styles.statusTextWrap}>
+              <Text style={styles.statusTitle}>Identity verified</Text>
+              <Text style={styles.statusSubtitle}>{isVerified ? "Your identity is verified" : "Pending verification"}</Text>
+            </View>
+          </View>
+          <IconSymbol name="chevron-forward" size={16} color={providerColors.muted} />
+        </View>
+      </View>
+
+      <View style={styles.searchBar}>
+        <IconSymbol name="search-outline" size={20} color={providerColors.muted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search jobs, categories, skills"
+          placeholderTextColor={providerColors.muted}
+          value={searchInput}
+          onChangeText={setSearchInput}
+        />
+      </View>
+
+      <View style={styles.banner}>
+        <View style={styles.bannerContent}>
+          <Text style={styles.bannerTitle}>Find better work opportunities</Text>
+          <Text style={styles.bannerSubtitle}>Connect with clients in Ethiopia.</Text>
+        </View>
+        <Pressable style={styles.bannerBtn} onPress={() => router.push("/tabs/jobs")}>
+          <Text style={styles.bannerBtnText}>Explore Jobs</Text>
+          <IconSymbol name="chevron-forward" size={14} color={providerColors.navy} />
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Browse by Category</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+          {CATEGORIES.map(cat => (
+            <Pressable
+              key={cat}
+              style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Jobs for You</Text>
+          <Pressable onPress={() => router.push("/tabs/jobs")}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </Pressable>
+        </View>
+
+        {openJobsQuery.isLoading ? (
+          <ActivityIndicator size="large" color={providerColors.blue} style={{ marginTop: 20 }} />
+        ) : openJobsQuery.isError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Couldn't load jobs</Text>
+            <ProviderButton label="Retry" onPress={() => openJobsQuery.refetch()} full={false} style={{ marginTop: 10 }} />
+          </View>
+        ) : openJobs.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No jobs found yet</Text>
+            <Text style={styles.emptyText}>Try another category or search term.</Text>
           </View>
         ) : (
-          <View style={styles.badgeRow}>
-            <IconSymbol name="shield-outline" size={20} color={providerColors.muted} />
-            <Text style={[styles.statusLabel, { color: providerColors.muted }]}>Not Verified</Text>
-          </View>
+          openJobs.slice(0, 2).map(job => (
+            <HomeJobCard
+              key={job.id}
+              job={job}
+              isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : job.saved || false}
+              onToggleSave={() => handleToggleSave(job.id, job.saved || false)}
+              onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
+            />
+          ))
         )}
       </View>
 
-      {dashboard.next_actions.length > 0 && (
-        <>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Next Actions</Text>
-          </View>
-          <View style={styles.stack}>
-            {dashboard.next_actions.map((action, idx) => (
-              <View key={idx} style={styles.actionItem}>
-                <Text style={styles.actionText}>• {action}</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
-
-      <View style={styles.profileTip}>
-        <Text style={styles.profileTipTag}>PROFILE COMPLETION - {dashboard.profile_completion}%</Text>
-        <Text style={styles.profileTipTitle}>Complete your profile to get more visibility</Text>
-        <Text style={styles.profileTipBody}>
-          Add portfolio items, services, and pricing to increase trust.
-        </Text>
-        <ProviderButton
-          label="Improve Profile"
-          full={false}
-          variant="secondary"
-          style={styles.tipCta}
-          onPress={() => router.push("/tabs/profile")}
-        />
-      </View>
-
-      {hotJobs.length > 0 && (
-        <View style={styles.horizontalSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Hot Projects</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {hotJobs.map(job => (
-              <View key={job.id} style={styles.horizontalCardWrap}>
-                <JobCard
-                  job={job}
-                  saved={savedJobs[job.id] || false}
-                  onToggleSave={() => handleToggleSave(job.id)}
-                  onOpen={() => router.push(`/jobs/${job.id}` as any)}
-                />
-              </View>
-            ))}
-          </ScrollView>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Popular in {selectedCategory === "All" ? "Design" : selectedCategory}</Text>
+          <Pressable onPress={() => router.push("/tabs/jobs")}>
+            <Text style={styles.viewAllText}>View all</Text>
+          </Pressable>
         </View>
-      )}
 
-      {openJobs.length > 0 && (
-        <View style={styles.verticalSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recommended for You</Text>
-            <Pressable onPress={() => router.push("/tabs/jobs")}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </Pressable>
-          </View>
-          <View style={styles.stack}>
-            {openJobs.map(job => (
-              <JobCard
+        {hotJobsQuery.isLoading ? (
+          <ActivityIndicator size="large" color={providerColors.blue} style={{ marginTop: 20 }} />
+        ) : popularJobs.length > 0 ? (
+          <View style={styles.popularGrid}>
+            {popularJobs.slice(0, 2).map(job => (
+              <CompactJobCard
                 key={job.id}
                 job={job}
-                saved={savedJobs[job.id] || false}
-                onToggleSave={() => handleToggleSave(job.id)}
-                onOpen={() => router.push(`/jobs/${job.id}` as any)}
+                isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : job.saved || false}
+                onToggleSave={() => handleToggleSave(job.id, job.saved || false)}
+                onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
               />
             ))}
           </View>
-        </View>
-      )}
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No popular jobs right now.</Text>
+          </View>
+        )}
+      </View>
       
-      <View style={{ height: 40 }} />
     </ProviderScreen>
   );
 }
 
+// Subcomponents
+
+function HomeJobCard({ job, isSaved, onToggleSave, onPress }: any) {
+  return (
+    <Pressable style={styles.homeJobCard} onPress={onPress}>
+      <View style={styles.hjcTopRow}>
+        <View style={styles.hjcIconBlock}>
+          <IconSymbol name="briefcase-outline" size={32} color={providerColors.blue} />
+        </View>
+        <View style={styles.hjcContent}>
+          <Text style={styles.hjcTitle} numberOfLines={1}>{job.title}</Text>
+          <Text style={styles.hjcCategory}>{job.client}</Text>
+          <View style={styles.hjcMetaRow}>
+            <IconSymbol name="location-outline" size={12} color={providerColors.muted} />
+            <Text style={styles.hjcMetaText}>{job.location}</Text>
+          </View>
+        </View>
+        <Pressable onPress={onToggleSave} style={styles.hjcBookmark}>
+          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={20} color={isSaved ? providerColors.blue : providerColors.muted} />
+        </Pressable>
+      </View>
+      <Text style={styles.hjcDesc} numberOfLines={2}>{job.description}</Text>
+      <View style={styles.hjcBottomRow}>
+        <Text style={styles.hjcBudget}>{formatEtbRange(job.budgetMin, job.budgetMax)}</Text>
+        <Pressable style={styles.hjcBtn} onPress={onPress}>
+          <Text style={styles.hjcBtnText}>View Details</Text>
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}
+
+function CompactJobCard({ job, isSaved, onToggleSave, onPress }: any) {
+  return (
+    <Pressable style={styles.compactCard} onPress={onPress}>
+      <View style={styles.ccTopRow}>
+        <View style={styles.ccIconBlock}>
+          <IconSymbol name="star-outline" size={24} color={providerColors.warningOrange} />
+        </View>
+        <Pressable onPress={onToggleSave}>
+          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={18} color={isSaved ? providerColors.blue : providerColors.muted} />
+        </Pressable>
+      </View>
+      <Text style={styles.ccTitle} numberOfLines={2}>{job.title}</Text>
+      <Text style={styles.ccCategory} numberOfLines={1}>{job.client}</Text>
+      <Text style={styles.ccBudget}>{formatEtbRange(job.budgetMin, job.budgetMax)}</Text>
+    </Pressable>
+  );
+}
+
+// Styles
 const styles = StyleSheet.create({
   content: {
-    paddingTop: providerSpacing.md
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 96,
+    backgroundColor: providerColors.appBg
   },
-  greeting: {
-    ...providerTypography.h1,
-    color: providerColors.navy,
-    letterSpacing: -0.6
+  greetingSection: {
+    marginTop: 8,
+    marginBottom: 16
   },
-  subheading: {
-    ...providerTypography.body,
-    color: providerColors.body,
-    marginTop: providerSpacing.xs
+  greetingTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: providerColors.navy
   },
-  availabilityCard: {
+  greetingSubtitle: {
+    fontSize: 14,
+    color: providerColors.muted,
+    marginTop: 4
+  },
+  statusRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16
+  },
+  statusCard: {
+    flex: 1,
+    minHeight: 76,
+    borderRadius: 18,
     backgroundColor: providerColors.white,
-    borderRadius: providerRadius.lg,
-    padding: providerSpacing.md,
+    borderWidth: 1,
+    borderColor: providerColors.border,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
-    gap: providerSpacing.sm,
+    justifyContent: "space-between",
     ...providerShadows.card
   },
-  statusPulseWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: providerRadius.sm,
+  statusCardLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  statusIconWrapGreen: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: providerColors.successSoft,
     alignItems: "center",
     justifyContent: "center"
   },
-  statusOn: {
-    backgroundColor: providerColors.successSoft
-  },
-  statusOff: {
-    backgroundColor: providerColors.warningSoft
-  },
-  statusPulse: {
-    width: 12,
-    height: 12,
-    borderRadius: providerRadius.full
-  },
-  pulseOn: {
+  statusDotGreen: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: providerColors.successGreen
   },
-  pulseOff: {
-    backgroundColor: providerColors.warningOrange
+  statusIconWrapBlue: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: providerColors.sky,
+    alignItems: "center",
+    justifyContent: "center"
   },
-  availabilityTextWrap: {
+  statusTextWrap: {
     flex: 1
   },
-  availabilityTitle: {
-    ...providerTypography.title,
+  statusTitle: {
+    fontSize: 13,
+    fontWeight: "700",
     color: providerColors.navy
   },
-  availabilitySubtitle: {
-    ...providerTypography.caption,
+  statusSubtitle: {
+    fontSize: 11,
     color: providerColors.muted,
     marginTop: 2
   },
-  heroCard: {
-    borderRadius: providerRadius.xxl,
-    padding: providerSpacing.xl,
-    backgroundColor: providerColors.blueDark,
-    ...providerShadows.elevated
-  },
-  heroTag: {
-    ...providerTypography.caption,
-    color: "rgba(255,255,255,0.85)",
-    letterSpacing: 1.4
-  },
-  heroTitle: {
-    ...providerTypography.h2,
-    color: providerColors.white,
-    marginTop: providerSpacing.xs
-  },
-  heroBody: {
-    ...providerTypography.body,
-    color: "rgba(255,255,255,0.92)",
-    marginTop: providerSpacing.xs
-  },
-  heroCta: {
-    marginTop: providerSpacing.md
-  },
-  summaryGrid: {
+  searchBar: {
+    height: 60,
+    borderRadius: 20,
+    backgroundColor: providerColors.white,
+    borderWidth: 1,
+    borderColor: providerColors.border,
+    paddingHorizontal: 18,
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: providerSpacing.sm
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: providerColors.title
+  },
+  banner: {
+    height: 110,
+    borderRadius: 22,
+    backgroundColor: providerColors.blueDark,
+    padding: 18,
+    marginBottom: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  bannerContent: {
+    flex: 1,
+    paddingRight: 10
+  },
+  bannerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: providerColors.white
+  },
+  bannerSubtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 4
+  },
+  bannerBtn: {
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: providerColors.white,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 4
+  },
+  bannerBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: providerColors.navy
+  },
+  section: {
+    marginBottom: 20
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: providerColors.navy,
+    marginBottom: 12
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: providerSpacing.md
+    marginBottom: 12
   },
-  sectionTitle: {
-    ...providerTypography.h3,
-    color: providerColors.navy
+  viewAllText: {
+    fontSize: 14,
+    color: providerColors.blue,
+    fontWeight: "500"
   },
-  statusBox: {
+  categoryScroll: {
+    gap: 8,
+    paddingRight: 20
+  },
+  categoryChip: {
+    height: 46,
+    borderRadius: 23,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: providerColors.border,
     backgroundColor: providerColors.white,
-    padding: providerSpacing.md,
-    borderRadius: providerRadius.lg,
-    marginTop: providerSpacing.xs,
-    ...providerShadows.card
+    justifyContent: "center"
   },
-  statusLabel: {
-    ...providerTypography.title,
-    color: providerColors.navy
+  categoryChipActive: {
+    backgroundColor: providerColors.blue,
+    borderColor: providerColors.blue
   },
-  stack: {
-    gap: providerSpacing.xs,
-    marginTop: providerSpacing.xs
-  },
-  actionItem: {
-    backgroundColor: providerColors.white,
-    padding: providerSpacing.sm,
-    paddingHorizontal: providerSpacing.md,
-    borderRadius: providerRadius.md,
-    ...providerShadows.card
-  },
-  actionText: {
-    ...providerTypography.body,
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: "500",
     color: providerColors.body
   },
-  profileTip: {
-    borderRadius: providerRadius.xl,
-    padding: providerSpacing.lg,
-    backgroundColor: providerColors.blue,
-    marginTop: providerSpacing.lg
+  categoryChipTextActive: {
+    color: providerColors.white
   },
-  profileTipTag: {
-    ...providerTypography.caption,
-    color: "rgba(255,255,255,0.85)",
-    letterSpacing: 1.1
+  emptyState: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: providerColors.white,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: providerColors.border
   },
-  profileTipTitle: {
-    ...providerTypography.h3,
-    color: providerColors.white,
-    marginTop: providerSpacing.xs
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: providerColors.navy
   },
-  profileTipBody: {
-    ...providerTypography.body,
-    color: "rgba(255,255,255,0.9)",
-    marginTop: providerSpacing.xs
+  emptyText: {
+    fontSize: 14,
+    color: providerColors.muted,
+    marginTop: 4
   },
-  tipCta: {
-    marginTop: providerSpacing.md
+  homeJobCard: {
+    minHeight: 150,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
+    backgroundColor: providerColors.white,
+    borderWidth: 1,
+    borderColor: providerColors.border,
+    ...providerShadows.card
   },
-  errorText: {
-    ...providerTypography.body,
-    color: providerColors.dangerRed,
-    textAlign: 'center',
-    marginVertical: providerSpacing.xl
+  hjcTopRow: {
+    flexDirection: "row",
+    gap: 12
   },
-  badgeRow: {
+  hjcIconBlock: {
+    width: 76,
+    height: 76,
+    borderRadius: 16,
+    backgroundColor: providerColors.sky,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  hjcContent: {
+    flex: 1,
+    paddingTop: 4
+  },
+  hjcTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: providerColors.navy
+  },
+  hjcCategory: {
+    fontSize: 13,
+    color: providerColors.blue,
+    marginTop: 4
+  },
+  hjcMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: providerSpacing.xs
+    gap: 4,
+    marginTop: 6
   },
-  horizontalSection: {
-    marginTop: providerSpacing.lg,
-    marginHorizontal: -providerSpacing.md
+  hjcMetaText: {
+    fontSize: 12,
+    color: providerColors.muted
   },
-  scrollContent: {
-    paddingHorizontal: providerSpacing.md,
-    gap: providerSpacing.md,
-    paddingVertical: providerSpacing.xs
+  hjcBookmark: {
+    padding: 4
   },
-  horizontalCardWrap: {
-    width: 300
+  hjcDesc: {
+    fontSize: 14,
+    color: providerColors.body,
+    marginTop: 12,
+    lineHeight: 20
   },
-  verticalSection: {
-    marginTop: providerSpacing.lg
+  hjcBottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 14
   },
-  seeAllText: {
-    ...providerTypography.label,
-    color: providerColors.blue
+  hjcBudget: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: providerColors.successGreen
+  },
+  hjcBtn: {
+    height: 42,
+    minWidth: 126,
+    borderRadius: 12,
+    backgroundColor: providerColors.blue,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  hjcBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: providerColors.white
+  },
+  popularGrid: {
+    flexDirection: "row",
+    gap: 12
+  },
+  compactCard: {
+    flex: 1,
+    minHeight: 150,
+    borderRadius: 20,
+    backgroundColor: providerColors.white,
+    borderWidth: 1,
+    borderColor: providerColors.border,
+    padding: 14,
+    ...providerShadows.card
+  },
+  ccTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12
+  },
+  ccIconBlock: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: providerColors.warningSoft,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  ccTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: providerColors.navy,
+    marginBottom: 6
+  },
+  ccCategory: {
+    fontSize: 12,
+    color: providerColors.muted,
+    marginBottom: 8
+  },
+  ccBudget: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: providerColors.successGreen
   }
 });

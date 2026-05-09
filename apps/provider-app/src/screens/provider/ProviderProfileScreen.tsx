@@ -278,70 +278,70 @@ const styles = StyleSheet.create({
     marginTop: 40
   },
   errorText: {
-    fontSize: 15,
+    fontSize: 14,
     color: providerColors.dangerRed
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 80,
     backgroundColor: providerColors.appBg
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 48,
-    marginBottom: 10
+    height: 40,
+    marginBottom: 8
   },
   headerLeft: {
-    width: 44,
-    height: 44
+    width: 40,
+    height: 40
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: providerColors.navy
   },
   headerRight: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: "flex-end",
     justifyContent: "center"
   },
   mainCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 22,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 12,
+    marginTop: 4,
     ...providerShadows.card
   },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14
+    gap: 12
   },
   avatarWrap: {
     position: "relative"
   },
   avatarImage: {
-    width: 84,
-    height: 84,
-    borderRadius: 42
+    width: 64,
+    height: 64,
+    borderRadius: 32
   },
   avatarFallback: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   avatarInitials: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
     color: providerColors.blue
   },
@@ -349,9 +349,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
@@ -363,34 +363,34 @@ const styles = StyleSheet.create({
     flex: 1
   },
   profileName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
     color: providerColors.navy,
     marginBottom: 2
   },
   profileSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: providerColors.muted,
     marginBottom: 2
   },
   profileLocation: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted,
-    marginBottom: 6
+    marginBottom: 4
   },
   badgesRow: {
-    gap: 6,
+    gap: 4,
     alignItems: "flex-start",
-    marginTop: 6
+    marginTop: 4
   },
   badgeAvailable: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: providerColors.successSoft,
-    paddingHorizontal: 10,
-    height: 30,
-    borderRadius: 15,
-    gap: 6,
+    paddingHorizontal: 8,
+    height: 24,
+    borderRadius: 12,
+    gap: 4,
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.15)",
     alignSelf: "flex-start"
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: providerColors.successGreen
   },
   badgeAvailableText: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.successGreen,
     fontWeight: "500"
   },
@@ -410,186 +410,186 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: providerColors.sky,
-    paddingHorizontal: 10,
-    height: 30,
-    borderRadius: 15,
-    gap: 6,
+    paddingHorizontal: 8,
+    height: 24,
+    borderRadius: 12,
+    gap: 4,
     alignSelf: "flex-start"
   },
   badgeNotVerified: {
     backgroundColor: providerColors.softCard
   },
   badgeVerifiedText: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.blue,
     fontWeight: "500"
   },
   divider: {
     height: 1,
     backgroundColor: providerColors.border,
-    marginVertical: 14
+    marginVertical: 12
   },
   completionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10
+    gap: 8
   },
   completionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.navy,
     fontWeight: "600"
   },
   progressBarWrap: {
     flex: 1,
-    height: 6,
+    height: 4,
     backgroundColor: providerColors.softCard,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: "hidden"
   },
   progressBarFill: {
-    height: 6,
+    height: 4,
     backgroundColor: providerColors.blue,
-    borderRadius: 3
+    borderRadius: 2
   },
   completionValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: providerColors.navy
   },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16
+    gap: 8,
+    marginBottom: 12
   },
   statCard: {
     flex: 1,
     minWidth: "45%",
-    height: 76,
-    borderRadius: 16,
+    height: 64,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    padding: 12,
-    gap: 6,
+    padding: 10,
+    gap: 4,
     ...providerShadows.card
   },
   statIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: providerColors.navy
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.muted
   },
   section: {
-    marginBottom: 16
+    marginBottom: 12
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.navy,
-    marginBottom: 12
+    marginBottom: 8
   },
   quickActionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10
+    gap: 8
   },
   quickActionBtn: {
     flex: 1,
     minWidth: "45%",
-    height: 48,
-    borderRadius: 14,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    gap: 8
+    paddingHorizontal: 10,
+    gap: 6
   },
   quickActionText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: providerColors.navy
   },
   card: {
     backgroundColor: providerColors.white,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 16,
+    marginBottom: 12,
     ...providerShadows.card
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: 8
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.navy
   },
   linkText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.blue,
     fontWeight: "500"
   },
   bodyText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     color: providerColors.body
   },
   skillsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8
+    gap: 6
   },
   skillChip: {
-    height: 32,
-    borderRadius: 16,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: providerColors.sky,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     justifyContent: "center"
   },
   skillChipText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.blue,
     fontWeight: "500"
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted
   },
   portfolioScroll: {
-    gap: 10
+    gap: 8
   },
   portfolioItem: {
-    width: 140,
-    gap: 8
+    width: 120,
+    gap: 6
   },
   portfolioImg: {
     width: "100%",
-    height: 90,
-    borderRadius: 14
+    height: 80,
+    borderRadius: 10
   },
   portfolioPlaceholder: {
     width: "100%",
-    height: 90,
-    borderRadius: 14,
+    height: 80,
+    borderRadius: 10,
     backgroundColor: providerColors.softCard,
     alignItems: "center",
     justifyContent: "center"
@@ -598,36 +598,36 @@ const styles = StyleSheet.create({
     gap: 2
   },
   portfolioTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: providerColors.navy
   },
   portfolioCategory: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.muted
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 8
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
   servicesList: {
-    gap: 12
+    gap: 8
   },
   serviceRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10
+    gap: 8
   },
   serviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
@@ -637,12 +637,12 @@ const styles = StyleSheet.create({
     gap: 2
   },
   serviceTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
   serviceDesc: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.muted
   },
   servicePriceWrap: {
@@ -651,24 +651,24 @@ const styles = StyleSheet.create({
     gap: 6
   },
   servicePrice: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: providerColors.navy
   },
   settingsMenu: {
     backgroundColor: providerColors.white,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 16,
+    marginBottom: 12,
     ...providerShadows.card
   },
   settingsRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 50,
-    gap: 10
+    height: 44,
+    gap: 8
   },
   settingsRowBorder: {
     borderBottomWidth: 1,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   settingsRowTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: providerColors.navy,
     fontWeight: "500"
   }

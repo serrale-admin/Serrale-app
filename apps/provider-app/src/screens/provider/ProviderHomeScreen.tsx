@@ -268,38 +268,38 @@ function CompactJobCard({ job, isSaved, onToggleSave, onPress }: any) {
 // Styles
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 80,
     backgroundColor: providerColors.appBg
   },
   greetingSection: {
-    marginTop: 8,
-    marginBottom: 12
+    marginTop: 4,
+    marginBottom: 8
   },
   greetingTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "700",
     color: providerColors.navy
   },
   greetingSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: providerColors.muted,
-    marginTop: 4
+    marginTop: 2
   },
   statusRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 12
+    gap: 8,
+    marginBottom: 8
   },
   statusCard: {
     flex: 1,
-    height: 68,
-    borderRadius: 16,
+    height: 56,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    padding: 12,
+    padding: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -309,26 +309,27 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8
+    gap: 6,
+    paddingRight: 4
   },
   statusIconWrapGreen: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: providerColors.successSoft,
     alignItems: "center",
     justifyContent: "center"
   },
   statusDotGreen: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: providerColors.successGreen
   },
   statusIconWrapBlue: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
@@ -337,99 +338,99 @@ const styles = StyleSheet.create({
     flex: 1
   },
   statusTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     color: providerColors.navy
   },
   statusSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
     color: providerColors.muted,
-    marginTop: 2
+    marginTop: 1
   },
   searchBar: {
-    height: 50,
-    borderRadius: 16,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 12,
-    marginBottom: 12
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: providerColors.title
   },
   banner: {
-    height: 92,
-    borderRadius: 18,
+    height: 76,
+    borderRadius: 14,
     backgroundColor: providerColors.blueDark,
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between"
   },
   bannerContent: {
     flex: 1,
-    paddingRight: 10
+    paddingRight: 8
   },
   bannerTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.white
   },
   bannerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: "rgba(255,255,255,0.8)",
-    marginTop: 4
+    marginTop: 2
   },
   bannerBtn: {
-    height: 38,
-    borderRadius: 14,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: providerColors.white,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     gap: 4
   },
   bannerBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: providerColors.navy
   },
   section: {
-    marginBottom: 16
+    marginBottom: 12
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: providerColors.navy,
-    marginBottom: 10
+    marginBottom: 8
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: 8
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.blue,
     fontWeight: "500"
   },
   categoryScroll: {
-    gap: 8,
-    paddingRight: 16
+    gap: 6,
+    paddingRight: 12
   },
   categoryChip: {
-    height: 40,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    height: 34,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
     backgroundColor: providerColors.white,
@@ -440,7 +441,7 @@ const styles = StyleSheet.create({
     borderColor: providerColors.blue
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: providerColors.body
   },
@@ -448,29 +449,29 @@ const styles = StyleSheet.create({
     color: providerColors.white
   },
   emptyState: {
-    padding: 16,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: providerColors.white,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: providerColors.border
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted,
-    marginTop: 4
+    marginTop: 2
   },
   homeJobCard: {
-    minHeight: 124,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
+    minHeight: 100,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
@@ -478,27 +479,27 @@ const styles = StyleSheet.create({
   },
   hjcTopRow: {
     flexDirection: "row",
-    gap: 12
+    gap: 10
   },
   hjcIconBlock: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   hjcContent: {
     flex: 1,
-    paddingTop: 2
+    paddingTop: 0
   },
   hjcTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: providerColors.navy
   },
   hjcCategory: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.blue,
     marginTop: 2
   },
@@ -509,83 +510,83 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   hjcMetaText: {
-    fontSize: 11,
+    fontSize: 10,
     color: providerColors.muted
   },
   hjcBookmark: {
-    padding: 4
+    padding: 2
   },
   hjcDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.body,
-    marginTop: 10,
-    lineHeight: 18
+    marginTop: 8,
+    lineHeight: 16
   },
   hjcBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginTop: 12
+    marginTop: 10
   },
   hjcBudget: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: providerColors.successGreen
   },
   hjcBtn: {
-    height: 38,
-    minWidth: 110,
-    borderRadius: 12,
+    height: 32,
+    minWidth: 90,
+    borderRadius: 10,
     backgroundColor: providerColors.blue,
     alignItems: "center",
     justifyContent: "center"
   },
   hjcBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: providerColors.white
   },
   popularGrid: {
     flexDirection: "row",
-    gap: 10
+    gap: 8
   },
   compactCard: {
     flex: 1,
-    height: 135,
-    borderRadius: 16,
+    height: 110,
+    borderRadius: 14,
     backgroundColor: providerColors.white,
     borderWidth: 1,
     borderColor: providerColors.border,
-    padding: 12,
+    padding: 10,
     ...providerShadows.card
   },
   ccTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8
+    marginBottom: 6
   },
   ccIconBlock: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: providerColors.warningSoft,
     alignItems: "center",
     justifyContent: "center"
   },
   ccTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: providerColors.navy,
-    marginBottom: 4
+    marginBottom: 2
   },
   ccCategory: {
-    fontSize: 11,
+    fontSize: 10,
     color: providerColors.muted,
-    marginBottom: 6
+    marginBottom: 4
   },
   ccBudget: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: providerColors.successGreen
   }

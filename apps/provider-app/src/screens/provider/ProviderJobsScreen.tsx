@@ -211,104 +211,104 @@ function JobFullCard({ job, saved, onToggleSave, onOpen }: { job: any; saved: bo
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 96,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 80,
     backgroundColor: providerColors.appBg
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16
+    marginBottom: 12
   },
   headerTitles: {
     flex: 1
   },
   pageTitle: {
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: "800",
     color: providerColors.navy
   },
   pageSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: providerColors.muted,
-    marginTop: 4
+    marginTop: 2
   },
   notificationBtn: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: "flex-end",
     justifyContent: "center",
     position: "relative"
   },
   notificationDot: {
     position: "absolute",
-    top: 10,
+    top: 8,
     right: 2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: providerColors.dangerRed,
     borderWidth: 2,
     borderColor: providerColors.appBg
   },
   searchRow: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 12
+    gap: 8,
+    marginBottom: 8
   },
   searchBox: {
     flex: 1,
-    height: 50,
-    borderRadius: 16,
+    height: 42,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
     backgroundColor: providerColors.white,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    gap: 8
+    paddingHorizontal: 12,
+    gap: 6
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: providerColors.navy,
     paddingVertical: 0
   },
   filterButton: {
-    width: 110,
-    height: 50,
-    borderRadius: 16,
+    width: 90,
+    height: 42,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
     backgroundColor: providerColors.white,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6
+    gap: 4
   },
   filterBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
     color: providerColors.navy
   },
   categoryWrap: {
-    marginHorizontal: -16,
-    marginBottom: 12
+    marginHorizontal: -12,
+    marginBottom: 8
   },
   categoryList: {
-    paddingHorizontal: 16,
-    paddingRight: 32,
-    gap: 8
+    paddingHorizontal: 12,
+    paddingRight: 24,
+    gap: 6
   },
   categoryChip: {
-    height: 40,
-    borderRadius: 14,
+    height: 34,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
     backgroundColor: providerColors.white,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     justifyContent: "center"
   },
   activeCategoryChip: {
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     borderColor: providerColors.blue
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: providerColors.navy
   },
@@ -327,10 +327,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12
+    marginBottom: 8
   },
   countText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted
   },
   sortBtn: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     gap: 4
   },
   sortBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.navy,
     fontWeight: "500"
   },
@@ -347,49 +347,49 @@ const styles = StyleSheet.create({
     minHeight: 300
   },
   stack: {
-    gap: 12
+    gap: 8
   },
   jobCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 1,
     borderColor: providerColors.border,
-    marginBottom: 10,
+    marginBottom: 8,
     ...providerShadows.card
   },
   jobTopRow: {
     flexDirection: "row",
-    gap: 12
+    gap: 10
   },
   jobIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     backgroundColor: providerColors.sky,
     alignItems: "center",
     justifyContent: "center"
   },
   jobInfoWrap: {
     flex: 1,
-    paddingTop: 2
+    paddingTop: 0
   },
   jobTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: providerColors.navy,
-    lineHeight: 22
+    lineHeight: 20
   },
   jobCategory: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.blue,
     marginTop: 2
   },
   jobMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 6
+    gap: 8,
+    marginTop: 4
   },
   jobMetaItem: {
     flexDirection: "row",
@@ -397,51 +397,51 @@ const styles = StyleSheet.create({
     gap: 4
   },
   jobMetaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.muted
   },
   jobBookmark: {
-    padding: 4
+    padding: 2
   },
   jobDesc: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     color: providerColors.body,
-    marginTop: 12
+    marginTop: 8
   },
   jobBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 12,
-    marginBottom: 12
+    marginTop: 8,
+    marginBottom: 8
   },
   jobPills: {
     flexDirection: "row",
-    gap: 8
+    gap: 6
   },
   budgetPill: {
-    height: 34,
-    borderRadius: 17,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: providerColors.successSoft,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     justifyContent: "center"
   },
   budgetPillText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: providerColors.successGreen
   },
   expChip: {
-    height: 34,
-    borderRadius: 17,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: providerColors.border,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     justifyContent: "center"
   },
   expChipText: {
-    fontSize: 12,
+    fontSize: 11,
     color: providerColors.blue,
     fontWeight: "500"
   },
@@ -449,64 +449,64 @@ const styles = StyleSheet.create({
     alignItems: "flex-end"
   },
   matchLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: providerColors.muted
   },
   matchScore: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700"
   },
   viewBtn: {
-    height: 40,
-    minWidth: 112,
-    borderRadius: 12
+    height: 34,
+    minWidth: 100,
+    borderRadius: 10
   },
   centerState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 50,
-    gap: 12
+    paddingVertical: 40,
+    gap: 10
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 13,
     color: providerColors.muted
   },
   errorCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 18,
-    padding: 24,
+    borderRadius: 14,
+    padding: 20,
     alignItems: "center",
     borderWidth: 1,
     borderColor: providerColors.border,
     ...providerShadows.card
   },
   errorText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
   errorSubText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted,
-    marginTop: 4
+    marginTop: 2
   },
   emptyCard: {
     backgroundColor: providerColors.white,
-    borderRadius: 18,
-    padding: 24,
+    borderRadius: 14,
+    padding: 20,
     alignItems: "center",
     borderWidth: 1,
     borderColor: providerColors.border,
     ...providerShadows.card
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
     color: providerColors.navy
   },
   emptySubText: {
-    fontSize: 13,
+    fontSize: 12,
     color: providerColors.muted,
-    marginTop: 4
+    marginTop: 2
   }
 });

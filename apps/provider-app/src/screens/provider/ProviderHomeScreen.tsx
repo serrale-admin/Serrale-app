@@ -1,25 +1,37 @@
 import { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, Switch, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
+  Image,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getProviderDashboard, getOpenJobs, toggleSaveJob } from "@serrale/api";
+import { getProviderDashboard, getOpenJobs, toggleSaveJob, getProviderBootstrap } from "@serrale/api";
 import { mapBackendJobToProviderJob } from "../../provider/mappers/jobs";
 import { IconSymbol } from "../../provider/components/IconSymbol";
-import { ProviderHeader } from "../../provider/components/ProviderHeader";
-import { ProviderScreen } from "../../provider/components/ProviderScreen";
 import { providerColors, providerShadows } from "../../provider/theme";
-import { ProviderButton } from "../../provider/components/ProviderButton";
 import { formatEtbRange } from "../../provider/format";
 
-const CATEGORIES = ["All", "Design", "Development", "Marketing", "Writing", "Photo & Video", "More"];
+const CATEGORIES = [
+  { label: "Sales &\nMarketing", icon: "briefcase", color: "#E8F4FD" },
+  { label: "Construction\n& Trades", icon: "construct", color: "#E8F4FD" },
+  { label: "Health &\nCare", icon: "heart", color: "#E8F4FD" },
+  { label: "Education &\nTraining", icon: "school", color: "#E8F4FD" },
+  { label: "Transport &\nLogistics", icon: "car", color: "#E8F4FD" },
+  { label: "Hospitality &\nTourism", icon: "restaurant", color: "#E8F4FD" },
+];
 
 export function ProviderHomeScreen() {
   const router = useRouter();
 
-  const [available, setAvailable] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -32,544 +44,717 @@ export function ProviderHomeScreen() {
     queryFn: getProviderDashboard,
   });
 
-  const openJobsQuery = useQuery({
-    queryKey: ["provider-home-open-jobs", searchTerm, selectedCategory],
-    queryFn: () => getOpenJobs({ 
-      limit: 5, 
-      search: searchTerm || undefined,
-      category: selectedCategory === "All" ? undefined : selectedCategory
-    }),
+  const bootstrapQuery = useQuery({
+    queryKey: ["provider-bootstrap"],
+    queryFn: getProviderBootstrap,
   });
 
-  const hotJobsQuery = useQuery({
-    queryKey: ["provider-home-hot-jobs", selectedCategory],
-    queryFn: () => getOpenJobs({ 
-      limit: 4, 
-      category: selectedCategory === "All" ? "Design" : selectedCategory 
-    }),
+  const featuredJobsQuery = useQuery({
+    queryKey: ["provider-home-featured-jobs", searchTerm, selectedCategory],
+    queryFn: () =>
+      getOpenJobs({
+        limit: 4,
+        search: searchTerm || undefined,
+        category: selectedCategory || undefined,
+      }),
+  });
+
+  const recentJobsQuery = useQuery({
+    queryKey: ["provider-home-recent-jobs"],
+    queryFn: () => getOpenJobs({ limit: 5 }),
   });
 
   const toggleSaveMutation = useMutation({
-    mutationFn: ({ jobId, save }: { jobId: string; save: boolean }) => toggleSaveJob(jobId, save),
+    mutationFn: ({ jobId, save }: { jobId: string; save: boolean }) =>
+      toggleSaveJob(jobId, save),
     onSuccess: (_, variables) => {
-      setSavedJobs(prev => ({ ...prev, [variables.jobId]: variables.save }));
-    }
+      setSavedJobs((prev) => ({ ...prev, [variables.jobId]: variables.save }));
+    },
   });
 
   const handleToggleSave = (jobId: string, currentSavedState: boolean) => {
-    const isCurrentlySaved = savedJobs[jobId] !== undefined ? savedJobs[jobId] : currentSavedState;
-    setSavedJobs(prev => ({ ...prev, [jobId]: !isCurrentlySaved }));
+    const isCurrentlySaved =
+      savedJobs[jobId] !== undefined ? savedJobs[jobId] : currentSavedState;
+    setSavedJobs((prev) => ({ ...prev, [jobId]: !isCurrentlySaved }));
     toggleSaveMutation.mutate({ jobId, save: !isCurrentlySaved });
   };
 
   const dashboard = dashboardQuery.data;
-  const providerName = dashboard?.provider_name || "Provider";
-  const isVerified = dashboard?.verification_status === "verified";
+  const providerName =
+    dashboard?.provider_name ||
+    bootstrapQuery.data?.profile?.full_name ||
+    "Provider";
+  const firstName = providerName.split(" ")[0];
+  const avatarUrl = bootstrapQuery.data?.user?.avatar_url;
 
-  const openJobs = (openJobsQuery.data || []).map(mapBackendJobToProviderJob);
-  const popularJobs = (hotJobsQuery.data || []).map(mapBackendJobToProviderJob);
+  const featuredJobs = (featuredJobsQuery.data || []).map(mapBackendJobToProviderJob);
+  const recentJobs = (recentJobsQuery.data || []).map(mapBackendJobToProviderJob);
 
   return (
-    <ProviderScreen contentContainerStyle={styles.content}>
-      <ProviderHeader showNotification unread={0} />
-
-      <View style={styles.greetingSection}>
-        <Text style={styles.greetingTitle}>Welcome back, {providerName.split(' ')[0]}</Text>
-        <Text style={styles.greetingSubtitle}>Find opportunities, grow your business.</Text>
-      </View>
-
-      <View style={styles.statusRow}>
-        <View style={styles.statusCard}>
-          <View style={styles.statusCardLeft}>
-            <View style={styles.statusIconWrapGreen}>
-              <View style={styles.statusDotGreen} />
-            </View>
-            <View style={styles.statusTextWrap}>
-              <Text style={styles.statusTitle} numberOfLines={1}>Available for work</Text>
-              <Text style={styles.statusSubtitle} numberOfLines={1}>Visible to clients</Text>
-            </View>
+    <View style={styles.root}>
+      {/* Blue Header */}
+      <View style={styles.header}>
+        <View style={styles.headerBrand}>
+          <View style={styles.brandLogoWrap}>
+            <Text style={styles.brandLogoText}>S</Text>
           </View>
-          <Switch
-            value={available}
-            onValueChange={setAvailable}
-            trackColor={{ false: "#CBD5E1", true: providerColors.successGreen }}
-            thumbColor={providerColors.white}
-            style={{ transform: [{ scale: 0.7 }] }}
-          />
+          <View>
+            <Text style={styles.brandName}>SERRALE</Text>
+            <Text style={styles.brandTagline}>Work. Serve. Grow.</Text>
+          </View>
         </View>
-
-        <View style={styles.statusCard}>
-          <View style={styles.statusCardLeft}>
-            <View style={styles.statusIconWrapBlue}>
-              <IconSymbol name="shield-checkmark" size={14} color={providerColors.blue} />
-            </View>
-            <View style={styles.statusTextWrap}>
-              <Text style={styles.statusTitle} numberOfLines={1}>Identity verified</Text>
-              <Text style={styles.statusSubtitle} numberOfLines={1}>{isVerified ? "Verified" : "Pending"}</Text>
-            </View>
-          </View>
-          <IconSymbol name="chevron-forward" size={16} color={providerColors.muted} />
-        </View>
-      </View>
-
-      <View style={styles.banner}>
-        <View style={styles.bannerTop}>
-          <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>Find better work opportunities</Text>
-            <Text style={styles.bannerSubtitle}>Connect with clients in Ethiopia.</Text>
-          </View>
-          <Pressable style={styles.bannerBtn} onPress={() => router.push("/tabs/jobs")}>
-            <Text style={styles.bannerBtnText}>Jobs</Text>
-            <IconSymbol name="chevron-forward" size={12} color={providerColors.navy} />
+        <View style={styles.headerRight}>
+          <Pressable style={styles.notifBtn}>
+            <IconSymbol name="notifications" size={22} color="#fff" />
+            <View style={styles.notifDot} />
+          </Pressable>
+          <Pressable style={styles.avatarBtn}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} />
+            ) : (
+              <View style={styles.headerAvatarFallback}>
+                <Text style={styles.headerAvatarInitial}>
+                  {firstName[0]?.toUpperCase()}
+                </Text>
+              </View>
+            )}
           </Pressable>
         </View>
+      </View>
 
-        <View style={styles.bannerSearch}>
-          <IconSymbol name="search-outline" size={18} color={providerColors.muted} />
+      {/* Search Bar */}
+      <View style={styles.searchWrap}>
+        <View style={styles.searchBar}>
+          <IconSymbol name="search" size={18} color="#94A3B8" />
           <TextInput
-            style={styles.bannerSearchInput}
-            placeholder="Search jobs, skills..."
-            placeholderTextColor={providerColors.muted}
+            style={styles.searchInput}
+            placeholder="Search for jobs, skills, companies..."
+            placeholderTextColor="#94A3B8"
             value={searchInput}
             onChangeText={setSearchInput}
           />
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Browse by Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-          {CATEGORIES.map(cat => (
-            <Pressable
-              key={cat}
-              style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Welcome Banner */}
+        <View style={styles.welcomeBanner}>
+          <View style={styles.welcomeTextWrap}>
+            <Text style={styles.welcomeTitle}>Welcome, {firstName}!</Text>
+            <Text style={styles.welcomeSubtitle}>Find your next opportunity.</Text>
+          </View>
+          <View style={styles.langToggle}>
+            <Pressable style={styles.langActive}>
+              <Text style={styles.langActiveText}>EN</Text>
             </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Jobs for You</Text>
-          <Pressable onPress={() => router.push("/tabs/jobs")}>
-            <Text style={styles.viewAllText}>View all</Text>
-          </Pressable>
+            <Pressable style={styles.langInactive}>
+              <Text style={styles.langInactiveText}>አዋ</Text>
+            </Pressable>
+          </View>
         </View>
 
-        {openJobsQuery.isLoading ? (
-          <ActivityIndicator size="large" color={providerColors.blue} style={{ marginTop: 20 }} />
-        ) : openJobsQuery.isError ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Couldn't load jobs</Text>
-            <ProviderButton label="Retry" onPress={() => openJobsQuery.refetch()} full={false} style={{ marginTop: 10 }} />
+        {/* Popular Categories */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Popular Categories</Text>
+            <Pressable onPress={() => router.push("/tabs/jobs")}>
+              <Text style={styles.seeAll}>See All</Text>
+            </Pressable>
           </View>
-        ) : openJobs.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No jobs found yet</Text>
-            <Text style={styles.emptyText}>Try another category or search term.</Text>
-          </View>
-        ) : (
-          openJobs.slice(0, 2).map(job => (
-            <HomeJobCard
-              key={job.id}
-              job={job}
-              isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : (job as any).saved || false}
-              onToggleSave={() => handleToggleSave(job.id, (job as any).saved || false)}
-              onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
-            />
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular in {selectedCategory === "All" ? "Design" : selectedCategory}</Text>
-          <Pressable onPress={() => router.push("/tabs/jobs")}>
-            <Text style={styles.viewAllText}>View all</Text>
-          </Pressable>
-        </View>
-
-        {hotJobsQuery.isLoading ? (
-          <ActivityIndicator size="large" color={providerColors.blue} style={{ marginTop: 20 }} />
-        ) : popularJobs.length > 0 ? (
-          <View style={styles.popularGrid}>
-            {popularJobs.slice(0, 2).map(job => (
-              <CompactJobCard
-                key={job.id}
-                job={job}
-                isSaved={savedJobs[job.id] !== undefined ? savedJobs[job.id] : (job as any).saved || false}
-                onToggleSave={() => handleToggleSave(job.id, (job as any).saved || false)}
-                onPress={() => router.push({ pathname: "/jobs/[jobId]" as any, params: { jobId: job.id } })}
-              />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            {CATEGORIES.map((cat) => (
+              <Pressable
+                key={cat.label}
+                style={styles.categoryItem}
+                onPress={() =>
+                  setSelectedCategory(
+                    selectedCategory === cat.label ? null : cat.label
+                  )
+                }
+              >
+                <View
+                  style={[
+                    styles.categoryCircle,
+                    selectedCategory === cat.label && styles.categoryCircleActive,
+                  ]}
+                >
+                  <IconSymbol
+                    name={cat.icon}
+                    size={24}
+                    color={
+                      selectedCategory === cat.label ? "#fff" : "#1E40AF"
+                    }
+                  />
+                </View>
+                <Text style={styles.categoryLabel}>{cat.label}</Text>
+              </Pressable>
             ))}
+          </ScrollView>
+        </View>
+
+        {/* Featured Jobs */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Jobs</Text>
+            <Pressable onPress={() => router.push("/tabs/jobs")}>
+              <Text style={styles.seeAll}>See All</Text>
+            </Pressable>
           </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No popular jobs right now.</Text>
+          {featuredJobsQuery.isLoading ? (
+            <ActivityIndicator size="small" color="#1D4ED8" style={{ marginTop: 16 }} />
+          ) : featuredJobs.length === 0 ? (
+            <Text style={styles.emptyText}>No featured jobs right now.</Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.featuredScroll}
+            >
+              {featuredJobs.map((job) => (
+                <FeaturedJobCard
+                  key={job.id}
+                  job={job}
+                  isSaved={
+                    savedJobs[job.id] !== undefined
+                      ? savedJobs[job.id]
+                      : (job as any).saved || false
+                  }
+                  onToggleSave={() =>
+                    handleToggleSave(job.id, (job as any).saved || false)
+                  }
+                  onPress={() =>
+                    router.push({
+                      pathname: "/jobs/[jobId]" as any,
+                      params: { jobId: job.id },
+                    })
+                  }
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Recent Job Openings */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Job Openings</Text>
+            <Pressable onPress={() => router.push("/tabs/jobs")}>
+              <Text style={styles.seeAll}>See All</Text>
+            </Pressable>
           </View>
-        )}
-      </View>
-      
-    </ProviderScreen>
+          {recentJobsQuery.isLoading ? (
+            <ActivityIndicator size="small" color="#1D4ED8" style={{ marginTop: 16 }} />
+          ) : recentJobs.length === 0 ? (
+            <Text style={styles.emptyText}>No job openings right now.</Text>
+          ) : (
+            <View style={styles.recentList}>
+              {recentJobs.slice(0, 5).map((job) => (
+                <RecentJobRow
+                  key={job.id}
+                  job={job}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/jobs/[jobId]" as any,
+                      params: { jobId: job.id },
+                    })
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
-// Subcomponents
+// --- Sub-components ---
 
-function HomeJobCard({ job, isSaved, onToggleSave, onPress }: any) {
+function FeaturedJobCard({ job, isSaved, onToggleSave, onPress }: any) {
+  const budget = formatEtbRange(job.budgetMin, job.budgetMax);
   return (
-    <Pressable style={styles.homeJobCard as any} onPress={onPress}>
-      <View style={styles.hjcTopRow}>
-        <View style={styles.hjcContent}>
-          <Text style={styles.hjcTitle} numberOfLines={1}>{job.title}</Text>
-          <View style={styles.hjcMetaRow}>
-            <Text style={styles.hjcCategory}>{job.client}</Text>
-            <Text style={styles.hjcMetaDivider}>•</Text>
-            <Text style={styles.hjcMetaText}>{job.location}</Text>
-          </View>
+    <Pressable style={styles.featuredCard} onPress={onPress}>
+      <View style={styles.fcTopRow}>
+        <View style={styles.fcLogoWrap}>
+          <Text style={styles.fcLogoText}>
+            {(job.client || job.title || "J")[0].toUpperCase()}
+          </Text>
         </View>
-        <Pressable onPress={onToggleSave} style={styles.hjcBookmark}>
-          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={18} color={isSaved ? providerColors.blue : providerColors.muted} />
+        <View style={styles.fcCompanyInfo}>
+          <Text style={styles.fcCompany} numberOfLines={1}>
+            {job.client || "Client"}
+          </Text>
+        </View>
+        <View style={styles.premiumBadge}>
+          <Text style={styles.premiumText}>Premium</Text>
+        </View>
+        <Pressable onPress={onToggleSave} style={styles.fcBookmark}>
+          <IconSymbol
+            name={isSaved ? "bookmark" : "bookmark-outline"}
+            size={18}
+            color={isSaved ? "#1D4ED8" : "#94A3B8"}
+          />
         </Pressable>
       </View>
-      <View style={styles.hjcBottomRow}>
-        <Text style={styles.hjcBudget}>{formatEtbRange(job.budgetMin, job.budgetMax)}</Text>
-        <ProviderButton label="View" onPress={onPress} style={styles.hjcBtn} full={false} />
+      <Text style={styles.fcTitle} numberOfLines={2}>{job.title}</Text>
+      <View style={styles.fcLocationRow}>
+        <IconSymbol name="location" size={13} color="#64748B" />
+        <Text style={styles.fcLocation}>{job.location || "Ethiopia"}</Text>
+      </View>
+      <View style={styles.fcBottomRow}>
+        <Text style={styles.fcSalaryLabel}>
+          Salary • <Text style={styles.fcSalaryValue}>{budget}</Text>
+        </Text>
+        <View style={styles.fcTypePill}>
+          <Text style={styles.fcTypeText}>Full-time</Text>
+        </View>
       </View>
     </Pressable>
   );
 }
 
-function CompactJobCard({ job, isSaved, onToggleSave, onPress }: any) {
+function RecentJobRow({ job, onPress }: any) {
   return (
-    <Pressable style={styles.compactCard as any} onPress={onPress}>
-      <View style={styles.ccTopRow}>
-        <View style={styles.ccIconBlock}>
-          <IconSymbol name="star-outline" size={24} color={providerColors.warningOrange} />
-        </View>
-        <Pressable onPress={onToggleSave}>
-          <IconSymbol name={isSaved ? "bookmark" : "bookmark-outline"} size={18} color={isSaved ? providerColors.blue : providerColors.muted} />
-        </Pressable>
+    <View style={styles.recentRow}>
+      <View style={styles.recentLogoWrap}>
+        <Text style={styles.recentLogoText}>
+          {(job.client || job.title || "J")[0].toUpperCase()}
+        </Text>
       </View>
-      <Text style={styles.ccTitle} numberOfLines={2}>{job.title}</Text>
-      <Text style={styles.ccCategory} numberOfLines={1}>{job.client}</Text>
-      <Text style={styles.ccBudget}>{formatEtbRange(job.budgetMin, job.budgetMax)}</Text>
-    </Pressable>
+      <View style={styles.recentInfo}>
+        <Text style={styles.recentTitle} numberOfLines={1}>{job.title}</Text>
+        <View style={styles.recentMeta}>
+          <Text style={styles.recentCompany}>{job.client || "Company"}</Text>
+          <Text style={styles.recentDot}>•</Text>
+          <IconSymbol name="location" size={11} color="#64748B" />
+          <Text style={styles.recentLocation}>{job.location || "Ethiopia"}</Text>
+        </View>
+      </View>
+      <Pressable style={styles.applyBtn} onPress={onPress}>
+        <Text style={styles.applyBtnText}>Apply Now</Text>
+      </Pressable>
+    </View>
   );
 }
 
-// Styles
+// --- Styles ---
+
+const BLUE = "#1D4ED8";
+const DARK_BLUE = "#1E3A8A";
+const NAVY = "#0F172A";
+
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 80,
-    backgroundColor: providerColors.appBg
+  root: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
   },
-  greetingSection: {
-    marginTop: 4,
-    marginBottom: 8
+
+  // HEADER
+  header: {
+    backgroundColor: BLUE,
+    paddingTop: 52,
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  greetingTitle: {
+  headerBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  brandLogoWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandLogoText: {
     fontSize: 22,
-    fontWeight: "700",
-    color: providerColors.navy
+    fontWeight: "900",
+    color: "#fff",
+    fontStyle: "italic",
   },
-  greetingSubtitle: {
+  brandName: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  brandTagline: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.75)",
+    marginTop: 1,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  notifBtn: {
+    position: "relative",
+    padding: 4,
+  },
+  notifDot: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#38BDF8",
+    borderWidth: 1.5,
+    borderColor: BLUE,
+  },
+  avatarBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  headerAvatar: {
+    width: "100%",
+    height: "100%",
+  },
+  headerAvatarFallback: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatarInitial: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+  },
+
+  // SEARCH
+  searchWrap: {
+    backgroundColor: BLUE,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  searchBar: {
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: NAVY,
+    paddingVertical: 0,
+  },
+
+  // SCROLL
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+
+  // WELCOME BANNER
+  welcomeBanner: {
+    margin: 16,
+    borderRadius: 16,
+    backgroundColor: DARK_BLUE,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  welcomeTextWrap: {
+    flex: 1,
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  welcomeSubtitle: {
     fontSize: 13,
-    color: providerColors.muted,
-    marginTop: 2
+    color: "rgba(255,255,255,0.75)",
+    marginTop: 4,
   },
-  statusRow: {
+  langToggle: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 8
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 20,
+    padding: 3,
+    gap: 2,
   },
-  statusCard: {
-    flex: 1,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: providerColors.white,
-    borderWidth: 1,
-    borderColor: providerColors.border,
-    padding: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    ...providerShadows.card
-  },
-  statusCardLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingRight: 4
-  },
-  statusIconWrapGreen: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: providerColors.successSoft,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  statusDotGreen: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: providerColors.successGreen
-  },
-  statusIconWrapBlue: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: providerColors.sky,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  statusTextWrap: {
-    flex: 1
-  },
-  statusTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: providerColors.navy
-  },
-  statusSubtitle: {
-    fontSize: 10,
-    color: providerColors.muted,
-    marginTop: 1
-  },
-  banner: {
-    backgroundColor: providerColors.blueDark,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 12,
-    ...providerShadows.card
-  },
-  bannerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10
-  },
-  bannerContent: {
-    flex: 1,
-    paddingRight: 8
-  },
-  bannerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: providerColors.white
-  },
-  bannerSubtitle: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 2
-  },
-  bannerBtn: {
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: providerColors.white,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    gap: 4
-  },
-  bannerBtnText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: providerColors.navy
-  },
-  bannerSearch: {
-    height: 38,
-    backgroundColor: providerColors.white,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
+  langActive: {
+    backgroundColor: "#fff",
+    borderRadius: 17,
     paddingHorizontal: 12,
-    gap: 8
+    paddingVertical: 6,
   },
-  bannerSearchInput: {
-    flex: 1,
+  langActiveText: {
     fontSize: 13,
-    color: providerColors.navy,
-    paddingVertical: 0
-  },
-  section: {
-    marginBottom: 12
-  },
-  sectionTitle: {
-    fontSize: 16,
     fontWeight: "700",
-    color: providerColors.navy,
-    marginBottom: 8
+    color: DARK_BLUE,
+  },
+  langInactive: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  langInactiveText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+  },
+
+  // SECTIONS
+  section: {
+    marginBottom: 4,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8
+    marginBottom: 14,
+    marginTop: 12,
   },
-  viewAllText: {
-    fontSize: 12,
-    color: providerColors.blue,
-    fontWeight: "500"
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: NAVY,
   },
+  seeAll: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: BLUE,
+  },
+
+  // CATEGORIES
   categoryScroll: {
-    gap: 6,
-    paddingRight: 12
+    gap: 16,
+    paddingRight: 16,
   },
-  categoryChip: {
-    height: 34,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: providerColors.border,
-    backgroundColor: providerColors.white,
-    justifyContent: "center"
+  categoryItem: {
+    alignItems: "center",
+    width: 72,
   },
-  categoryChipActive: {
-    backgroundColor: providerColors.blue,
-    borderColor: providerColors.blue
-  },
-  categoryChipText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: providerColors.body
-  },
-  categoryChipTextActive: {
-    color: providerColors.white
-  },
-  emptyState: {
-    padding: 12,
+  categoryCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#E8F0FE",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: providerColors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: providerColors.border
-  },
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: providerColors.navy
-  },
-  emptyText: {
-    fontSize: 12,
-    color: providerColors.muted,
-    marginTop: 2
-  },
-  homeJobCard: {
-    borderRadius: 12,
-    padding: 10,
     marginBottom: 6,
-    backgroundColor: providerColors.white,
+  },
+  categoryCircleActive: {
+    backgroundColor: BLUE,
+  },
+  categoryLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#334155",
+    textAlign: "center",
+    lineHeight: 13,
+  },
+
+  // FEATURED JOBS
+  featuredScroll: {
+    gap: 12,
+    paddingRight: 16,
+  },
+  featuredCard: {
+    width: 195,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: providerColors.border,
-    ...providerShadows.card
+    borderColor: "#E2E8F0",
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  hjcTopRow: {
+  fcTopRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
     gap: 8,
-    marginBottom: 6
   },
-  hjcContent: {
-    flex: 1
+  fcLogoWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
   },
-  hjcTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: providerColors.navy,
-    lineHeight: 18
+  fcLogoText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: BLUE,
   },
-  hjcCategory: {
+  fcCompanyInfo: {
+    flex: 1,
+  },
+  fcCompany: {
     fontSize: 11,
     fontWeight: "600",
-    color: providerColors.blue
+    color: "#475569",
   },
-  hjcMetaRow: {
+  premiumBadge: {
+    backgroundColor: BLUE,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  premiumText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  fcBookmark: {
+    padding: 2,
+  },
+  fcTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: NAVY,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  fcLocationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 2
+    marginBottom: 10,
   },
-  hjcMetaText: {
-    fontSize: 11,
-    color: providerColors.muted
+  fcLocation: {
+    fontSize: 12,
+    color: "#64748B",
   },
-  hjcMetaDivider: {
-    fontSize: 10,
-    color: providerColors.border,
-    marginHorizontal: 2
-  },
-  hjcBookmark: {
-    padding: 2
-  },
-  hjcBottomRow: {
+  fcBottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6
   },
-  hjcBudget: {
-    fontSize: 13,
+  fcSalaryLabel: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  fcSalaryValue: {
     fontWeight: "700",
-    color: providerColors.successGreen
+    color: NAVY,
   },
-  hjcBtn: {
-    height: 30,
-    minWidth: 70,
-    borderRadius: 8,
-    paddingHorizontal: 10
+  fcTypePill: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  popularGrid: {
+  fcTypeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: BLUE,
+  },
+
+  // RECENT JOB ROWS
+  recentList: {
+    gap: 0,
+  },
+  recentRow: {
     flexDirection: "row",
-    gap: 8
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    gap: 12,
   },
-  compactCard: {
-    flex: 1,
-    height: 90,
-    borderRadius: 12,
-    backgroundColor: providerColors.white,
+  recentLogoWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: providerColors.border,
-    padding: 8,
-    ...providerShadows.card
+    borderColor: "#DBEAFE",
+    flexShrink: 0,
   },
-  ccTopRow: {
+  recentLogoText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: BLUE,
+  },
+  recentInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  recentTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: NAVY,
+  },
+  recentMeta: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4
+    gap: 4,
   },
-  ccIconBlock: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: providerColors.warningSoft,
-    alignItems: "center",
-    justifyContent: "center"
+  recentCompany: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "500",
   },
-  ccTitle: {
+  recentDot: {
+    fontSize: 10,
+    color: "#CBD5E1",
+  },
+  recentLocation: {
+    fontSize: 12,
+    color: "#64748B",
+  },
+  applyBtn: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    flexShrink: 0,
+  },
+  applyBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: providerColors.navy,
-    lineHeight: 14,
-    marginBottom: 2
+    color: BLUE,
   },
-  ccCategory: {
-    fontSize: 10,
-    color: providerColors.muted,
-    marginBottom: 2
+
+  // MISC
+  emptyText: {
+    fontSize: 13,
+    color: "#94A3B8",
+    textAlign: "center",
+    paddingVertical: 16,
   },
-  ccBudget: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: providerColors.successGreen
-  }
 });

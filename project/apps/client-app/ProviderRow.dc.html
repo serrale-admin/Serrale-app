@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div onClick="{{ open }}" style="display:flex;gap:11px;align-items:flex-start;padding:10px 12px;background:#fff;border:1px solid rgba(6,71,52,0.10);border-radius:15px;box-shadow:0 3px 12px rgba(6,71,52,0.05);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease;" style-active="transform:scale(0.988)">
+  <div style="width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:17px;color:#fff;letter-spacing:.5px;background:{{ avatarBg }};">{{ initials }}</div>
+  <div style="flex:1;min-width:0;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-weight:700;font-size:14.5px;color:#102E25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ name }}</span>
+      <sc-if value="{{ showBadge }}" hint-placeholder-val="{{ true }}">
+        <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:3px;background:#EAF8EF;color:#16875F;border-radius:999px;font-size:10px;font-weight:700;padding:2px 7px;"><i class="ph-fill ph-seal-check" style="font-size:11px;"></i>{{ badge }}</span>
+      </sc-if>
+      <div style="flex:1;"></div>
+      <button onClick="{{ save }}" aria-label="Save provider" style="width:30px;height:30px;flex-shrink:0;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;">
+        <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><i class="ph-fill ph-bookmark-simple" style="color:#F6B93B;font-size:19px;"></i></sc-if>
+        <sc-if value="{{ notSaved }}" hint-placeholder-val="{{ true }}"><i class="ph ph-bookmark-simple" style="color:#9aa39d;font-size:19px;"></i></sc-if>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-size:12px;color:#65756D;overflow:hidden;">
+      <span style="display:inline-flex;align-items:center;gap:2px;color:#102E25;font-weight:700;flex-shrink:0;"><i class="ph-fill ph-star" style="color:#F6B93B;font-size:11px;"></i>{{ rating }}</span>
+      <span style="opacity:.4;flex-shrink:0;">·</span>
+      <span style="color:#102E25;font-weight:600;flex-shrink:0;">{{ service }}</span>
+      <span style="opacity:.4;flex-shrink:0;">·</span>
+      <span style="display:inline-flex;align-items:center;gap:2px;min-width:0;overflow:hidden;"><i class="ph ph-map-pin" style="font-size:11px;flex-shrink:0;"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ area }}</span></span>
+    </div>
+    <div style="font-size:12px;color:#65756D;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ desc }}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <button onClick="{{ call }}" style="flex-shrink:0;height:30px;padding:0 13px;border:none;border-radius:9px;background:#064734;color:#fff;font-size:12px;font-weight:700;font-family:Inter,sans-serif;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-shadow:0 4px 11px rgba(6,71,52,0.18);"><i class="ph-bold ph-phone-call" style="font-size:13px;"></i>Call</button>
+      <button onClick="{{ wa }}" style="flex-shrink:0;height:30px;padding:0 12px;border:1px solid rgba(22,135,95,0.25);border-radius:9px;background:#EAF8EF;color:#0f6f4d;font-size:12px;font-weight:700;font-family:Inter,sans-serif;display:inline-flex;align-items:center;gap:5px;cursor:pointer;"><i class="ph-fill ph-whatsapp-logo" style="font-size:13px;"></i>WhatsApp</button>
+      <span style="flex:1;min-width:0;display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:{{ availColor }};white-space:nowrap;overflow:hidden;"><span style="width:6px;height:6px;border-radius:999px;background:{{ availColor }};flex-shrink:0;"></span>{{ avail }}</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:130}}">
+class Component extends DCLogic {
+  renderVals(){
+    const p = this.props.provider || {};
+    const palette = ['#064734','#086246','#16875F','#0b5a40','#2f6f57','#0e5c44'];
+    const n = p.name || '';
+    let h = 0; for (let i=0;i<n.length;i++) h = (h*31 + n.charCodeAt(i)) >>> 0;
+    const initials = n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const badge = p.verified ? 'Verified' : (p.adminReviewed ? 'Reviewed' : (p.hasPastWork ? 'Past work' : ''));
+    const saved = !!this.props.saved;
+    return {
+      name: p.name, service: p.service, area: p.area, desc: p.description,
+      rating: (p.rating||0).toFixed(1),
+      initials, avatarBg: palette[h % palette.length],
+      badge, showBadge: !!badge,
+      avail: p.availableToday ? 'Today' : 'This week',
+      availColor: p.availableToday ? '#16875F' : '#9a8a5a',
+      saved, notSaved: !saved,
+      open: () => this.props.onOpen && this.props.onOpen(p.id),
+      call: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.props.onCall && this.props.onCall(p.id); },
+      wa: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.props.onWhatsapp && this.props.onWhatsapp(p.id); },
+      save: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.props.onSave && this.props.onSave(p.id); },
+    };
+  }
+}
+</script>
+</body>
+</html>

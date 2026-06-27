@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#dfe6df;}
+  ::-webkit-scrollbar{width:0;height:0;}
+  .scrl{-ms-overflow-style:none;scrollbar-width:none;}
+  .scrl::-webkit-scrollbar{display:none;}
+  @keyframes scrFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes scrSheet{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  @keyframes scrScrim{from{opacity:0;}to{opacity:1;}}
+  @keyframes scrSpin{to{transform:rotate(360deg);}}
+  @keyframes scrToast{from{opacity:0;transform:transl(-50%,12px);}to{opacity:1;transform:translate(-50%,0);}}
+  @keyframes scrPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+  @keyframes scrRise{from{opacity:0;transform:translateY(14px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:26px;font-family:Inter,system-ui,sans-serif;background:radial-gradient(120% 80% at 50% 0%,#eef2ea 0%,#d7e0d6 55%,#c7d2c6 100%);">
+  <div style="position:relative;width:390px;height:844px;background:#0b0f0d;border-radius:48px;padding:11px;box-shadow:0 50px 110px rgba(6,71,52,0.30),0 12px 34px rgba(0,0,0,0.20),inset 0 0 0 2px rgba(255,255,255,0.06);">
+    <div style="position:absolute;top:22px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:#0b0f0d;border-radius:999px;z-index:40;"></div>
+    <div style="position:relative;width:100%;height:100%;background:#FAF7EF;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;">
+
+      <sc-if value="{{ showStatus }}" hint-placeholder-val="{{ false }}">
+        <div style="height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 26px;z-index:6;">
+          <span style="font-size:14px;font-weight:700;color:#102E25;font-variant-numeric:tabular-nums;">9:41</span>
+          <div style="display:flex;align-items:center;gap:6px;color:#102E25;font-size:15px;">
+            <i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high" style="font-size:17px;"></i>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;position:relative;overflow:hidden;display:flex;">
+
+        <!-- SPLASH -->
+        <sc-if value="{{ isSplash }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ skipSplash }}" style="position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:linear-gradient(165deg,#075539 0%,#053b2b 60%,#022a1f 100%);animation:scrFade .35s ease;">
+            <img src="logo.png" alt="SERRALE" style="width:158px;filter:brightness(0) invert(1);animation:scrRise .6s ease;" />
+            <div style="color:rgba(255,255,255,0.66);font-size:13px;letter-spacing:.4px;font-weight:500;">Trusted local services</div>
+            <div style="position:absolute;bottom:64px;display:flex;align-items:center;gap:9px;color:rgba(255,255,255,0.6);font-size:12px;">
+              <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.25);border-top-color:#F6B93B;border-radius:999px;display:inline-block;animation:scrSpin .8s linear infinite;"></span>
+              Preparing your area…
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- HOME -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+          <div class="scrl" style="width:100%;overflow-y:auto;animation:scrFade .26s ease;">
+            <div style="position:sticky;top:0;z-index:5;background:#FAF7EF;padding:2px 16px 8px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <img src="logo.png" alt="SERRALE" style="height:21px;width:auto;" />
+                <button onClick="{{ openLocation }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid rgba(6,71,52,0.12);border-radius:999px;padding:6px 11px;cursor:pointer;box-shadow:0 2px 8px rgba(6,71,52,0.05);">
+                  <i class="ph-fill ph-map-pin" style="color:#16875F;font-size:14px;"></i>
+                  <span style="font-size:12.5px;font-weight:700;color:#102E25;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ area }}</span>
+                  <i class="ph-bold ph-caret-down" style="color:#65756D;font-size:11px;"></i>
+                </button>
+                <button onClick="{{ goBookmarks }}" aria-label="Saved providers" style="width:38px;height:38px;border-radius:999px;border:1px solid rgba(6,71,52,0.12);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <i class="ph ph-bookmark-simple" style="font-size:18px;color:#102E25;"></i>
+                </button>
+              </div>
+            </div>
+
+            <div style="padding:0 16px;">
+              <div onClick="{{ goSearch }}" style="display:flex;align-items:center;gap:9px;height:48px;background:#fff;border:1px solid rgba(6,71,52,0.12);border-radius:14px;padding:0 6px 0 14px;box-shadow:0 4px 14px rgba(6,71,52,0.06);cursor:text;">
+                <i class="ph ph-magnifying-glass" style="font-size:19px;color:#65756D;"></i>
+                <span style="flex:1;font-size:14px;color:#9aa39d;">{{ searchPlaceholder }}</span>
+                <button onClick="{{ openFilter }}" aria-label="Filters" style="width:38px;height:38px;border-radius:11px;border:none;background:#EAF8EF;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                  <i class="ph-bold ph-sliders-horizontal" style="font-size:17px;color:#064734;"></i>
+                </button>
+              </div>
+
+              <div style="margin-top:12px;position:relative;overflow:hidden;border-radius:16px;box-shadow:0 6px 18px rgba(6,71,52,0.1);">
+                <div style="display:flex;width:300%;transition:transform .55s cubic-bezier(.4,0,.2,1);transform:{{ bannerShift }};">
+                  <sc-for list="{{ bannerSlides }}" as="b" hint-placeholder-count="3">
+                    <button onClick="{{ b.go }}" style="flex:1;min-width:0;height:98px;border:none;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;padding:0 18px;background:{{ b.grad }};position:relative;overflow:hidden;">
+                      <span style="position:absolute;top:-26px;right:-20px;width:96px;height:96px;border-radius:999px;background:rgba(255,255,255,0.09);"></span>
+                      <div style="flex:1;min-width:0;z-index:1;">
+                        <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">{{ b.title }}</div>
+                        <div style="font-size:11.5px;color:rgba(255,255,255,0.78);margin-top:3px;">{{ b.sub }}</div>
+                        <span style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:11.5px;font-weight:700;color:#102E25;background:#F6B93B;padding:5px 11px;border-radius:999px;">{{ b.cta }}<i class="ph-bold ph-arrow-right" style="font-size:11px;"></i></span>
+                      </div>
+                      <i class="{{ b.icon }}" style="font-size:50px;color:rgba(255,255,255,0.2);z-index:0;flex-shrink:0;"></i>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:center;gap:6px;margin-top:10px;">
+                <sc-for list="{{ bannerDots }}" as="d" hint-placeholder-count="3">
+                  <button onClick="{{ d.go }}" aria-label="Go to slide" style="width:{{ d.w }};height:6px;border-radius:999px;border:none;background:{{ d.bg }};cursor:pointer;transition:all .3s ease;padding:0;"></button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div class="scrl" style="display:flex;gap:8px;overflow-x:auto;padding:14px 16px 4px;">
+              <sc-for list="{{ homeChips }}" as="c" hint-placeholder-count="6">
+                <button onClick="{{ c.go }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px 0 11px;background:#fff;border:1px solid rgba(6,71,52,0.12);border-radius:999px;cursor:pointer;box-shadow:0 2px 7px rgba(6,71,52,0.04);">
+                  <i class="{{ c.iconClass }}" style="font-size:16px;color:#064734;"></i>
+                  <span style="font-size:12.5px;font-weight:600;color:#102E25;white-space:nowrap;">{{ c.name }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 9px;">
+              <h2 style="margin:0;font-size:17px;font-weight:700;color:#102E25;">{{ nearbyTitle }}</h2>
+              <button onClick="{{ goSearch }}" style="background:none;border:none;font-size:12.5px;font-weight:700;color:#16875F;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">{{ viewAll }}<i class="ph-bold ph-caret-right" style="font-size:11px;"></i></button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;padding:0 16px;">
+              <sc-for list="{{ nearby }}" as="p" hint-placeholder-count="4">
+                <dc-import name="ProviderRow" provider="{{ p }}" saved="{{ p.saved }}" on-open="{{ openProvider }}" on-call="{{ callProvider }}" on-whatsapp="{{ whatsappProvider }}" on-save="{{ toggleSave }}" hint-size="100%,124px"></dc-import>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 16px 9px;">
+              <h2 style="margin:0;font-size:17px;font-weight:700;color:#102E25;">{{ popularTitle }}</h2>
+              <button onClick="{{ goCategories }}" style="background:none;border:none;font-size:12.5px;font-weight:700;color:#16875F;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">{{ viewAll }}<i class="ph-bold ph-caret-right" style="font-size:11px;"></i></button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:0 16px;">
+              <sc-for list="{{ homeCats }}" as="c" hint-placeholder-count="8">
+                <button onClick="{{ c.go }}" style="display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px 5px 11px;min-height:92px;justify-content:center;background:#fff;border:1px solid rgba(6,71,52,0.08);border-radius:18px;cursor:pointer;box-shadow:0 3px 10px rgba(6,71,52,0.05);transition:transform .15s ease;" style-active="transform:scale(0.95)">
+                  <span style="width:46px;height:46px;border-radius:15px;background:{{ c.grad }};display:flex;align-items:center;justify-content:center;box-shadow:0 5px 13px rgba(6,71,52,0.22);"><i class="{{ c.iconClass }}" style="font-size:22px;color:#fff;"></i></span>
+                  <span style="font-size:10.5px;font-weight:600;color:#102E25;text-align:center;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ c.name }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 16px 9px;">
+              <h2 style="margin:0;font-size:17px;font-weight:700;color:#102E25;">{{ verifiedTitle }}</h2>
+              <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#16875F;background:#EAF8EF;padding:4px 9px;border-radius:999px;"><i class="ph-fill ph-seal-check"></i>Admin reviewed</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;padding:0 16px;">
+              <sc-for list="{{ verifiedList }}" as="p" hint-placeholder-count="3">
+                <dc-import name="ProviderRow" provider="{{ p }}" saved="{{ p.saved }}" on-open="{{ openProvider }}" on-call="{{ callProvider }}" on-whatsapp="{{ whatsappProvider }}" on-save="{{ toggleSave }}" hint-size="100%,124px"></dc-import>
+              </sc-for>
+            </div>
+
+            <h2 style="margin:0;padding:22px 16px 9px;font-size:17px;font-weight:700;color:#102E25;">{{ pastWorkTitle }}</h2>
+            <div class="scrl" style="display:flex;gap:11px;overflow-x:auto;padding:0 16px 4px;">
+              <sc-for list="{{ pastWork }}" as="w" hint-placeholder-count="3">
+                <div style="flex-shrink:0;width:172px;background:#fff;border:1px solid rgba(6,71,52,0.1);border-radius:16px;overflow:hidden;box-shadow:0 3px 12px rgba(6,71,52,0.05);">
+                  <div style="height:96px;display:flex;align-items:center;justify-content:center;background:{{ w.bg }};"><i class="{{ w.iconClass }}" style="font-size:34px;color:rgba(255,255,255,0.85);"></i></div>
+                  <div style="padding:9px 11px 11px;">
+                    <div style="font-size:13px;font-weight:700;color:#102E25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ w.title }}</div>
+                    <div style="font-size:11px;color:#65756D;margin-top:3px;display:flex;align-items:center;gap:4px;"><i class="ph ph-map-pin" style="font-size:11px;"></i>{{ w.area }} · {{ w.category }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin:22px 16px 0;padding:14px;background:linear-gradient(135deg,#064734,#086246);border-radius:18px;display:flex;align-items:center;gap:12px;">
+              <span style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-shield-check" style="font-size:21px;color:#F6B93B;"></i></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px;font-weight:700;color:#fff;">Stay safe with SERRALE</div>
+                <div style="font-size:11.5px;color:rgba(255,255,255,0.72);margin-top:2px;line-height:1.4;">Agree on price, time, and work scope before starting.</div>
+              </div>
+              <button onClick="{{ goHelp }}" style="border:none;background:none;cursor:pointer;color:rgba(255,255,255,0.8);"><i class="ph-bold ph-caret-right" style="font-size:16px;"></i></button>
+            </div>
+
+            <div style="height:96px;"></div>
+          </div>
+        </sc-if>
+
+        <!-- CATEGORIES -->
+        <sc-if value="{{ isCategories }}" hint-placeholder-val="{{ false }}">
+          <div class="scrl" style="width:100%;overflow-y:auto;animation:scrFade .26s ease;">
+            <div style="position:sticky;top:0;z-index:5;background:#FAF7EF;padding:2px 16px 10px;">
+              <h1 style="margin:0 0 12px;font-family:Fraunces,serif;font-size:25px;font-weight:600;color:#102E25;">Categories</h1>
+              <div style="display:flex;align-items:center;gap:9px;height:46px;background:#fff;border:1px solid rgba(6,71,52,0.12);border-radius:13px;padding:0 14px;box-shadow:0 3px 11px rgba(6,71,52,0.05);">
+                <i class="ph ph-magnifying-glass" style="font-size:18px;color:#65756D;"></i>
+                <input value="{{ catSearch }}" onInput="{{ onCatSearch }}" placeholder="Search services" style="flex:1;border:none;outline:none;background:none;font-size:14px;font-family:Inter,sans-serif;color:#102E25;" />
+              </div>
+            </div>
+            <div style="padding:6px 16px 0;">
+              <sc-for list="{{ catGroups }}" as="g" hint-placeholder-count="3">
+                <div style="margin-bottom:22px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                    <span style="font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#16875F;">{{ g.name }}</span>
+                    <span style="flex:1;height:1px;background:rgba(6,71,52,0.1);"></span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="4">
+                      <button onClick="{{ c.go }}" style="position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:11px;padding:15px 14px 14px;background:#fff;border:1px solid rgba(6,71,52,0.08);border-radius:18px;cursor:pointer;text-align:left;box-shadow:0 4px 13px rgba(6,71,52,0.05);overflow:hidden;transition:transform .15s ease;" style-active="transform:scale(0.975)">
+                        <span style="position:absolute;top:-22px;right:-22px;width:66px;height:66px;border-radius:999px;background:#EAF8EF;opacity:.55;"></span>
+                        <span style="position:relative;width:46px;height:46px;border-radius:14px;background:{{ c.grad }};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px rgba(6,71,52,0.2);"><i class="{{ c.iconClass }}" style="font-size:23px;color:#fff;"></i></span>
+                        <span style="position:relative;min-width:0;width:100%;">
+                          <span style="display:block;font-size:14px;font-weight:700;color:#102E25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.name }}</span>
+                          <span style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#65756D;margin-top:3px;"><i class="ph-fill ph-users-three" style="font-size:12px;color:#16875F;"></i>{{ c.count }} providers</span>
+                        </span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="height:96px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- CATEGORY DETAIL -->
+        <sc-if value="{{ isCategory }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;padding:2px 12px 10px 8px;background:#FAF7EF;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:17px;font-weight:700;color:#102E25;">{{ catName }}</div>
+                  <div style="font-size:12px;color:#65756D;">{{ catCount }} providers near {{ area }}</div>
+                </div>
+                <button onClick="{{ openFilter }}" style="display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 12px;border:1px solid rgba(6,71,52,0.14);border-radius:10px;background:#fff;cursor:pointer;">
+                  <i class="ph-bold ph-sliders-horizontal" style="font-size:15px;color:#064734;"></i>
+                  <span style="font-size:12.5px;font-weight:700;color:#064734;">Filter</span>
+                  <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}"><span style="min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#F6B93B;color:#5e4708;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">{{ filterCount }}</span></sc-if>
+                </button>
+              </div>
+            </div>
+            <div class="scrl" style="display:flex;gap:8px;overflow-x:auto;padding:2px 16px 12px;flex-shrink:0;">
+              <sc-for list="{{ catSubs }}" as="sub" hint-placeholder-count="5">
+                <button onClick="{{ sub.go }}" style="flex-shrink:0;height:34px;padding:0 14px;border-radius:999px;border:1px solid {{ sub.border }};background:{{ sub.bg }};color:{{ sub.color }};font-size:12.5px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">{{ sub.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px;flex-shrink:0;">
+              <span style="font-size:12.5px;color:#65756D;"><b style="color:#102E25;">{{ catResultCount }}</b> providers</span>
+              <button onClick="{{ openSort }}" style="display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-size:12.5px;font-weight:700;color:#064734;"><i class="ph-bold ph-arrows-down-up" style="font-size:14px;"></i>{{ sort }}</button>
+            </div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ catProviders }}" as="p" hint-placeholder-count="4">
+                <dc-import name="ProviderRow" provider="{{ p }}" saved="{{ p.saved }}" on-open="{{ openProvider }}" on-call="{{ callProvider }}" on-whatsapp="{{ whatsappProvider }}" on-save="{{ toggleSave }}" hint-size="100%,124px"></dc-import>
+              </sc-for>
+              <sc-if value="{{ catEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding:40px 20px;">
+                  <i class="ph ph-magnifying-glass" style="font-size:42px;color:#bcc6bf;"></i>
+                  <div style="font-size:16px;font-weight:700;color:#102E25;margin-top:14px;">No providers found</div>
+                  <div style="font-size:13px;color:#65756D;margin-top:6px;line-height:1.5;">Try another area or request help and we will look for a provider.</div>
+                  <button onClick="{{ goPost }}" style="margin-top:16px;height:42px;padding:0 20px;border:none;border-radius:12px;background:#F6B93B;color:#102E25;font-size:13.5px;font-weight:700;cursor:pointer;">Request service</button>
+                </div>
+              </sc-if>
+              <div style="height:20px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+<!-- SEARCH RESULTS -->
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;padding:2px 14px 10px 8px;background:#FAF7EF;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <button onClick="{{ back }}" aria-label="Back" style="width:38px;height:38px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button>
+                <div style="flex:1;display:flex;align-items:center;gap:8px;height:44px;background:#fff;border:1px solid rgba(6,71,52,0.14);border-radius:12px;padding:0 12px;">
+                  <i class="ph ph-magnifying-glass" style="font-size:17px;color:#65756D;"></i>
+                  <input id="searchField" value="{{ searchVal }}" onInput="{{ onSearchInput }}" placeholder="Search services" style="flex:1;border:none;outline:none;background:none;font-size:14px;font-family:Inter,sans-serif;color:#102E25;" />
+                  <sc-if value="{{ hasSearchVal }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearSearch }}" style="border:none;background:none;cursor:pointer;padding:2px;"><i class="ph-fill ph-x-circle" style="font-size:17px;color:#bcc6bf;"></i></button></sc-if>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                <button onClick="{{ openLocation }}" style="display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(6,71,52,0.14);background:#fff;cursor:pointer;"><i class="ph-fill ph-map-pin" style="font-size:13px;color:#16875F;"></i><span style="font-size:12.5px;font-weight:600;color:#102E25;">{{ area }}</span><i class="ph-bold ph-caret-down" style="font-size:10px;color:#65756D;"></i></button>
+                <button onClick="{{ openFilter }}" style="display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(6,71,52,0.14);background:#fff;cursor:pointer;"><i class="ph-bold ph-sliders-horizontal" style="font-size:14px;color:#064734;"></i><span style="font-size:12.5px;font-weight:700;color:#064734;">Filter</span><sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}"><span style="min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#F6B93B;color:#5e4708;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">{{ filterCount }}</span></sc-if></button>
+              </div>
+            </div>
+            <div style="padding:0 16px 8px;flex-shrink:0;">
+              <div style="font-size:13.5px;color:#65756D;margin-bottom:9px;"><b style="color:#102E25;">{{ searchCount }}</b> providers{{ searchSuffix }}</div>
+              <div class="scrl" style="display:flex;gap:7px;overflow-x:auto;">
+                <sc-for list="{{ quickChips }}" as="q" hint-placeholder-count="5">
+                  <button onClick="{{ q.go }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:999px;border:1px solid {{ q.border }};background:{{ q.bg }};color:{{ q.color }};font-size:12px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;"><i class="{{ q.iconClass }}" style="font-size:13px;"></i>{{ q.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:6px 16px 0;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ searchResults }}" as="p" hint-placeholder-count="5">
+                <dc-import name="ProviderRow" provider="{{ p }}" saved="{{ p.saved }}" on-open="{{ openProvider }}" on-call="{{ callProvider }}" on-whatsapp="{{ whatsappProvider }}" on-save="{{ toggleSave }}" hint-size="100%,124px"></dc-import>
+              </sc-for>
+              <sc-if value="{{ searchEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center;padding:46px 24px;">
+                  <span style="width:64px;height:64px;border-radius:999px;background:#EAF8EF;display:inline-flex;align-items:center;justify-content:center;"><i class="ph ph-magnifying-glass" style="font-size:30px;color:#16875F;"></i></span>
+                  <div style="font-size:17px;font-weight:700;color:#102E25;margin-top:16px;">No providers found yet</div>
+                  <div style="font-size:13px;color:#65756D;margin-top:7px;line-height:1.5;">Try another area or request help and we will look for a provider.</div>
+                  <div style="display:flex;gap:9px;justify-content:center;margin-top:18px;">
+                    <button onClick="{{ openFilter }}" style="height:42px;padding:0 17px;border:1px solid rgba(6,71,52,0.16);border-radius:12px;background:#fff;color:#064734;font-size:13px;font-weight:700;cursor:pointer;">Change filters</button>
+                    <button onClick="{{ goPost }}" style="height:42px;padding:0 17px;border:none;border-radius:12px;background:#F6B93B;color:#102E25;font-size:13px;font-weight:700;cursor:pointer;">Request service</button>
+                  </div>
+                </div>
+              </sc-if>
+              <div style="height:20px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PROVIDER DETAIL -->
+        <sc-if value="{{ isProvider }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;padding:2px 12px 6px 8px;">
+              <button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button>
+              <div style="flex:1;"></div>
+              <button onClick="{{ sharePv }}" aria-label="Share" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph ph-share-network" style="font-size:19px;color:#102E25;"></i></button>
+              <button onClick="{{ savePv }}" aria-label="Save" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <sc-if value="{{ pvSaved }}" hint-placeholder-val="{{ false }}"><i class="ph-fill ph-bookmark-simple" style="font-size:21px;color:#F6B93B;"></i></sc-if>
+                <sc-if value="{{ pvNotSaved }}" hint-placeholder-val="{{ true }}"><i class="ph ph-bookmark-simple" style="font-size:21px;color:#102E25;"></i></sc-if>
+              </button>
+            </div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:0 16px;">
+              <div style="display:flex;gap:14px;align-items:center;">
+                <div style="width:74px;height:74px;border-radius:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-weight:600;font-size:27px;color:#fff;background:{{ pvBg }};box-shadow:0 8px 20px rgba(6,71,52,0.18);">{{ pvInitials }}</div>
+                <div style="min-width:0;">
+                  <div style="font-family:Fraunces,serif;font-size:22px;font-weight:600;color:#102E25;line-height:1.15;">{{ pvName }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;color:#65756D;">
+                    <span style="font-weight:600;color:#102E25;">{{ pvService }}</span>
+                    <sc-if value="{{ pvVerified }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:3px;background:#EAF8EF;color:#16875F;border-radius:999px;font-size:10.5px;font-weight:700;padding:2px 7px;"><i class="ph-fill ph-seal-check"></i>Verified</span></sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12.5px;color:#65756D;">
+                    <span style="display:inline-flex;align-items:center;gap:3px;color:#102E25;font-weight:700;"><i class="ph-fill ph-star" style="color:#F6B93B;font-size:13px;"></i>{{ pvRating }}</span>
+                    <span>· {{ pvReviews }} reviews ·</span>
+                    <span style="display:inline-flex;align-items:center;gap:2px;"><i class="ph ph-map-pin" style="font-size:12px;"></i>{{ pvArea }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="scrl" style="display:flex;gap:7px;overflow-x:auto;margin-top:16px;">
+                <sc-for list="{{ pvFacts }}" as="f" hint-placeholder-count="4">
+                  <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;border-radius:999px;background:#fff;border:1px solid rgba(6,71,52,0.1);font-size:12px;font-weight:600;color:#102E25;white-space:nowrap;"><i class="{{ f.iconClass }}" style="font-size:14px;color:#16875F;"></i>{{ f.label }}</span>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:20px;">
+                <div style="font-size:15px;font-weight:700;color:#102E25;margin-bottom:7px;">About</div>
+                <div style="font-size:13.5px;color:#65756D;line-height:1.6;">{{ pvAbout }}</div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <div style="font-size:15px;font-weight:700;color:#102E25;margin-bottom:9px;">Services</div>
+                <div style="background:#fff;border:1px solid rgba(6,71,52,0.1);border-radius:15px;overflow:hidden;">
+                  <sc-for list="{{ pvServices }}" as="sv" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(6,71,52,0.07);">
+                      <i class="ph ph-check-circle" style="font-size:17px;color:#16875F;"></i>
+                      <span style="flex:1;font-size:13.5px;font-weight:500;color:#102E25;">{{ sv.name }}</span>
+                      <span style="font-size:11px;font-weight:700;color:#9a8a5a;background:#FFF4D8;padding:3px 9px;border-radius:999px;">{{ sv.price }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <div style="font-size:15px;font-weight:700;color:#102E25;margin-bottom:10px;">Recent work</div>
+                <div class="scrl" style="display:flex;gap:11px;overflow-x:auto;">
+                  <sc-for list="{{ pvPastWork }}" as="w" hint-placeholder-count="2">
+                    <div style="flex-shrink:0;width:158px;background:#fff;border:1px solid rgba(6,71,52,0.1);border-radius:15px;overflow:hidden;">
+                      <div style="height:90px;display:flex;align-items:center;justify-content:center;background:{{ w.bg }};"><i class="{{ w.iconClass }}" style="font-size:32px;color:rgba(255,255,255,0.85);"></i></div>
+                      <div style="padding:9px 11px;">
+                        <div style="font-size:12.5px;font-weight:700;color:#102E25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ w.title }}</div>
+                        <div style="font-size:11px;color:#65756D;margin-top:3px;">{{ w.note }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ pvNoWork }}" hint-placeholder-val="{{ false }}"><div style="padding:16px;font-size:12.5px;color:#9aa39d;">No past work added yet.</div></sc-if>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="font-size:15px;font-weight:700;color:#102E25;">Reviews</div>
+                  <sc-if value="{{ pvHasReviews }}" hint-placeholder-val="{{ false }}"><button onClick="{{ noop }}" style="border:none;background:none;font-size:12.5px;font-weight:700;color:#16875F;cursor:pointer;">View all</button></sc-if>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <sc-for list="{{ pvReviewList }}" as="r" hint-placeholder-count="2">
+                    <div style="background:#fff;border:1px solid rgba(6,71,52,0.1);border-radius:14px;padding:12px 14px;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:30px;height:30px;border-radius:999px;background:#EAF8EF;color:#064734;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">{{ r.initial }}</span>
+                        <span style="font-size:13px;font-weight:700;color:#102E25;">{{ r.userName }}</span>
+                        <span style="font-size:11px;color:#9aa39d;">· {{ r.area }}</span>
+                        <div style="flex:1;"></div>
+                        <span style="display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:700;color:#102E25;"><i class="ph-fill ph-star" style="color:#F6B93B;font-size:12px;"></i>{{ r.rating }}</span>
+                      </div>
+                      <div style="font-size:13px;color:#65756D;line-height:1.55;margin-top:8px;">{{ r.text }}</div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ pvNoReviews }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:#9aa39d;">No reviews yet.</div></sc-if>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;background:#FFFDF7;border:1px solid rgba(246,185,59,0.32);border-radius:15px;padding:14px;display:flex;gap:12px;align-items:flex-start;">
+                <i class="ph-fill ph-shield-check" style="font-size:22px;color:#b8851a;flex-shrink:0;"></i>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:700;color:#102E25;">Stay safe</div>
+                  <div style="font-size:12px;color:#65756D;line-height:1.5;margin-top:3px;">Agree on price, time, and work scope clearly before starting work.</div>
+                  <button onClick="{{ openReport }}" style="margin-top:8px;border:none;background:none;padding:0;font-size:12px;font-weight:700;color:#C8553D;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><i class="ph ph-flag" style="font-size:13px;"></i>Report provider</button>
+                </div>
+              </div>
+              <div style="height:24px;"></div>
+            </div>
+
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:9px;padding:11px 16px 20px;background:#fff;border-top:1px solid rgba(6,71,52,0.09);box-shadow:0 -8px 24px rgba(6,71,52,0.07);">
+              <button onClick="{{ callPv }}" style="flex:1;height:50px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;font-family:Inter,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 20px rgba(6,71,52,0.22);"><i class="ph-fill ph-phone-call" style="font-size:18px;"></i>Call</button>
+              <button onClick="{{ waPv }}" style="flex:1;height:50px;border:1px solid rgba(22,135,95,0.3);border-radius:14px;background:#EAF8EF;color:#0f6f4d;font-size:15px;font-weight:700;font-family:Inter,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><i class="ph-fill ph-whatsapp-logo" style="font-size:19px;"></i>WhatsApp</button>
+            </div>
+          </div>
+        </sc-if>
+
+<!-- POST / REQUEST -->
+        <sc-if value="{{ isPost }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <sc-if value="{{ postSent }}" hint-placeholder-val="{{ false }}">
+              <div class="scrl" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 28px;">
+                <div style="width:84px;height:84px;border-radius:999px;background:#EAF8EF;display:flex;align-items:center;justify-content:center;animation:scrRise .4s ease;"><i class="ph-fill ph-check-circle" style="font-size:48px;color:#16875F;"></i></div>
+                <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;color:#102E25;margin-top:20px;">We received your request</div>
+                <div style="font-size:13.5px;color:#65756D;line-height:1.6;margin-top:9px;max-width:280px;">SERRALE will help match your request with relevant providers near {{ postAreaLabel }}.</div>
+                <button onClick="{{ goSearch }}" style="margin-top:26px;width:100%;max-width:280px;height:50px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(6,71,52,0.2);">Browse providers</button>
+                <button onClick="{{ resetPost }}" style="margin-top:11px;width:100%;max-width:280px;height:48px;border:1px solid rgba(6,71,52,0.16);border-radius:14px;background:#fff;color:#064734;font-size:14px;font-weight:700;cursor:pointer;">View my requests</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ postGuest }}" hint-placeholder-val="{{ false }}">
+              <div class="scrl" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 28px;">
+                <div style="width:78px;height:78px;border-radius:22px;background:#FFF4D8;display:flex;align-items:center;justify-content:center;"><i class="ph-fill ph-hand-heart" style="font-size:40px;color:#b8851a;"></i></div>
+                <div style="font-family:Fraunces,serif;font-size:23px;font-weight:600;color:#102E25;margin-top:18px;">Post a service request</div>
+                <div style="font-size:13.5px;color:#65756D;line-height:1.6;margin-top:9px;max-width:280px;">Log in with your phone to tell SERRALE what you need. We'll help you find the right provider.</div>
+                <button onClick="{{ goLoginPost }}" style="margin-top:24px;width:100%;max-width:280px;height:50px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(6,71,52,0.2);"><i class="ph-fill ph-phone" style="font-size:17px;"></i>Log in with phone</button>
+                <button onClick="{{ goCategories }}" style="margin-top:11px;width:100%;max-width:280px;height:48px;border:1px solid rgba(6,71,52,0.16);border-radius:14px;background:#fff;color:#064734;font-size:14px;font-weight:700;cursor:pointer;">Continue browsing</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ postForm }}" hint-placeholder-val="{{ true }}">
+              <div style="flex-shrink:0;padding:2px 16px 8px;">
+                <h1 style="margin:0;font-family:Fraunces,serif;font-size:25px;font-weight:600;color:#102E25;">Post a request</h1>
+                <div style="font-size:13px;color:#65756D;margin-top:3px;">Tell us what you need — it only takes a moment.</div>
+              </div>
+              <div class="scrl" style="flex:1;overflow-y:auto;padding:8px 16px 0;">
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin-bottom:7px;">What service do you need?</div>
+                <button onClick="{{ openPostCat }}" style="width:100%;height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#fff;border:1px solid rgba(6,71,52,0.14);border-radius:13px;cursor:pointer;text-align:left;">
+                  <i class="ph ph-magnifying-glass" style="font-size:17px;color:#65756D;"></i>
+                  <span style="flex:1;font-size:14px;color:{{ postCatColor }};">{{ postCatLabel }}</span>
+                  <i class="ph-bold ph-caret-right" style="font-size:13px;color:#9aa39d;"></i>
+                </button>
+
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin:18px 0 7px;">Where do you need it?</div>
+                <button onClick="{{ openPostArea }}" style="width:100%;height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#fff;border:1px solid rgba(6,71,52,0.14);border-radius:13px;cursor:pointer;text-align:left;">
+                  <i class="ph-fill ph-map-pin" style="font-size:16px;color:#16875F;"></i>
+                  <span style="flex:1;font-size:14px;color:#102E25;font-weight:500;">{{ postAreaLabel }}</span>
+                  <i class="ph-bold ph-caret-down" style="font-size:13px;color:#9aa39d;"></i>
+                </button>
+
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin:18px 0 7px;">Describe the work</div>
+                <textarea value="{{ postDesc }}" onInput="{{ onPostDesc }}" placeholder="Example: I need help fixing a leaking sink." maxlength="300" style="width:100%;height:92px;resize:none;padding:12px 14px;background:#fff;border:1px solid rgba(6,71,52,0.14);border-radius:13px;font-size:13.5px;font-family:Inter,sans-serif;color:#102E25;outline:none;line-height:1.5;"></textarea>
+                <div style="text-align:right;font-size:11px;color:#9aa39d;margin-top:4px;">{{ postDescCount }}/300</div>
+
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin:14px 0 8px;">When do you need it?</div>
+                <div style="display:flex;gap:8px;">
+                  <sc-for list="{{ whenChips }}" as="w" hint-placeholder-count="3">
+                    <button onClick="{{ w.go }}" style="flex:1;height:40px;border-radius:11px;border:1px solid {{ w.border }};background:{{ w.bg }};color:{{ w.color }};font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">{{ w.label }}</button>
+                  </sc-for>
+                </div>
+
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin:18px 0 8px;">Budget <span style="font-weight:500;color:#9aa39d;">(optional)</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <sc-for list="{{ budgetChips }}" as="b" hint-placeholder-count="5">
+                    <button onClick="{{ b.go }}" style="height:36px;padding:0 13px;border-radius:999px;border:1px solid {{ b.border }};background:{{ b.bg }};color:{{ b.color }};font-size:12.5px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">{{ b.label }}</button>
+                  </sc-for>
+                </div>
+
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin:18px 0 8px;">How should providers contact you?</div>
+                <div style="display:flex;gap:8px;background:#EAF8EF;border-radius:13px;padding:4px;">
+                  <sc-for list="{{ contactChips }}" as="c" hint-placeholder-count="3">
+                    <button onClick="{{ c.go }}" style="flex:1;height:40px;border-radius:10px;border:none;background:{{ c.bg }};color:{{ c.color }};font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;box-shadow:{{ c.shadow }};display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i class="{{ c.iconClass }}" style="font-size:15px;"></i>{{ c.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="height:96px;"></div>
+              </div>
+              <div style="flex-shrink:0;padding:11px 16px 20px;background:#fff;border-top:1px solid rgba(6,71,52,0.09);">
+                <button onClick="{{ submitRequest }}" style="width:100%;height:50px;border:none;border-radius:14px;background:#F6B93B;color:#102E25;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(246,185,59,0.3);display:inline-flex;align-items:center;justify-content:center;gap:8px;"><i class="ph-bold ph-paper-plane-tilt" style="font-size:17px;"></i>Submit request</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+<!-- PROFILE -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div class="scrl" style="width:100%;overflow-y:auto;animation:scrFade .26s ease;">
+            <div style="padding:2px 16px 0;"><h1 style="margin:0 0 14px;font-family:Fraunces,serif;font-size:25px;font-weight:600;color:#102E25;">Profile</h1></div>
+            <sc-if value="{{ profileGuest }}" hint-placeholder-val="{{ true }}">
+              <div style="margin:0 16px;background:linear-gradient(140deg,#064734,#086246);border-radius:20px;padding:22px 18px;text-align:center;box-shadow:0 12px 30px rgba(6,71,52,0.18);">
+                <span style="width:62px;height:62px;border-radius:999px;background:rgba(255,255,255,0.14);display:inline-flex;align-items:center;justify-content:center;"><i class="ph-fill ph-user" style="font-size:30px;color:#fff;"></i></span>
+                <div style="font-family:Fraunces,serif;font-size:18px;font-weight:600;color:#fff;margin-top:12px;">Welcome to SERRALE</div>
+                <div style="font-size:12.5px;color:rgba(255,255,255,0.72);line-height:1.5;margin-top:5px;">Continue with phone to save providers and manage requests.</div>
+                <button onClick="{{ goLoginProfile }}" style="margin-top:16px;width:100%;height:46px;border:none;border-radius:13px;background:#F6B93B;color:#102E25;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;"><i class="ph-fill ph-phone" style="font-size:16px;"></i>Log in with phone</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ profileLoggedIn }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:0 16px;display:flex;align-items:center;gap:14px;background:#fff;border:1px solid rgba(6,71,52,0.1);border-radius:20px;padding:16px;box-shadow:0 4px 14px rgba(6,71,52,0.05);">
+                <span style="width:56px;height:56px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-weight:600;font-size:22px;color:#fff;background:linear-gradient(140deg,#0a5d3f,#13845a);">{{ userInitials }}</span>
+                <div style="min-width:0;flex:1;">
+                  <div style="font-size:17px;font-weight:700;color:#102E25;">{{ userName }}</div>
+                  <div style="font-size:12.5px;color:#65756D;margin-top:2px;">{{ userPhone }}</div>
+                  <div style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:#16875F;font-weight:600;margin-top:4px;"><i class="ph-fill ph-map-pin" style="font-size:12px;"></i>{{ area }}</div>
+                </div>
+              </div>
+            </sc-if>
+            <div style="padding:18px 16px 0;display:flex;flex-direction:column;gap:13px;">
+              <sc-for list="{{ profileGroups }}" as="g" hint-placeholder-count="2">
+                <div style="background:#fff;border:1px solid rgba(6,71,52,0.09);border-radius:18px;overflow:hidden;box-shadow:0 3px 12px rgba(6,71,52,0.04);">
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                    <button onClick="{{ r.go }}" style="width:100%;display:flex;align-items:center;gap:13px;padding:13px 14px;background:none;border:none;border-top:1px solid {{ r.divider }};cursor:pointer;text-align:left;">
+                      <span style="width:34px;height:34px;border-radius:10px;background:{{ r.tint }};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="{{ r.iconClass }}" style="font-size:17px;color:{{ r.iconColor }};"></i></span>
+                      <span style="flex:1;font-size:14px;font-weight:600;color:{{ r.labelColor }};">{{ r.label }}</span>
+                      <sc-if value="{{ r.chevron }}" hint-placeholder-val="{{ true }}"><i class="ph-bold ph-caret-right" style="font-size:14px;color:#cdd5cf;"></i></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <div style="text-align:center;font-size:11px;color:#aab4ac;padding:6px 0;">SERRALE Basic · v1.0</div>
+              <div style="height:96px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- BOOKMARKS -->
+        <sc-if value="{{ isBookmarks }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:2px 12px 10px 8px;">
+              <button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button>
+              <div style="font-size:18px;font-weight:700;color:#102E25;">Saved providers</div>
+            </div>
+            <sc-if value="{{ hasSaved }}" hint-placeholder-val="{{ true }}">
+              <div class="scrl" style="flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px;">
+                <sc-for list="{{ savedProviders }}" as="p" hint-placeholder-count="3">
+                  <dc-import name="ProviderRow" provider="{{ p }}" saved="{{ p.saved }}" on-open="{{ openProvider }}" on-call="{{ callProvider }}" on-whatsapp="{{ whatsappProvider }}" on-save="{{ toggleSave }}" hint-size="100%,124px"></dc-import>
+                </sc-for>
+                <div style="height:20px;"></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noSaved }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 28px;">
+                <div style="width:72px;height:72px;border-radius:20px;background:#FFF4D8;display:flex;align-items:center;justify-content:center;"><i class="ph ph-bookmark-simple" style="font-size:36px;color:#b8851a;"></i></div>
+                <div style="font-size:17px;font-weight:700;color:#102E25;margin-top:16px;">No saved providers yet</div>
+                <div style="font-size:13px;color:#65756D;line-height:1.6;margin-top:7px;max-width:260px;">Tap the bookmark icon on any provider to save them here.</div>
+                <button onClick="{{ goSearch }}" style="margin-top:20px;height:46px;padding:0 22px;border:none;border-radius:13px;background:#064734;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Browse providers</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+<!-- LOGIN -->
+        <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;padding:2px 12px 0 8px;"><button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button></div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:10px 22px 0;">
+              <div style="width:54px;height:54px;border-radius:16px;background:linear-gradient(140deg,#0a5d3f,#13845a);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(6,71,52,0.2);"><i class="ph-fill ph-phone" style="font-size:26px;color:#fff;"></i></div>
+              <h1 style="margin:18px 0 6px;font-family:Fraunces,serif;font-size:25px;font-weight:600;color:#102E25;">Log in with phone</h1>
+              <div style="font-size:13.5px;color:#65756D;line-height:1.55;">Use your Ethiopian phone number to continue. We'll send a verification code by SMS.</div>
+              <div style="display:flex;gap:9px;margin-top:24px;">
+                <div style="display:flex;align-items:center;gap:6px;height:52px;padding:0 14px;background:#fff;border:1px solid rgba(6,71,52,0.14);border-radius:13px;flex-shrink:0;"><span style="font-size:16px;">🇪🇹</span><span style="font-size:15px;font-weight:700;color:#102E25;">+251</span></div>
+                <input id="phoneField" value="{{ phone }}" onInput="{{ onPhone }}" inputmode="numeric" placeholder="9 12 345 678" style="flex:1;min-width:0;height:52px;padding:0 16px;background:#fff;border:1px solid {{ phoneBorder }};border-radius:13px;font-size:16px;font-weight:600;font-family:Inter,sans-serif;color:#102E25;outline:none;letter-spacing:.5px;" />
+              </div>
+              <sc-if value="{{ hasOtpError }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#C8553D;margin-top:10px;"><i class="ph-fill ph-warning-circle" style="font-size:14px;"></i>{{ otpError }}</div></sc-if>
+            </div>
+            <div style="flex-shrink:0;padding:14px 22px 22px;">
+              <button onClick="{{ sendCode }}" style="width:100%;height:52px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(6,71,52,0.22);">Send code</button>
+              <button onClick="{{ continueGuest }}" style="width:100%;height:48px;margin-top:9px;border:none;background:none;color:#65756D;font-size:13.5px;font-weight:600;cursor:pointer;">Continue as guest</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- VERIFY -->
+        <sc-if value="{{ isVerify }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;padding:2px 12px 0 8px;"><button onClick="{{ goLoginBack }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button></div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:10px 22px 0;">
+              <h1 style="margin:8px 0 6px;font-family:Fraunces,serif;font-size:25px;font-weight:600;color:#102E25;">Enter verification code</h1>
+              <div style="font-size:13.5px;color:#65756D;line-height:1.55;">We sent a 6-digit code to <b style="color:#102E25;">+251 {{ phoneMasked }}</b>.</div>
+              <div style="display:flex;gap:9px;margin-top:26px;">
+                <sc-for list="{{ otpBoxes }}" as="b" hint-placeholder-count="6">
+                  <input id="{{ b.id }}" value="{{ b.value }}" onInput="{{ b.onInput }}" onKeyDown="{{ b.onKey }}" inputmode="numeric" maxlength="1" style="flex:1;min-width:0;height:58px;text-align:center;background:#fff;border:1.5px solid {{ b.border }};border-radius:13px;font-size:23px;font-weight:700;font-family:Inter,sans-serif;color:#102E25;outline:none;" />
+                </sc-for>
+              </div>
+              <sc-if value="{{ hasOtpError }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#C8553D;margin-top:12px;"><i class="ph-fill ph-warning-circle" style="font-size:14px;"></i>{{ otpError }}</div></sc-if>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;">
+                <span style="font-size:13px;color:#9aa39d;">{{ resendText }}</span>
+                <button onClick="{{ goLoginBack }}" style="border:none;background:none;font-size:13px;font-weight:700;color:#16875F;cursor:pointer;">Change number</button>
+              </div>
+              <button onClick="{{ fillDemo }}" style="margin-top:20px;width:100%;height:40px;border:1px dashed rgba(6,71,52,0.22);border-radius:11px;background:#FFFDF7;color:#65756D;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i class="ph ph-magic-wand" style="font-size:14px;"></i>Demo: auto-fill code</button>
+            </div>
+            <div style="flex-shrink:0;padding:14px 22px 22px;"><button onClick="{{ verifyNow }}" style="width:100%;height:52px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(6,71,52,0.22);">Verify</button></div>
+          </div>
+        </sc-if>
+
+        <!-- SIMPLE LIST SCREENS (Help / Settings / Safety) -->
+        <sc-if value="{{ isHelp }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:2px 12px 8px 8px;"><button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button><div style="font-size:18px;font-weight:700;color:#102E25;">Help &amp; Support</div></div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:4px 16px 0;">
+              <div style="background:#fff;border:1px solid rgba(6,71,52,0.09);border-radius:18px;overflow:hidden;box-shadow:0 3px 12px rgba(6,71,52,0.04);">
+                <sc-for list="{{ helpRows }}" as="r" hint-placeholder-count="5">
+                  <button onClick="{{ r.go }}" style="width:100%;display:flex;align-items:center;gap:13px;padding:14px;background:none;border:none;border-top:1px solid {{ r.divider }};cursor:pointer;text-align:left;">
+                    <span style="width:36px;height:36px;border-radius:11px;background:{{ r.tint }};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="{{ r.iconClass }}" style="font-size:18px;color:{{ r.iconColor }};"></i></span>
+                    <span style="flex:1;min-width:0;"><span style="display:block;font-size:14px;font-weight:600;color:#102E25;">{{ r.label }}</span><span style="display:block;font-size:11.5px;color:#9aa39d;margin-top:1px;">{{ r.sub }}</span></span>
+                    <i class="ph-bold ph-caret-right" style="font-size:14px;color:#cdd5cf;"></i>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="height:20px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLanguage }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:2px 12px 8px 8px;"><button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button><div style="font-size:18px;font-weight:700;color:#102E25;">Language</div></div>
+            <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ langOptions }}" as="o" hint-placeholder-count="2">
+                <button onClick="{{ o.go }}" style="display:flex;align-items:center;gap:13px;padding:16px 15px;background:#fff;border:1.5px solid {{ o.border }};border-radius:16px;cursor:pointer;text-align:left;box-shadow:0 3px 10px rgba(6,71,52,0.04);">
+                  <span style="width:42px;height:42px;border-radius:12px;background:{{ o.tint }};display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">{{ o.flag }}</span>
+                  <span style="flex:1;"><span style="display:block;font-size:15px;font-weight:700;color:#102E25;">{{ o.label }}</span><span style="display:block;font-size:12px;color:#9aa39d;margin-top:1px;">{{ o.sub }}</span></span>
+                  <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><i class="ph-fill ph-check-circle" style="font-size:24px;color:#16875F;"></i></sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:2px 12px 8px 8px;"><button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button><div style="font-size:18px;font-weight:700;color:#102E25;">Settings</div></div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:4px 16px 0;display:flex;flex-direction:column;gap:13px;">
+              <sc-for list="{{ settingsGroups }}" as="g" hint-placeholder-count="2">
+                <div style="background:#fff;border:1px solid rgba(6,71,52,0.09);border-radius:18px;overflow:hidden;box-shadow:0 3px 12px rgba(6,71,52,0.04);">
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                    <button onClick="{{ r.go }}" style="width:100%;display:flex;align-items:center;gap:13px;padding:14px;background:none;border:none;border-top:1px solid {{ r.divider }};cursor:pointer;text-align:left;">
+                      <span style="flex:1;font-size:14px;font-weight:600;color:{{ r.labelColor }};">{{ r.label }}</span>
+                      <span style="font-size:13px;color:#9aa39d;">{{ r.value }}</span>
+                      <i class="ph-bold ph-caret-right" style="font-size:14px;color:#cdd5cf;"></i>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <div style="height:20px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSafety }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;animation:scrFade .26s ease;">
+            <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:2px 12px 8px 8px;"><button onClick="{{ back }}" aria-label="Back" style="width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-arrow-left" style="font-size:20px;color:#102E25;"></i></button><div style="font-size:18px;font-weight:700;color:#102E25;">Safety tips</div></div>
+            <div class="scrl" style="flex:1;overflow-y:auto;padding:4px 16px 0;display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ safetyTips }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid rgba(6,71,52,0.09);border-radius:16px;padding:14px;box-shadow:0 3px 10px rgba(6,71,52,0.04);">
+                  <span style="width:36px;height:36px;border-radius:11px;background:#EAF8EF;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="{{ t.iconClass }}" style="font-size:18px;color:#16875F;"></i></span>
+                  <div style="flex:1;"><div style="font-size:14px;font-weight:700;color:#102E25;">{{ t.title }}</div><div style="font-size:12.5px;color:#65756D;line-height:1.5;margin-top:3px;">{{ t.text }}</div></div>
+                </div>
+              </sc-for>
+              <div style="height:20px;"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!--SCREENS-->
+
+      </div>
+
+      <!-- BOTTOM NAV -->
+      <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0;display:flex;align-items:center;padding:7px 8px 22px;background:#fff;border-top:1px solid rgba(6,71,52,0.09);box-shadow:0 -6px 20px rgba(6,71,52,0.05);z-index:5;">
+          <sc-for list="{{ navItems }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.go }}" style="flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;cursor:pointer;">
+              <span style="display:flex;align-items:center;justify-content:center;width:48px;height:27px;border-radius:999px;background:{{ t.pill }};transition:background .2s ease;"><i class="{{ t.iconClass }}" style="font-size:21px;color:{{ t.color }};"></i></span>
+              <span style="font-size:10px;font-weight:600;color:{{ t.color }};">{{ t.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- TOAST -->
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:104px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;background:#102E25;color:#fff;padding:11px 16px;border-radius:13px;box-shadow:0 12px 30px rgba(0,0,0,0.28);font-size:13px;font-weight:600;white-space:nowrap;animation:scrToast .25s ease;max-width:320px;">
+          <i class="{{ toastIcon }}" style="color:#F6B93B;font-size:17px;"></i>{{ toastText }}
+        </div>
+      </sc-if>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(8,30,22,0.48);z-index:50;animation:scrScrim .2s ease;"></div>
+      </sc-if>
+
+      <!-- LOCATION / POST AREA SHEET -->
+      <sc-if value="{{ isAreaSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:24px 24px 0 0;max-height:78%;display:flex;flex-direction:column;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="display:flex;justify-content:center;padding:10px 0 4px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 12px;"><div style="font-size:17px;font-weight:700;color:#102E25;">Choose area</div><button onClick="{{ closeSheet }}" style="width:32px;height:32px;border:none;background:#F3F0E6;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-x" style="font-size:15px;color:#65756D;"></i></button></div>
+          <div class="scrl" style="overflow-y:auto;padding:0 14px 24px;">
+            <sc-for list="{{ areaList }}" as="a" hint-placeholder-count="6">
+              <button onClick="{{ a.go }}" style="width:100%;display:flex;align-items:center;gap:11px;padding:13px 12px;background:{{ a.bg }};border:none;border-radius:13px;cursor:pointer;text-align:left;margin-bottom:3px;">
+                <i class="{{ a.iconClass }}" style="font-size:18px;color:{{ a.iconColor }};"></i>
+                <span style="flex:1;font-size:14.5px;font-weight:{{ a.weight }};color:#102E25;">{{ a.label }}</span>
+                <sc-if value="{{ a.active }}" hint-placeholder-val="{{ false }}"><i class="ph-fill ph-check-circle" style="font-size:21px;color:#16875F;"></i></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- POST CATEGORY SHEET -->
+      <sc-if value="{{ isPostCatSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:24px 24px 0 0;height:80%;display:flex;flex-direction:column;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="display:flex;justify-content:center;padding:10px 0 4px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 12px;"><div style="font-size:17px;font-weight:700;color:#102E25;">What service do you need?</div><button onClick="{{ closeSheet }}" style="width:32px;height:32px;border:none;background:#F3F0E6;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="ph-bold ph-x" style="font-size:15px;color:#65756D;"></i></button></div>
+          <div class="scrl" style="overflow-y:auto;padding:0 14px 24px;display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+            <sc-for list="{{ postCatList }}" as="c" hint-placeholder-count="8">
+              <button onClick="{{ c.go }}" style="display:flex;align-items:center;gap:10px;padding:12px;background:#FFFDF7;border:1px solid rgba(6,71,52,0.1);border-radius:13px;cursor:pointer;text-align:left;">
+                <span style="width:36px;height:36px;border-radius:11px;background:{{ c.grad }};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="{{ c.iconClass }}" style="font-size:18px;color:#fff;"></i></span>
+                <span style="font-size:12.5px;font-weight:600;color:#102E25;line-height:1.2;">{{ c.name }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- FILTER SHEET -->
+      <sc-if value="{{ isFilterSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#FAF7EF;border-radius:24px 24px 0 0;height:86%;display:flex;flex-direction:column;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="flex-shrink:0;background:#fff;border-radius:24px 24px 0 0;">
+            <div style="display:flex;justify-content:center;padding:10px 0 4px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 14px;"><div style="font-size:18px;font-weight:700;color:#102E25;">Filters</div><button onClick="{{ resetFilters }}" style="border:none;background:none;font-size:13.5px;font-weight:700;color:#16875F;cursor:pointer;">Reset</button></div>
+          </div>
+          <div class="scrl" style="flex:1;overflow-y:auto;padding:16px 18px 0;">
+            <sc-for list="{{ filterSections }}" as="sec" hint-placeholder-count="5">
+              <div style="margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;color:#102E25;margin-bottom:10px;">{{ sec.title }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <sc-for list="{{ sec.options }}" as="o" hint-placeholder-count="4">
+                    <button onClick="{{ o.go }}" style="height:36px;padding:0 14px;border-radius:999px;border:1px solid {{ o.border }};background:{{ o.bg }};color:{{ o.color }};font-size:12.5px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="height:12px;"></div>
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:10px;padding:12px 18px 22px;background:#fff;border-top:1px solid rgba(6,71,52,0.09);">
+            <button onClick="{{ resetFilters }}" style="height:50px;padding:0 20px;border:1px solid rgba(6,71,52,0.16);border-radius:14px;background:#fff;color:#064734;font-size:14px;font-weight:700;cursor:pointer;">Clear</button>
+            <button onClick="{{ applyFilters }}" style="flex:1;height:50px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(6,71,52,0.22);">Show {{ filterResultCount }} providers</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- CONTACT / CALL SHEET -->
+      <sc-if value="{{ isContactSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:24px 24px 0 0;padding:10px 20px 24px;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="display:flex;justify-content:center;padding:0 0 14px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+          <div style="display:flex;align-items:center;gap:13px;">
+            <span style="width:50px;height:50px;border-radius:15px;background:linear-gradient(140deg,#0a5d3f,#13845a);display:flex;align-items:center;justify-content:center;"><i class="ph-fill ph-phone-call" style="font-size:24px;color:#fff;"></i></span>
+            <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:#102E25;">Call {{ contactName }}?</div><div style="font-size:13px;color:#65756D;margin-top:2px;">{{ contactPhone }}</div></div>
+          </div>
+          <button onClick="{{ confirmCall }}" style="width:100%;height:50px;margin-top:18px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(6,71,52,0.22);"><i class="ph-fill ph-phone-call" style="font-size:18px;"></i>Call now</button>
+          <button onClick="{{ closeSheet }}" style="width:100%;height:48px;margin-top:9px;border:none;background:none;color:#65756D;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+        </div>
+      </sc-if>
+
+      <!-- WHATSAPP SHEET -->
+      <sc-if value="{{ isWaSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:24px 24px 0 0;padding:10px 20px 24px;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="display:flex;justify-content:center;padding:0 0 14px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+          <div style="display:flex;align-items:center;gap:13px;">
+            <span style="width:50px;height:50px;border-radius:15px;background:#EAF8EF;display:flex;align-items:center;justify-content:center;"><i class="ph-fill ph-whatsapp-logo" style="font-size:26px;color:#0f6f4d;"></i></span>
+            <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:#102E25;">Message {{ waName }}</div><div style="font-size:13px;color:#65756D;margin-top:2px;">on WhatsApp</div></div>
+          </div>
+          <div style="margin-top:16px;background:#F3F7F2;border:1px solid rgba(6,71,52,0.08);border-radius:14px;padding:13px 14px;font-size:13px;color:#3c4a43;line-height:1.55;">{{ waMessage }}</div>
+          <button onClick="{{ confirmWa }}" style="width:100%;height:50px;margin-top:16px;border:none;border-radius:14px;background:#0f6f4d;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(15,111,77,0.25);"><i class="ph-fill ph-whatsapp-logo" style="font-size:19px;"></i>Open WhatsApp</button>
+          <button onClick="{{ closeSheet }}" style="width:100%;height:48px;margin-top:8px;border:none;background:none;color:#65756D;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+        </div>
+      </sc-if>
+
+      <!-- AUTH PROMPT SHEET -->
+      <sc-if value="{{ isAuthSheet }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:24px 24px 0 0;padding:10px 20px 24px;text-align:center;box-shadow:0 -12px 30px rgba(6,71,52,0.16);animation:scrSheet .28s cubic-bezier(.2,.9,.3,1);">
+          <div style="display:flex;justify-content:center;padding:0 0 16px;"><span style="width:38px;height:4px;border-radius:999px;background:rgba(6,71,52,0.16);"></span></div>
+          <span style="width:62px;height:62px;border-radius:18px;background:#FFF4D8;display:inline-flex;align-items:center;justify-content:center;"><i class="ph-fill ph-bookmark-simple" style="font-size:30px;color:#b8851a;"></i></span>
+          <div style="font-family:Fraunces,serif;font-size:20px;font-weight:600;color:#102E25;margin-top:14px;">{{ authTitle }}</div>
+          <div style="font-size:13px;color:#65756D;line-height:1.55;margin-top:6px;">Log in with your phone number to continue. It only takes a moment.</div>
+          <button onClick="{{ goLoginSheet }}" style="width:100%;height:50px;margin-top:18px;border:none;border-radius:14px;background:#064734;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(6,71,52,0.22);"><i class="ph-fill ph-phone" style="font-size:17px;"></i>Log in with phone</button>
+          <button onClick="{{ closeSheet }}" style="width:100%;height:48px;margin-top:8px;border:none;background:none;color:#65756D;font-size:14px;font-weight:600;cursor:pointer;">Continue browsing</button>
+        </div>
+      </sc-if>
+
+      <!--OVERLAYS-->
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      route:'splash', tab:'home', lang:'en', loggedIn:false, user:null,
+      area:'Bole', saved:{}, search:'', searchInput:'',
+      activeCategoryId:null, activeProviderId:null, activeProviderTab:'about', aboutExpanded:false,
+      sort:'Recommended', activeSub:null,
+      sheet:null, contactId:null, waId:null,
+      phone:'', otp:['','','','','',''], otpError:'', resend:45,
+      filters:{ areas:[], avail:[], trust:[], rating:'Any', contact:[], price:[], exp:[] },
+      post:{ category:'', area:'Bole', desc:'', when:'Today', contact:'Both', budget:'' },
+      requestSent:false, msgTab:'All', convos:[], bannerIndex:0,
+      toast:null,
+    };
+    this._hist = [];
+    this.AREAS = ["All Addis Ababa","Bole","Yeka","Kirkos","Arada","Lideta","Gullele","Kolfe Keranio","Nifas Silk-Lafto","Akaki Kality","Lemi Kura"];
+    this.CATS = [
+      {id:'plumbers',name:'Plumbers',am:'ቧንቧ',icon:'ph-wrench',count:1200,group:'Home & Repair',subs:['Pipe leak','Sink repair','Water pressure','Bathroom','Emergency','Installation']},
+      {id:'electricians',name:'Electricians',am:'ኤሌክትሪክ',icon:'ph-lightning',count:950,group:'Home & Repair',subs:['Switch repair','Wiring','Lighting','Breaker','Installation']},
+      {id:'painters',name:'Painters',am:'ቀለም',icon:'ph-paint-roller',count:780,group:'Home & Repair',subs:['Interior','Exterior','Wall finishing','Doors']},
+      {id:'carpenters',name:'Carpenters',am:'እንጨት',icon:'ph-hammer',count:650,group:'Home & Repair',subs:['Furniture','Doors','Shelves','Repairs']},
+      {id:'appliance',name:'Appliance Repair',am:'መጠገኛ',icon:'ph-wrench',count:540,group:'Home & Repair',subs:['Fridge','Washing machine','Stove','TV']},
+      {id:'locksmiths',name:'Locksmiths',am:'ቁልፍ',icon:'ph-key',count:210,group:'Home & Repair',subs:['Lock change','Key copy','Emergency']},
+      {id:'cleaners',name:'Cleaners',am:'ጽዳት',icon:'ph-sparkle',count:1150,group:'Cleaning & Care',subs:['Home cleaning','Office cleaning','Move-in','Deep cleaning']},
+      {id:'nannies',name:'Nannies',am:'ህፃን ተንከባካቢ',icon:'ph-baby',count:900,group:'Cleaning & Care',subs:['Daytime','Full-time','Newborn']},
+      {id:'laundry',name:'Laundry',am:'ልብስ',icon:'ph-t-shirt',count:340,group:'Cleaning & Care',subs:['Wash','Iron','Pickup']},
+      {id:'gardeners',name:'Gardeners',am:'አትክልት',icon:'ph-plant',count:280,group:'Cleaning & Care',subs:['Lawn','Trimming','Planting']},
+      {id:'pest',name:'Pest Control',am:'ተባይ',icon:'ph-bug',count:190,group:'Cleaning & Care',subs:['Insects','Rodents','Fumigation']},
+      {id:'movers',name:'Movers',am:'ማጓጓዣ',icon:'ph-truck',count:420,group:'Moving & Delivery',subs:['House move','Office move','Furniture']},
+      {id:'drivers',name:'Drivers',am:'ሹፌር',icon:'ph-steering-wheel',count:610,group:'Moving & Delivery',subs:['Daily','Airport','Errands']},
+      {id:'photographers',name:'Photographers',am:'ፎቶ',icon:'ph-camera',count:360,group:'Events & Personal',subs:['Events','Portrait','Product']},
+      {id:'cooks',name:'Cooks & Catering',am:'ምግብ',icon:'ph-cooking-pot',count:430,group:'Events & Personal',subs:['Home cooking','Events','Ethiopian dishes']},
+      {id:'makeup',name:'Makeup Artists',am:'ሜካፕ',icon:'ph-palette',count:220,group:'Events & Personal',subs:['Wedding','Event','Studio']},
+      {id:'tailors',name:'Tailors',am:'ልብስ ስፌት',icon:'ph-scissors',count:390,group:'Events & Personal',subs:['Custom','Repair','Traditional']},
+      {id:'designers',name:'Designers',am:'ዲዛይን',icon:'ph-pen-nib',count:180,group:'Digital & Office',subs:['Logo','Branding','Print']},
+      {id:'developers',name:'Developers',am:'ዴቨሎፐር',icon:'ph-code',count:150,group:'Digital & Office',subs:['Web','Mobile','Support']},
+      {id:'marketing',name:'Marketing',am:'ግብይት',icon:'ph-megaphone',count:120,group:'Digital & Office',subs:['Social','Ads','Content']},
+    ];
+    this.PROV = [
+      {id:'tekle-plumbing',name:'Tekle Plumbing',service:'Plumber',categoryId:'plumbers',rating:4.9,reviewCount:256,area:'Bole',verified:true,adminReviewed:true,availableToday:true,hasPastWork:true,exp:8,price:'Standard',description:'Pipe leaks, sink repair, and water pressure.',phone:'+251911234567'},
+      {id:'abebe-painting',name:'Abebe Painting',service:'Painter',categoryId:'painters',rating:4.8,reviewCount:128,area:'Lideta',verified:true,adminReviewed:true,availableToday:false,hasPastWork:true,exp:6,price:'Budget',description:'Interior painting, wall finishing, small repairs.',phone:'+251911234568'},
+      {id:'amanuel-electric',name:'Amanuel Electric',service:'Electrician',categoryId:'electricians',rating:4.8,reviewCount:173,area:'Nifas Silk-Lafto',verified:true,adminReviewed:true,availableToday:false,hasPastWork:true,exp:10,price:'Standard',description:'Switch repair, wiring, lighting, installation.',phone:'+251911234569'},
+      {id:'bethel-cleaning',name:'Bethel Cleaning',service:'Cleaner',categoryId:'cleaners',rating:4.7,reviewCount:146,area:'Yeka',verified:true,adminReviewed:true,availableToday:true,hasPastWork:false,exp:4,price:'Budget',description:'Home, office, deep cleaning, and support.',phone:'+251911234570'},
+      {id:'hanna-childcare',name:'Hanna Childcare',service:'Nanny',categoryId:'nannies',rating:4.9,reviewCount:89,area:'Bole',verified:true,adminReviewed:true,availableToday:true,hasPastWork:true,exp:7,price:'Standard',description:'Experienced daytime and full-time care.',phone:'+251911234571'},
+      {id:'yonas-carpentry',name:'Yonas Carpentry',service:'Carpenter',categoryId:'carpenters',rating:4.6,reviewCount:64,area:'Kirkos',verified:false,adminReviewed:true,availableToday:false,hasPastWork:true,exp:5,price:'Standard',description:'Custom furniture, doors, shelves, repairs.',phone:'+251911234572'},
+      {id:'selam-appliance',name:'Selam Appliance',service:'Appliance Repair',categoryId:'appliance',rating:4.7,reviewCount:112,area:'Arada',verified:true,adminReviewed:true,availableToday:true,hasPastWork:false,exp:9,price:'Standard',description:'Fridge, washing machine, and stove repair.',phone:'+251911234573'},
+      {id:'dawit-movers',name:'Dawit Movers',service:'Mover',categoryId:'movers',rating:4.5,reviewCount:78,area:'Kolfe Keranio',verified:false,adminReviewed:true,availableToday:true,hasPastWork:false,exp:3,price:'Budget',description:'House and office moving, careful handling.',phone:'+251911234574'},
+      {id:'marta-catering',name:'Marta Catering',service:'Catering',categoryId:'cooks',rating:4.9,reviewCount:201,area:'Bole',verified:true,adminReviewed:true,availableToday:false,hasPastWork:true,exp:11,price:'Premium',description:'Home cooking, events, and Ethiopian dishes.',phone:'+251911234575'},
+      {id:'robel-electric',name:'Robel Electric',service:'Electrician',categoryId:'electricians',rating:4.6,reviewCount:54,area:'Yeka',verified:false,adminReviewed:true,availableToday:true,hasPastWork:false,exp:4,price:'Budget',description:'Lighting, breaker, and home wiring fixes.',phone:'+251911234576'},
+      {id:'sara-cleaning',name:'Sara Cleaning',service:'Cleaner',categoryId:'cleaners',rating:4.8,reviewCount:97,area:'Lideta',verified:true,adminReviewed:true,availableToday:true,hasPastWork:true,exp:6,price:'Standard',description:'Move-in and deep cleaning specialist.',phone:'+251911234577'},
+      {id:'kbrom-plumbing',name:'Kbrom Plumbing',service:'Plumber',categoryId:'plumbers',rating:4.7,reviewCount:132,area:'Gullele',verified:true,adminReviewed:false,availableToday:false,hasPastWork:true,exp:7,price:'Standard',description:'Bathroom, kitchen, and emergency plumbing.',phone:'+251911234578'},
+    ];
+    this.REVIEWS = [
+      {providerId:'tekle-plumbing',userName:'Marta',area:'Bole',rating:5,text:'Found him quickly and the sink repair was done the same day.'},
+      {providerId:'tekle-plumbing',userName:'Henok',area:'Bole',rating:5,text:'On time and fair price. Highly recommend.'},
+      {providerId:'abebe-painting',userName:'Daniel',area:'Lideta',rating:5,text:'Clean finishing and professional communication.'},
+      {providerId:'abebe-painting',userName:'Sara',area:'Lideta',rating:4,text:'Good work, finished in two days as promised.'},
+      {providerId:'hanna-childcare',userName:'Liya',area:'Bole',rating:5,text:'Very caring and reliable with my daughter.'},
+    ];
+    this.PASTWORK = [
+      {providerId:'abebe-painting',title:'Kitchen repaint in Bole',category:'Painting',area:'Bole',icon:'ph-paint-roller',bg:'#086246'},
+      {providerId:'tekle-plumbing',title:'Bathroom leak repair',category:'Plumbing',area:'Yeka',icon:'ph-wrench',bg:'#064734'},
+      {providerId:'yonas-carpentry',title:'Custom wardrobe build',category:'Carpentry',area:'Kirkos',icon:'ph-hammer',bg:'#0b5a40'},
+      {providerId:'bethel-cleaning',title:'Office deep clean',category:'Cleaning',area:'Yeka',icon:'ph-sparkle',bg:'#16875F'},
+    ];
+  }
+
+  componentDidMount(){ this._t = setTimeout(()=>{ if(this.state.route==='splash') this.setState({route:'home'}); }, 1700); this._bi = setInterval(()=>{ if(this.state.route==='home') this.setState(s=>({bannerIndex:(s.bannerIndex+1)%3})); }, 4500); }
+  componentWillUnmount(){ clearTimeout(this._t); clearTimeout(this._toastT); clearInterval(this._ri); clearInterval(this._bi); }
+  setBanner(i){ this.setState({bannerIndex:i}); }
+  bannerGo(i){ if(i===0){ this.goPost(); } else if(i===1){ const f=Object.assign({},this.state.filters,{trust:['Verified only']}); this.setState({filters:f}); this.pushHist(); this.setState({route:'search',search:''}); } else { this.goCategories(); } }
+
+  L(){
+    const am = this.state.lang==='am';
+    return {
+      tabs:{home:am?'መነሻ':'Home',categories:am?'ምድቦች':'Categories',post:am?'ጥያቄ':'Post',messages:am?'መልዕክት':'Messages',profile:am?'መገለጫ':'Profile'},
+      searchPlaceholder:am?'ባለሙያ ፈልግ…':'Search plumber, painter, nanny…',
+      promoText:am?'ባለሙያ ማግኘት ይከብዳል? እንረዳዎ':"Need help finding a provider?",
+      promoBtn:am?'ጠይቅ':'Request',
+      nearbyTitle:am?'በአቅራቢያ ያሉ':'Nearby providers',
+      popularTitle:am?'ታዋቂ ምድቦች':'Popular categories',
+      verifiedTitle:am?'የተረጋገጡ':'Verified providers',
+      pastWorkTitle:am?'የቀደመ ስራ':'Recent work',
+      viewAll:am?'ሁሉንም':'View all',
+    };
+  }
+
+  fmt(n){ return n.toLocaleString('en-US')+'+'; }
+  avatarColor(name){ const palette=['#064734','#086246','#16875F','#0b5a40','#2f6f57','#0e5c44']; const n=name||''; let h=0; for(let i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return palette[h%palette.length]; }
+  gradFor(group){ const m={'Home & Repair':'linear-gradient(140deg,#0a5d3f,#13845a)','Cleaning & Care':'linear-gradient(140deg,#0c6b4d,#1aa073)','Moving & Delivery':'linear-gradient(140deg,#0a5f54,#16897e)','Events & Personal':'linear-gradient(140deg,#1c6b45,#43935a)','Digital & Office':'linear-gradient(140deg,#0e5c44,#34805f)'}; return m[group]||'linear-gradient(140deg,#0a5d3f,#13845a)'; }
+  initialsOf(name){ return (name||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+  onSearchInput(e){ this.setState({search:e.target.value, searchInput:e.target.value}); }
+  clearSearch(){ this.setState({search:'', searchInput:''}); }
+  toggleArr(arr,val){ return arr.includes(val)?arr.filter(x=>x!==val):arr.concat([val]); }
+  toggleQuick(kind){
+    const f=Object.assign({}, this.state.filters);
+    if(kind==='verified') f.trust=this.toggleArr(f.trust,'Verified only');
+    else if(kind==='today') f.avail=this.toggleArr(f.avail,'Available today');
+    else if(kind==='near') f.areas=f.areas.includes(this.state.area)?f.areas.filter(a=>a!==this.state.area):f.areas.concat([this.state.area]);
+    else if(kind==='rating4') f.rating=f.rating==='4.0+'?'Any':'4.0+';
+    else if(kind==='whatsapp') f.contact=this.toggleArr(f.contact,'WhatsApp available');
+    this.setState({filters:f});
+  }
+  savePv(){ this.toggleSave(this.state.activeProviderId); }
+  callPv(){ this.callProvider(this.state.activeProviderId); }
+  waPv(){ this.whatsappProvider(this.state.activeProviderId); }
+  msgPv(){ if(!this.state.loggedIn){ this.openAuth('Log in to message providers','messages'); return; } const p=this.prov(this.state.activeProviderId); if(p){ const convos=this.state.convos.slice(); if(!convos.find(c=>c.providerId===p.id)) convos.unshift({providerId:p.id, name:p.name, about:p.service.toLowerCase(), last:'You: Hello, I found you on SERRALE.', time:'now'}); this.setState({convos, tab:'messages', route:'messages'}); this.toast('Conversation with '+p.name,'ph-fill ph-chat-circle'); } }
+  loginFor(dest){ this._authDest=dest; this._pending=null; this.setState({sheet:null, route:'login', phone:'', otp:['','','','','',''], otpError:''}); }
+  setMsgTab(t){ this.setState({msgTab:t}); }
+  openConvo(c){ this.openProvider(c.providerId); }
+  openPostCat(){ this.setState({sheet:'postCat'}); }
+  openPostArea(){ this.setState({sheet:'postArea'}); }
+  setPost(key,val){ this.setState({post:Object.assign({}, this.state.post, {[key]:val}), sheet:null}); }
+  onPostDesc(e){ this.setPost('desc', e.target.value.slice(0,300)); }
+  submitRequest(){ const p=this.state.post; if(!p.category){ this.openPostCat(); this.toast('Choose a service','ph-fill ph-warning-circle'); return; } if(!p.desc.trim()){ this.toast('Describe the work briefly','ph-fill ph-warning-circle'); return; } this.setState({requestSent:true}); }
+  resetPost(){ this.setState({requestSent:false, post:{category:'',area:this.state.area,desc:'',when:'Today',contact:'Both',budget:''}}); this.toast('No active requests yet','ph-fill ph-tray'); }
+  sharePv(){ this.toast('Profile link copied','ph-fill ph-link'); }
+  openReport(){ this.toast('Report sent to SERRALE','ph-fill ph-flag'); }
+  noop(){ this.toast('Showing all reviews','ph-fill ph-chats'); }
+  goLanguage(){ this.goRoute('language'); }
+  goSafety(){ this.goRoute('safety'); }
+  goSettings(){ this.goRoute('settings'); }
+  goHelp2(){ this.goRoute('help'); }
+  goLoginProfile(){ this.loginFor('profile'); }
+  goLoginSheet(){ this.goLogin(); }
+  continueGuest(){ this.setState({route:'home', tab:'home', sheet:null}); }
+  onPhone(e){ this.setPhone(e.target.value); }
+  goLoginBack(){ clearInterval(this._ri); this.setState({route:'login', otpError:''}); }
+  verifyNow(){ this.verifyOtp(this.state.otp); }
+  setPostCat(id){ this.setState({post:Object.assign({}, this.state.post, {category:id}), sheet:null}); }
+  setPostArea(a){ this.setState({post:Object.assign({}, this.state.post, {area:a}), sheet:null}); }
+  toggleFilter(key,val){ const f=Object.assign({}, this.state.filters); f[key]=this.toggleArr(f[key],val); this.setState({filters:f}); }
+  setFilterRating(val){ const f=Object.assign({}, this.state.filters, {rating:val}); this.setState({filters:f}); }
+  resetFilters(){ this.setState({filters:{areas:[],avail:[],trust:[],rating:'Any',contact:[],price:[],exp:[]}}); }
+  applyFilters(){ const r=this.state.route; this.setState({sheet:null}); if(r!=='search'&&r!=='category'){ this.pushHist(); this.setState({route:'search'}); } else { this.toast('Filters applied','ph-fill ph-sliders-horizontal'); } }
+  cat(id){ return this.CATS.find(c=>c.id===id); }
+  prov(id){ return this.PROV.find(p=>p.id===id); }
+  withSaved(p){ return Object.assign({}, p, {saved: !!this.state.saved[p.id]}); }
+
+  toast(text, icon){ clearTimeout(this._toastT); this.setState({toast:{text, icon:icon||'ph-fill ph-check-circle'}}); this._toastT = setTimeout(()=>this.setState({toast:null}), 2200); }
+
+  go(route, extra){ this.setState(Object.assign({route, sheet:null}, extra||{})); }
+  skipSplash(){ if(this.state.route==='splash') this.setState({route:'home'}); }
+  tabTo(key){ this.setState({tab:key, route:key, sheet:null}); }
+
+  goSearch(){ this.pushHist(); this.setState({route:'search', search:this.state.searchInput}); }
+  doSearch(term){ this.pushHist(); this.setState({route:'search', search:term, searchInput:term, tab:'home'}); }
+  goCategories(){ this.tabTo('categories'); }
+  goBookmarks(){ if(!this.state.loggedIn){ this.openAuth('Log in to save providers','bookmarks'); return; } this.pushHist(); this.setState({route:'bookmarks'}); }
+  goPost(){ this.tabTo('post'); }
+  goHelp(){ this.pushHist(); this.setState({route:'help'}); }
+  goRoute(r){ this.pushHist(); this.setState({route:r, sheet:null}); }
+  openLocation(){ this.setState({sheet:'location'}); }
+  openFilter(){ this.setState({sheet:'filter'}); }
+  setArea(a){ this.setState({area:a, sheet:null}); }
+
+  pushHist(){ this._hist.push(this.state.route); }
+  back(){ const tabs=['home','categories','post','messages','profile']; let r=this._hist.pop()||'home'; const extra={}; if(tabs.includes(r)) extra.tab=r; this.setState(Object.assign({route:r, sheet:null}, extra)); }
+  openProvider(id){ this.pushHist(); this.setState({route:'provider', activeProviderId:id, aboutExpanded:false, activeProviderTab:'about'}); }
+  openCategory(id){ this.pushHist(); this.setState({route:'category', activeCategoryId:id, activeSub:null, sort:'Recommended'}); }
+  onCatSearch(e){ this.setState({catSearch:e.target.value}); }
+  setSub(sub){ this.setState({activeSub: this.state.activeSub===sub?null:sub}); }
+  openSort(){ const opts=['Recommended','Rating','Nearest','Recently added']; const i=opts.indexOf(this.state.sort); const next=opts[(i+1)%opts.length]; this.setState({sort:next}); this.toast('Sorted by '+next,'ph-fill ph-arrows-down-up'); }
+  catFilteredProviders(){
+    const s=this.state; let list=this.PROV.filter(p=>p.categoryId===s.activeCategoryId);
+    const f=s.filters;
+    if(f.areas.length) list=list.filter(p=>f.areas.includes(p.area));
+    if(f.avail.includes('Available today')) list=list.filter(p=>p.availableToday);
+    if(f.trust.includes('Verified only')) list=list.filter(p=>p.verified);
+    if(f.trust.includes('Has past work')) list=list.filter(p=>p.hasPastWork);
+    if(f.rating==='4.5+') list=list.filter(p=>p.rating>=4.5); else if(f.rating==='4.0+') list=list.filter(p=>p.rating>=4.0);
+    if(f.price.length) list=list.filter(p=>f.price.includes(p.price));
+    if(s.sort==='Rating') list=list.slice().sort((a,b)=>b.rating-a.rating);
+    else if(s.sort==='Nearest') list=list.slice().sort((a,b)=>(b.area===s.area)-(a.area===s.area));
+    else if(s.sort==='Recently added') list=list.slice().reverse();
+    else list=list.slice().sort((a,b)=>(b.verified-a.verified)||(b.rating-a.rating));
+    return list;
+  }
+
+  toggleSave(id){
+    if(!this.state.loggedIn){ this.openAuth('Log in to save providers', null, ()=>this._doSave(id)); return; }
+    this._doSave(id);
+  }
+  _doSave(id){
+    const saved = Object.assign({}, this.state.saved);
+    if(saved[id]){ delete saved[id]; this.setState({saved}); this.toast('Removed from saved','ph-fill ph-bookmark-simple'); }
+    else { saved[id]=true; this.setState({saved}); this.toast('Saved to bookmarks','ph-fill ph-bookmark-simple'); }
+  }
+
+  callProvider(id){ this.setState({sheet:'contact', contactId:id}); }
+  whatsappProvider(id){ this.setState({sheet:'wa', waId:id}); }
+  confirmCall(){ const p=this.prov(this.state.contactId); this.setState({sheet:null}); if(p) this.toast('Calling '+p.name+'…','ph-fill ph-phone-call'); }
+  confirmWa(){ const p=this.prov(this.state.waId); this.setState({sheet:null}); if(p) this.toast('Opening WhatsApp…','ph-fill ph-whatsapp-logo'); }
+
+  openAuth(title, dest, pending){ this._authDest=dest; this._pending=pending; this._authTitle=title; this.setState({sheet:'auth'}); }
+  goLogin(){ this.setState({sheet:null, route:'login', phone:'', otp:['','','','','',''], otpError:''}); }
+  closeSheet(){ this.setState({sheet:null}); }
+  setPhone(v){ this.setState({phone:v.replace(/[^0-9]/g,'').slice(0,10)}); }
+  sendCode(){
+    const ph=this.state.phone;
+    if(ph.replace(/^0/,'').length<9){ this.setState({otpError:'Enter a valid Ethiopian phone number.'}); return; }
+    clearInterval(this._ri); this.setState({route:'verify', otp:['','','','','',''], otpError:'', resend:45});
+    this._ri=setInterval(()=>{ this.setState(s=>{ if(s.resend<=1){ clearInterval(this._ri); return {resend:0}; } return {resend:s.resend-1}; }); },1000);
+  }
+  setOtp(i,v){
+    v=v.replace(/[^0-9]/g,'').slice(-1);
+    const otp=this.state.otp.slice(); otp[i]=v;
+    this.setState({otp, otpError:''});
+    if(v && i<5){ const el=document.getElementById('otp'+(i+1)); if(el) el.focus(); }
+    if(otp.every(d=>d!=='')) setTimeout(()=>this.verifyOtp(otp),120);
+  }
+  fillDemoOtp(){ const otp=['1','2','3','4','5','6']; this.setState({otp}); setTimeout(()=>this.verifyOtp(otp),200); }
+  verifyOtp(otp){
+    if(otp.some(d=>d==='')){ this.setState({otpError:'Enter the 6-digit code.'}); return; }
+    clearInterval(this._ri);
+    this.setState({loggedIn:true, user:{name:'Natnael', phone:'+251 '+(this.state.phone||'911 234 567')}, route:this._authDest||'profile', tab:(this._authDest||'profile'), sheet:null});
+    this.toast('Welcome to SERRALE','ph-fill ph-hand-waving');
+    if(this._pending){ const p=this._pending; this._pending=null; setTimeout(p,300); }
+  }
+  logout(){ this.setState({loggedIn:false, user:null, saved:{}, route:'profile', tab:'profile'}); this.toast('Logged out','ph-fill ph-sign-out'); }
+  setLang(l){ this.setState({lang:l}); }
+
+  filteredProviders(){
+    const s=this.state; let list=this.PROV.slice();
+    if(s.search){ const q=s.search.toLowerCase(); list=list.filter(p=> p.name.toLowerCase().includes(q)||p.service.toLowerCase().includes(q)||p.description.toLowerCase().includes(q)|| (this.cat(p.categoryId)&&this.cat(p.categoryId).name.toLowerCase().includes(q))); }
+    const f=s.filters;
+    if(f.areas.length) list=list.filter(p=>f.areas.includes(p.area));
+    if(f.avail.includes('Available today')) list=list.filter(p=>p.availableToday);
+    if(f.trust.includes('Verified only')) list=list.filter(p=>p.verified);
+    if(f.trust.includes('Admin reviewed')) list=list.filter(p=>p.adminReviewed);
+    if(f.trust.includes('Has past work')) list=list.filter(p=>p.hasPastWork);
+    if(f.rating==='4.5+') list=list.filter(p=>p.rating>=4.5);
+    if(f.rating==='4.0+') list=list.filter(p=>p.rating>=4.0);
+    if(f.price.length) list=list.filter(p=>f.price.includes(p.price));
+    if(f.exp.includes('5+ years')) list=list.filter(p=>p.exp>=5);
+    else if(f.exp.includes('3+ years')) list=list.filter(p=>p.exp>=3);
+    else if(f.exp.includes('1+ years')) list=list.filter(p=>p.exp>=1);
+    return list;
+  }
+  activeFilterCount(){ const f=this.state.filters; return f.areas.length+f.avail.length+f.trust.length+(f.rating!=='Any'?1:0)+f.contact.length+f.price.length+f.exp.length; }
+
+  renderVals(){
+    const s=this.state, L=this.L();
+    const tabs=[
+      {key:'home',iconOn:'ph-fill ph-house',iconOff:'ph ph-house'},
+      {key:'categories',iconOn:'ph-fill ph-squares-four',iconOff:'ph ph-squares-four'},
+      {key:'post',iconOn:'ph-fill ph-plus-circle',iconOff:'ph ph-plus-circle'},
+      {key:'profile',iconOn:'ph-fill ph-user',iconOff:'ph ph-user'},
+    ];
+    const tabRoutes=['home','categories','post','profile'];
+    const navItems=tabs.map(t=>{ const active=s.tab===t.key && tabRoutes.includes(s.route);
+      return {label:L.tabs[t.key], iconClass:active?t.iconOn:t.iconOff, color:active?'#064734':'#9aa39d', pill:active?'#EAF8EF':'transparent', go:()=>this.tabTo(t.key)}; });
+
+    const homeChipIds=['plumbers','electricians','cleaners','painters','nannies','carpenters','appliance'];
+    const homeChips=homeChipIds.map(id=>{ const c=this.cat(id); return {name:s.lang==='am'?c.am:c.name, iconClass:'ph '+c.icon, go:()=>this.openCategory(id)}; });
+    const homeCats=this.CATS.slice(0,8).map(c=>({name:s.lang==='am'?c.am:c.name, count:this.fmt(c.count), iconClass:'ph-fill '+c.icon, grad:this.gradFor(c.group), go:()=>this.openCategory(c.id)}));
+    let near=this.PROV.filter(p=> s.area==='All Addis Ababa' ? true : p.area===s.area);
+    if(near.length<3) near=this.PROV.slice();
+    const nearby=near.slice(0,5).map(p=>this.withSaved(p));
+    const verifiedList=this.PROV.filter(p=>p.verified).slice(0,3).map(p=>this.withSaved(p));
+    const pastWork=this.PASTWORK.map(w=>({title:w.title,area:w.area,category:w.category,iconClass:'ph-fill '+w.icon,bg:w.bg}));
+
+    // Categories screen
+    const cq=(s.catSearch||'').toLowerCase();
+    const groupNames=['Home & Repair','Cleaning & Care','Moving & Delivery','Events & Personal','Digital & Office'];
+    const catGroups=groupNames.map(gn=>({
+      name:gn,
+      items:this.CATS.filter(c=>c.group===gn && (!cq || c.name.toLowerCase().includes(cq))).map(c=>({name:s.lang==='am'?c.am:c.name, count:this.fmt(c.count), iconClass:'ph-fill '+c.icon, grad:this.gradFor(c.group), go:()=>this.openCategory(c.id)}))
+    })).filter(g=>g.items.length);
+
+    // Category detail
+    const ac=this.cat(s.activeCategoryId)||{name:'',count:0,subs:[]};
+    const catProvRaw=s.activeCategoryId?this.catFilteredProviders():[];
+    const catProviders=catProvRaw.map(p=>this.withSaved(p));
+    const catSubs=(ac.subs||[]).map(sub=>{ const on=s.activeSub===sub; return {label:sub, go:()=>this.setSub(sub), bg:on?'#064734':'#fff', color:on?'#fff':'#102E25', border:on?'#064734':'rgba(6,71,52,0.14)'}; });
+
+    // Search
+    const searchResRaw=this.filteredProviders();
+    const searchResults=searchResRaw.map(p=>this.withSaved(p));
+    const qk=(kind,label,icon)=>{ let on=false; const f=s.filters;
+      if(kind==='verified') on=f.trust.includes('Verified only');
+      else if(kind==='today') on=f.avail.includes('Available today');
+      else if(kind==='near') on=f.areas.includes(s.area);
+      else if(kind==='rating4') on=f.rating==='4.0+';
+      else if(kind==='whatsapp') on=f.contact.includes('WhatsApp available');
+      return {label, iconClass:on?('ph-fill '+icon):('ph '+icon), go:()=>this.toggleQuick(kind), bg:on?'#064734':'#fff', color:on?'#fff':'#102E25', border:on?'#064734':'rgba(6,71,52,0.14)'}; };
+    const quickChips=[qk('verified','Verified','ph-seal-check'),qk('today','Available today','ph-clock'),qk('near','Near me','ph-map-pin'),qk('rating4','Rating 4+','ph-star'),qk('whatsapp','WhatsApp','ph-whatsapp-logo')];
+
+    // Provider detail
+    const pv=this.prov(s.activeProviderId)||{};
+    const pvCat=this.cat(pv.categoryId)||{subs:[]};
+    const priceLabels=['Budget','Standard','Standard','Premium'];
+    const pvServices=(pvCat.subs||[]).slice(0,4).map((sv,i)=>({name:sv, price:priceLabels[i]||pv.price||'Standard'}));
+    const pvFacts=[];
+    if(pv.availableToday) pvFacts.push({label:'Available today',iconClass:'ph-fill ph-clock'});
+    if(pv.adminReviewed) pvFacts.push({label:'Admin reviewed',iconClass:'ph-fill ph-seal-check'});
+    if(pv.exp) pvFacts.push({label:pv.exp+' years experience',iconClass:'ph-fill ph-medal'});
+    if(pv.hasPastWork) pvFacts.push({label:'Has past work',iconClass:'ph-fill ph-image-square'});
+    pvFacts.push({label:'WhatsApp available',iconClass:'ph-fill ph-whatsapp-logo'});
+    const pvPastWork=this.PASTWORK.filter(w=>w.providerId===pv.id).map(w=>({title:w.title,note:w.note,iconClass:'ph-fill '+w.icon,bg:w.bg}));
+    const pvReviewList=this.REVIEWS.filter(r=>r.providerId===pv.id).slice(0,2).map(r=>({userName:r.userName,area:r.area,rating:r.rating,text:r.text,initial:(r.userName||'?')[0]}));
+
+    // Post
+    const po=s.post; const poCat=this.cat(po.category);
+    const chip=(label,active,go,extra)=>Object.assign({label,go,bg:active?'#064734':'#fff',color:active?'#fff':'#102E25',border:active?'#064734':'rgba(6,71,52,0.14)'},extra||{});
+    const whenChips=['Today','This week','Flexible'].map(w=>chip(w, po.when===w, ()=>this.setPost('when',w)));
+    const budgetChips=['Not sure','Under 1,000 ETB','1,000–3,000 ETB','3,000–7,000 ETB','7,000+ ETB'].map(b=>chip(b, po.budget===b, ()=>this.setPost('budget',b)));
+    const cIcons={Call:'ph-fill ph-phone',WhatsApp:'ph-fill ph-whatsapp-logo',Both:'ph-fill ph-chats-circle'};
+    const contactChips=['Call','WhatsApp','Both'].map(c=>{ const on=po.contact===c; return {label:c, iconClass:cIcons[c], go:()=>this.setPost('contact',c), bg:on?'#fff':'transparent', color:on?'#064734':'#5a7a6c', shadow:on?'0 2px 8px rgba(6,71,52,0.12)':'none'}; });
+
+    // Messages
+    const convos=s.convos.map(c=>({name:c.name, about:c.about, last:c.last, time:c.time, initials:this.initialsOf(c.name), bg:this.avatarColor(c.name), open:()=>this.openConvo(c)}));
+    const msgTabs=['All','Providers','Requests'].map(t=>chip(t, s.msgTab===t, ()=>this.setMsgTab(t)));
+
+    // Banner
+    const bSlides=[
+      {title:"Need a provider? We'll help",sub:'Post a request in under a minute',cta:'Request',icon:'ph-fill ph-hand-heart',grad:'linear-gradient(120deg,#075539,#0f6c49)'},
+      {title:'Verified, admin-reviewed pros',sub:'Trusted local providers near you',cta:'Explore',icon:'ph-fill ph-seal-check',grad:'linear-gradient(120deg,#0c6b4d,#16956a)'},
+      {title:'Call or WhatsApp directly',sub:'Reach providers instantly',cta:'Browse',icon:'ph-fill ph-phone-call',grad:'linear-gradient(120deg,#0a5f54,#15867b)'},
+    ];
+    const bannerSlides=bSlides.map((b,i)=>Object.assign({},b,{go:()=>this.bannerGo(i)}));
+    const bannerShift='translateX(-'+(s.bannerIndex*(100/3))+'%)';
+    const bannerDots=[0,1,2].map(i=>({go:()=>this.setBanner(i), bg:s.bannerIndex===i?'#064734':'rgba(6,71,52,0.2)', w:s.bannerIndex===i?'20px':'6px'}));
+
+    // Profile
+    const firstDiv=(rows)=>{ if(rows[0]) rows[0]=Object.assign({},rows[0],{divider:'transparent'}); return rows; };
+    const prow=(label,iconClass,go,opt)=>Object.assign({label,iconClass,go,tint:'#EAF8EF',iconColor:'#16875F',labelColor:'#102E25',divider:'rgba(6,71,52,0.07)',chevron:true},opt||{});
+    let profileGroups;
+    if(s.loggedIn){ profileGroups=[
+      {rows:firstDiv([prow('My requests','ph-fill ph-tray',()=>this.toast('No active requests yet','ph-fill ph-tray')),prow('Saved providers','ph-fill ph-bookmark-simple',()=>this.goBookmarks()),prow('Notifications','ph-fill ph-bell',()=>this.toast('No new notifications','ph-fill ph-bell'))])},
+      {rows:firstDiv([prow('Language','ph-fill ph-translate',()=>this.goLanguage()),prow('Location preference','ph-fill ph-map-pin',()=>this.openLocation()),prow('Help & Support','ph-fill ph-question',()=>this.goHelp2()),prow('Safety tips','ph-fill ph-shield-check',()=>this.goSafety())])},
+      {rows:firstDiv([prow('Become a service provider','ph-fill ph-storefront',()=>this.toast('Provider sign-up opening soon','ph-fill ph-storefront'),{tint:'#FFF4D8',iconColor:'#b8851a'}),prow('Settings','ph-fill ph-gear',()=>this.goSettings()),prow('Log out','ph-fill ph-sign-out',()=>this.logout(),{tint:'#FBEAE6',iconColor:'#C8553D',labelColor:'#C8553D',chevron:false})])},
+    ]; } else { profileGroups=[
+      {rows:firstDiv([prow('Help & Support','ph-fill ph-question',()=>this.goHelp2()),prow('Language','ph-fill ph-translate',()=>this.goLanguage()),prow('Safety tips','ph-fill ph-shield-check',()=>this.goSafety())])},
+      {rows:firstDiv([prow('Become a service provider','ph-fill ph-storefront',()=>this.toast('Provider sign-up opening soon','ph-fill ph-storefront'),{tint:'#FFF4D8',iconColor:'#b8851a'})])},
+    ]; }
+    const savedProviders=this.PROV.filter(p=>s.saved[p.id]).map(p=>this.withSaved(p));
+
+    // Help / Settings / Safety / Language
+    const hrow=(label,sub,iconClass,go)=>({label,sub,iconClass,go,tint:'#EAF8EF',iconColor:'#16875F',divider:'rgba(6,71,52,0.07)'});
+    let helpRows=[ hrow('Call SERRALE support','+251 11 000 0000','ph-fill ph-phone-call',()=>this.toast('Calling SERRALE support…','ph-fill ph-phone-call')), hrow('WhatsApp support','Chat with our team','ph-fill ph-whatsapp-logo',()=>this.toast('Opening WhatsApp…','ph-fill ph-whatsapp-logo')), hrow('Frequently asked questions','Common questions','ph-fill ph-question',()=>this.toast('Opening FAQ…','ph-fill ph-question')), hrow('Safety tips','Stay safe with SERRALE','ph-fill ph-shield-check',()=>this.goSafety()), hrow('Report an issue','Tell us what went wrong','ph-fill ph-flag',()=>this.toast('Report form opening…','ph-fill ph-flag')), hrow('Telegram community','Join the community','ph-fill ph-telegram-logo',()=>this.toast('Opening Telegram…','ph-fill ph-telegram-logo')) ];
+    helpRows=firstDiv(helpRows);
+    const langOptions=[ {label:'English',sub:'Default',flag:'EN',active:s.lang==='en',go:()=>this.setLang('en'),border:s.lang==='en'?'#16875F':'rgba(6,71,52,0.1)',tint:s.lang==='en'?'#EAF8EF':'#F3F0E6'}, {label:'አማርኛ',sub:'Amharic',flag:'አ',active:s.lang==='am',go:()=>this.setLang('am'),border:s.lang==='am'?'#16875F':'rgba(6,71,52,0.1)',tint:s.lang==='am'?'#EAF8EF':'#F3F0E6'} ];
+    const srow=(label,value,go,opt)=>Object.assign({label,value,go,labelColor:'#102E25',divider:'rgba(6,71,52,0.07)'},opt||{});
+    const settingsGroups=[
+      {rows:firstDiv([srow('Account information', s.user?s.user.name:'Guest', ()=>this.toast('Account info','ph-fill ph-user')),srow('Phone number', s.user?s.user.phone:'Not set', ()=>this.toast('Phone number','ph-fill ph-phone')),srow('Default area', s.area, ()=>this.openLocation())])},
+      {rows:firstDiv([srow('Language', s.lang==='am'?'አማርኛ':'English', ()=>this.goLanguage()),srow('Notifications','On',()=>this.toast('Notification settings','ph-fill ph-bell')),srow('Privacy','',()=>this.toast('Privacy settings','ph-fill ph-lock'))])},
+      {rows:firstDiv([srow('Terms & policies','',()=>this.toast('Terms','ph-fill ph-file-text')),srow('Delete account','',()=>this.toast('Contact support to delete','ph-fill ph-warning'),{labelColor:'#C8553D'})])},
+    ];
+    const safetyTips=[ {title:'Agree on terms first',text:'Agree on price, time, and work scope clearly before any work begins.',iconClass:'ph-fill ph-handshake'}, {title:'Prefer trust signals',text:'Choose verified and admin-reviewed providers with visible past work.',iconClass:'ph-fill ph-seal-check'}, {title:'Meet safely',text:'Confirm the location and keep initial contact within SERRALE.',iconClass:'ph-fill ph-map-pin'}, {title:'Keep records',text:'Save the provider profile and the details you agreed on.',iconClass:'ph-fill ph-note'} ];
+
+    // Sheets
+    const sheetPostArea = s.sheet==='postArea';
+    const areaActiveVal = sheetPostArea ? po.area : s.area;
+    const areaList=this.AREAS.map((a,i)=>({label:a, active:a===areaActiveVal, go:()=> sheetPostArea?this.setPostArea(a):this.setArea(a), iconClass:i===0?'ph-fill ph-buildings':'ph ph-map-pin', iconColor:i===0?'#b8851a':'#16875F', bg:a===areaActiveVal?'#EAF8EF':'transparent', weight:a===areaActiveVal?'700':'500'}));
+    const postCatList=this.CATS.map(c=>({name:s.lang==='am'?c.am:c.name, iconClass:'ph-fill '+c.icon, grad:this.gradFor(c.group), go:()=>this.setPostCat(c.id)}));
+    const fopt=(key,label)=>{ const on=s.filters[key].includes(label); return {label,go:()=>this.toggleFilter(key,label),bg:on?'#064734':'#fff',color:on?'#fff':'#102E25',border:on?'#064734':'rgba(6,71,52,0.14)'}; };
+    const frate=(label)=>{ const on=s.filters.rating===label; return {label,go:()=>this.setFilterRating(label),bg:on?'#064734':'#fff',color:on?'#fff':'#102E25',border:on?'#064734':'rgba(6,71,52,0.14)'}; };
+    const filterSections=[
+      {title:'Location', options:['Bole','Yeka','Kirkos','Arada','Lideta','Gullele','Kolfe Keranio','Nifas Silk-Lafto','Akaki Kality','Lemi Kura'].map(a=>fopt('areas',a))},
+      {title:'Availability', options:['Available today','Open now','This week'].map(a=>fopt('avail',a))},
+      {title:'Trust', options:['Verified only','Admin reviewed','Has past work','Has reviews'].map(a=>fopt('trust',a))},
+      {title:'Rating', options:['4.5+','4.0+','Any'].map(frate)},
+      {title:'Contact', options:['Phone available','WhatsApp available'].map(a=>fopt('contact',a))},
+      {title:'Price level', options:['Budget','Standard','Premium'].map(a=>fopt('price',a))},
+      {title:'Experience', options:['1+ years','3+ years','5+ years'].map(a=>fopt('exp',a))},
+    ];
+    const filterResultCount = s.route==='category' ? this.catFilteredProviders().length : this.filteredProviders().length;
+    const contactP=this.prov(s.contactId)||{}; const waP=this.prov(s.waId)||{};
+    const otpBoxes=[0,1,2,3,4,5].map(i=>({id:'otp'+i, value:s.otp[i], onInput:(e)=>this.setOtp(i,e.target.value), onKey:(e)=>{ if(e.key==='Backspace'&&!s.otp[i]&&i>0){ const el=document.getElementById('otp'+(i-1)); if(el) el.focus(); } }, border:s.otp[i]?'#16875F':'rgba(6,71,52,0.18)'}));
+
+    return {
+      showStatus: s.route!=='splash',
+      showTabs: tabRoutes.includes(s.route),
+      isSplash: s.route==='splash', skipSplash:()=>this.skipSplash(),
+      isHome: s.route==='home',
+      isCategories: s.route==='categories', isCategory: s.route==='category',
+      catSearch: s.catSearch||'', onCatSearch:(e)=>this.onCatSearch(e), catGroups,
+      catName: s.lang==='am'?ac.am:ac.name, catCount: this.fmt(ac.count), catResultCount: catProviders.length,
+      catSubs, catProviders, catEmpty: catProviders.length===0,
+      sort: s.sort, openSort:()=>this.openSort(),
+      hasFilters: this.activeFilterCount()>0, filterCount: this.activeFilterCount(),
+      back:()=>this.back(), goPost:()=>this.goPost(), noop:()=>this.noop(),
+      isSearch: s.route==='search', searchVal: s.search, hasSearchVal: !!s.search,
+      onSearchInput:(e)=>this.onSearchInput(e), clearSearch:()=>this.clearSearch(),
+      searchResults, searchCount: searchResults.length, searchEmpty: searchResults.length===0,
+      searchSuffix: s.search?(' for "'+s.search+'"'):(' near '+s.area), quickChips,
+      isProvider: s.route==='provider',
+      pvName:pv.name, pvService:pv.service, pvArea:pv.area, pvRating:(pv.rating||0).toFixed(1), pvReviews:pv.reviewCount,
+      pvInitials:this.initialsOf(pv.name), pvBg:this.avatarColor(pv.name), pvVerified:!!pv.verified,
+      pvAbout:(pv.description||'')+' Trusted by local clients across '+(pv.area||'Addis Ababa')+', with '+(pv.exp||3)+' years of hands-on experience.',
+      pvFacts, pvServices, pvPastWork, pvNoWork:pvPastWork.length===0,
+      pvReviewList, pvHasReviews:pvReviewList.length>0, pvNoReviews:pvReviewList.length===0,
+      pvSaved: !!s.saved[s.activeProviderId], pvNotSaved: !s.saved[s.activeProviderId],
+      callPv:()=>this.callPv(), waPv:()=>this.waPv(), msgPv:()=>this.msgPv(), savePv:()=>this.savePv(), sharePv:()=>this.sharePv(), openReport:()=>this.openReport(),
+      isPost: s.route==='post', postSent: s.requestSent, postGuest: !s.loggedIn && !s.requestSent, postForm: s.loggedIn && !s.requestSent,
+      postCatLabel: poCat?(s.lang==='am'?poCat.am:poCat.name):'e.g. plumber, cleaner, painter', postCatColor: poCat?'#102E25':'#9aa39d',
+      postAreaLabel: po.area, postDesc: po.desc, postDescCount: po.desc.length,
+      whenChips, budgetChips, contactChips,
+      openPostCat:()=>this.openPostCat(), openPostArea:()=>this.openPostArea(), onPostDesc:(e)=>this.onPostDesc(e),
+      submitRequest:()=>this.submitRequest(), resetPost:()=>this.resetPost(),
+      goLoginPost:()=>this.loginFor('post'), goCategories:()=>this.goCategories(),
+      isMessages: s.route==='messages', msgGuest: !s.loggedIn, msgLoggedIn: s.loggedIn,
+      bannerSlides, bannerShift, bannerDots,
+      isProfile: s.route==='profile', profileGuest: !s.loggedIn, profileLoggedIn: s.loggedIn,
+      userName: s.user?s.user.name:'', userPhone: s.user?s.user.phone:'', userInitials: s.user?this.initialsOf(s.user.name):'',
+      profileGroups, goLoginProfile:()=>this.goLoginProfile(),
+      isBookmarks: s.route==='bookmarks', savedProviders, hasSaved: savedProviders.length>0, noSaved: savedProviders.length===0,
+      isLogin: s.route==='login', isVerify: s.route==='verify',
+      phone: s.phone, onPhone:(e)=>this.onPhone(e), phoneBorder: s.otpError?'#C8553D':'rgba(6,71,52,0.14)',
+      hasOtpError: !!s.otpError, otpError: s.otpError, sendCode:()=>this.sendCode(), continueGuest:()=>this.continueGuest(),
+      phoneMasked: (s.phone||'9XX XXX XXX').replace(/(\d{3})(\d{3})(\d{0,4})/,'$1 $2 $3').trim()||'9XX XXX XXX',
+      otpBoxes, resendText: s.resend>0?('Resend code in '+s.resend+'s'):'You can resend the code now',
+      goLoginBack:()=>this.goLoginBack(), fillDemo:()=>this.fillDemoOtp(), verifyNow:()=>this.verifyNow(),
+      isHelp: s.route==='help', helpRows,
+      isLanguage: s.route==='language', langOptions,
+      isSettings: s.route==='settings', settingsGroups,
+      isSafety: s.route==='safety', safetyTips,
+      sheetOpen: !!s.sheet, closeSheet:()=>this.closeSheet(),
+      isAreaSheet: s.sheet==='location'||s.sheet==='postArea', areaList,
+      isPostCatSheet: s.sheet==='postCat', postCatList,
+      isFilterSheet: s.sheet==='filter', filterSections, filterResultCount, resetFilters:()=>this.resetFilters(), applyFilters:()=>this.applyFilters(),
+      isContactSheet: s.sheet==='contact', contactName: contactP.name, contactPhone: contactP.phone, confirmCall:()=>this.confirmCall(),
+      isWaSheet: s.sheet==='wa', waName: waP.name, waMessage: 'Hello, I found your service on SERRALE. I need help with '+(waP.service?waP.service.toLowerCase():'a service')+'. Are you available?', confirmWa:()=>this.confirmWa(),
+      isAuthSheet: s.sheet==='auth', authTitle: this._authTitle||'Log in to continue', goLoginSheet:()=>this.goLoginSheet(),
+      goLanguage:()=>this.goLanguage(), goSafety:()=>this.goSafety(), goSettings:()=>this.goSettings(),
+      navItems, area:s.area,
+      searchPlaceholder:L.searchPlaceholder, promoText:L.promoText, promoBtn:L.promoBtn,
+      nearbyTitle:L.nearbyTitle, popularTitle:L.popularTitle, verifiedTitle:L.verifiedTitle, pastWorkTitle:L.pastWorkTitle, viewAll:L.viewAll,
+      homeChips, homeCats, nearby, verifiedList, pastWork,
+      openLocation:()=>this.openLocation(), openFilter:()=>this.openFilter(),
+      goSearch:()=>this.goSearch(), goCategories:()=>this.goCategories(), goBookmarks:()=>this.goBookmarks(), goPost:()=>this.goPost(), goHelp:()=>this.goHelp(),
+      openProvider:(id)=>this.openProvider(id), openCategory:(id)=>this.openCategory(id),
+      toggleSave:(id)=>this.toggleSave(id), callProvider:(id)=>this.callProvider(id), whatsappProvider:(id)=>this.whatsappProvider(id),
+      hasToast: !!s.toast, toastText: s.toast&&s.toast.text, toastIcon: s.toast&&s.toast.icon,
+    };
+  }
+}
+</script>
+</body>
+</html>

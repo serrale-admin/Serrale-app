@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { normalizeEthiopianPhone } from '../api/auth';
+import { normalizeEthiopianPhone } from '../lib/phone';
 
 export const phoneSchema = z.object({
   phone: z

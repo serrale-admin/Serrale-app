@@ -5,7 +5,7 @@ import { http } from '../../lib/http';
 export async function searchSuggest(query: string): Promise<string[]> {
   const q = query.trim();
   if (!q) return [];
-  const rows = await http<Array<string | { label?: string; text?: string; name?: string }>>(
+  const rows = await http<(string | { label?: string; text?: string; name?: string })[]>(
     `${DIRECTORY}/search/suggest`,
     { query: { q } },
   );

@@ -1,6 +1,15 @@
 import { create } from 'zustand';
-import type { AuthUser } from '../api/auth';
 import type { Filters, Lang } from '../types';
+
+/** Minimal placeholder for the authenticated user shape. The concrete type
+ *  lives server-side; the mobile store only needs something structurally
+ *  compatible with what the UI consumes (`name`, `phone`). Replace with a
+ *  real type when the auth client exposes one. */
+interface AuthUser {
+  id?: string;
+  name: string;
+  phone: string;
+}
 
 const emptyFilters = (): Filters => ({
   areas: [],
@@ -21,10 +30,13 @@ interface AppState {
   // session
   loggedIn: boolean;
   user: AuthUser | null;
+  verifyToken: string;
   pendingPhone: string;
-  login(user: AuthUser): void;
+  pendingChallengeId: string;
+  login(user: AuthUser, verifyToken: string): void;
   logout(): void;
   setPendingPhone(phone: string): void;
+  setPendingChallengeId(id: string): void;
 
   // preferences
   area: string;
@@ -59,10 +71,13 @@ let toastTimer: ReturnType<typeof setTimeout> | undefined;
 export const useAppStore = create<AppState>((set, get) => ({
   loggedIn: false,
   user: null,
+  verifyToken: '',
   pendingPhone: '',
-  login: (user) => set({ loggedIn: true, user }),
-  logout: () => set({ loggedIn: false, user: null, saved: {} }),
+  pendingChallengeId: '',
+  login: (user, verifyToken) => set({ loggedIn: true, user, verifyToken }),
+  logout: () => set({ loggedIn: false, user: null, verifyToken: '', saved: {}, pendingPhone: '', pendingChallengeId: '' }),
   setPendingPhone: (pendingPhone) => set({ pendingPhone }),
+  setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
 
   area: 'Bole',
   lang: 'en',

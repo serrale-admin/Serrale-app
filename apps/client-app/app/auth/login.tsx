@@ -3,7 +3,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRequestOtp } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
+import { normalizeEthiopianPhone } from '../../src/lib/phone';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { PhoneForm, phoneSchema } from '../../src/schemas/auth';
 import { useAppStore } from '../../src/store/appStore';
@@ -12,6 +14,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ reason?: string; next?: string }>();
   const setPendingPhone = useAppStore((s) => s.setPendingPhone);
+  const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
+  const requestOtp = useRequestOtp();
 
   const { handleSubmit, watch, setValue, formState } = useForm<PhoneForm>({
     resolver: zodResolver(phoneSchema),
@@ -22,8 +26,16 @@ export default function LoginScreen() {
   const error = formState.errors.phone?.message;
 
   const onSend = handleSubmit((v) => {
-    setPendingPhone(v.phone);
-    router.push({ pathname: '/auth/verify', params: { next: params.next } });
+    requestOtp.mutate(
+      { phone: v.phone },
+      {
+        onSuccess: (challenge) => {
+          setPendingPhone(normalizeEthiopianPhone(v.phone) || v.phone);
+          setPendingChallengeId(challenge.challengeId);
+          router.push({ pathname: '/auth/verify', params: { next: params.next } });
+        },
+      },
+    );
   });
 
   return (
@@ -63,11 +75,17 @@ export default function LoginScreen() {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
+        {requestOtp.error instanceof Error && !error && (
+          <View style={styles.errorRow}>
+            <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
+            <Text style={styles.errorText}>{requestOtp.error.message}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.primary} onPress={onSend}>
-          <Text style={styles.primaryText}>Send code</Text>
+        <Pressable style={styles.primary} onPress={onSend} disabled={requestOtp.isPending}>
+          <Text style={styles.primaryText}>{requestOtp.isPending ? 'Sending…' : 'Send code'}</Text>
         </Pressable>
         <Pressable style={styles.guest} onPress={() => router.replace('/(tabs)/home')}>
           <Text style={styles.guestText}>Continue as guest</Text>

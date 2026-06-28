@@ -11,6 +11,7 @@ export default function VerifyScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ next?: string }>();
   const phone = useAppStore((s) => s.pendingPhone);
+  const challengeId = useAppStore((s) => s.pendingChallengeId);
   const login = useAppStore((s) => s.login);
   const showToast = useAppStore((s) => s.showToast);
   const verifyMutation = useVerifyOtp();
@@ -33,10 +34,10 @@ export default function VerifyScreen() {
       return;
     }
     verifyMutation.mutate(
-      { phone, code: code.join('') },
+      { phone, code: code.join(''), challengeId },
       {
-        onSuccess: (user) => {
-          login(user);
+        onSuccess: (result) => {
+          login({ name: 'SERRALE user', phone }, result.verifyToken);
           showToast('Welcome to SERRALE', 'ph-hand-waving');
           const next = (params.next as string) || '/(tabs)/profile';
           router.replace(next as never);

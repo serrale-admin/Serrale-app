@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as api from '../api';
+import type { VerifyArgs } from '../api';
+import { useAppStore } from '../store/appStore';
 import type { ProviderQuery, ServiceRequest } from '../types';
 
 export const keys = {
@@ -46,10 +48,17 @@ export const useProviderReviews = (id: string) =>
   useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 2), enabled: !!id });
 
 export const useCreateRequest = () =>
-  useMutation({ mutationFn: (input: ServiceRequest) => api.createServiceRequest(input) });
+  useMutation({
+    mutationFn: (input: ServiceRequest) => api.createServiceRequest(input, useAppStore.getState().verifyToken),
+  });
 
 export const useRequestOtp = () =>
-  useMutation({ mutationFn: (phone: string) => api.requestOtp(phone) });
+  useMutation({
+    mutationFn: (v: { phone: string }) => api.requestOtp(v.phone, 'directory_customer_request'),
+  });
 
 export const useVerifyOtp = () =>
-  useMutation({ mutationFn: (v: { phone: string; code: string }) => api.verifyOtp(v.phone, v.code) });
+  useMutation({
+    mutationFn: (v: { phone: string; code: string; challengeId: string }) =>
+      api.verifyOtp({ phone: v.phone, code: v.code, challengeId: v.challengeId, purpose: 'directory_customer_request' } satisfies VerifyArgs),
+  });

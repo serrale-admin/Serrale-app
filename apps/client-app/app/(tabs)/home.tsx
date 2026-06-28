@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Chip from '../../src/components/Chip';
-import EmptyState from '../../src/components/EmptyState';
 import FilterSheet from '../../src/components/FilterSheet';
 import HomeBanner from '../../src/components/HomeBanner';
 import LocationSheet from '../../src/components/LocationSheet';

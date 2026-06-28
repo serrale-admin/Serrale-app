@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { selectProviders } from '../api/providers';
+import { selectProviders } from '../api/mock/providers';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import type { Filters, ProviderQuery } from '../types';

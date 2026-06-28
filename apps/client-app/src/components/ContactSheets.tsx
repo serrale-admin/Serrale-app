@@ -1,4 +1,5 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as api from '../api';
 import { Icon } from '../lib/icons';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
@@ -11,9 +12,16 @@ const waDigits = (phone: string) => phone.replace(/[^0-9]/g, '');
 export default function ContactSheets() {
   const { mode, provider, close } = useContactStore();
   const showToast = useAppStore((s) => s.showToast);
+  const verifyToken = useAppStore((s) => s.verifyToken);
+
+  const logLead = () => {
+    if (!provider) return;
+    api.createProviderLead(provider.id, verifyToken).catch(() => {});
+  };
 
   const onCall = () => {
     if (!provider) return;
+    logLead();
     Linking.openURL(`tel:${provider.phone}`).catch(() => {});
     close();
     showToast(`Calling ${provider.name}…`, 'ph-phone-call');
@@ -21,6 +29,7 @@ export default function ContactSheets() {
 
   const onWhatsapp = () => {
     if (!provider) return;
+    logLead();
     const msg = `Hello, I found your service on SERRALE. I need help with ${provider.service.toLowerCase()}. Are you available?`;
     const url = `whatsapp://send?phone=${waDigits(provider.phone)}&text=${encodeURIComponent(msg)}`;
     Linking.openURL(url).catch(() => {});

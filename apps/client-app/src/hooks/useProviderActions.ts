@@ -7,7 +7,6 @@ import type { Provider } from '../types';
 /** Shared provider interactions: open, save (auth-gated), call, WhatsApp. */
 export function useProviderActions() {
   const router = useRouter();
-  const loggedIn = useAppStore((s) => s.loggedIn);
   const toggleSaved = useAppStore((s) => s.toggleSaved);
   const showToast = useAppStore((s) => s.showToast);
   const openCall = useContactStore((s) => s.openCall);
@@ -17,14 +16,10 @@ export function useProviderActions() {
 
   const save = useCallback(
     (id: string) => {
-      if (!loggedIn) {
-        router.push({ pathname: '/auth/login', params: { reason: 'Log in to save providers' } });
-        return;
-      }
       const added = toggleSaved(id);
       showToast(added ? 'Saved to bookmarks' : 'Removed from saved', 'ph-bookmark-simple');
     },
-    [loggedIn, router, toggleSaved, showToast],
+    [toggleSaved, showToast],
   );
 
   const call = useCallback((p: Provider) => openCall(p), [openCall]);

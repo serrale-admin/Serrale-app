@@ -24,7 +24,6 @@ export default function HomeScreen() {
   const labels = useLabels();
   const area = useAppStore((s) => s.area);
   const lang = useAppStore((s) => s.lang);
-  const loggedIn = useAppStore((s) => s.loggedIn);
   const setArea = useAppStore((s) => s.setArea);
   const filters = useAppStore((s) => s.filters);
   const toggleFilter = useAppStore((s) => s.toggleFilter);
@@ -40,8 +39,7 @@ export default function HomeScreen() {
   const quickCats = QUICK_IDS.map((id) => CATS.find((c) => c.id === id)!);
   const popularCats = CATS.slice(0, 8);
 
-  const goBookmarks = () =>
-    loggedIn ? router.push('/bookmarks') : router.push({ pathname: '/auth/login', params: { reason: 'Log in to save providers' } });
+  const goBookmarks = () => router.push('/bookmarks');
 
   const onBanner = (i: number) => {
     if (i === 0) router.push('/(tabs)/request');

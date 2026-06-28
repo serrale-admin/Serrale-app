@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Filters, Lang } from '../types';
 
 /** Minimal placeholder for the authenticated user shape. The concrete type
@@ -68,69 +69,81 @@ const toggleArr = (arr: string[], val: string): string[] =>
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-export const useAppStore = create<AppState>((set, get) => ({
-  loggedIn: false,
-  user: null,
-  verifyToken: '',
-  pendingPhone: '',
-  pendingChallengeId: '',
-  login: (user, verifyToken) => set({ loggedIn: true, user, verifyToken }),
-  logout: () => set({ loggedIn: false, user: null, verifyToken: '', saved: {}, pendingPhone: '', pendingChallengeId: '' }),
-  setPendingPhone: (pendingPhone) => set({ pendingPhone }),
-  setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      loggedIn: false,
+      user: null,
+      verifyToken: '',
+      pendingPhone: '',
+      pendingChallengeId: '',
+      login: (user, verifyToken) => set({ loggedIn: true, user, verifyToken }),
+      logout: () => set({ loggedIn: false, user: null, verifyToken: '', saved: {}, pendingPhone: '', pendingChallengeId: '' }),
+      setPendingPhone: (pendingPhone) => set({ pendingPhone }),
+      setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
 
-  area: 'Bole',
-  lang: 'en',
-  setArea: (area) => set({ area }),
-  setLang: (lang) => set({ lang }),
+      area: 'Bole',
+      lang: 'en',
+      setArea: (area) => set({ area }),
+      setLang: (lang) => set({ lang }),
 
-  saved: {},
-  isSaved: (id) => !!get().saved[id],
-  toggleSaved: (id) => {
-    const saved = { ...get().saved };
-    const next = !saved[id];
-    if (next) saved[id] = true;
-    else delete saved[id];
-    set({ saved });
-    return next;
-  },
+      saved: {},
+      isSaved: (id) => !!get().saved[id],
+      toggleSaved: (id) => {
+        const saved = { ...get().saved };
+        const next = !saved[id];
+        if (next) saved[id] = true;
+        else delete saved[id];
+        set({ saved });
+        return next;
+      },
 
-  filters: emptyFilters(),
-  toggleFilter: (key, value) =>
-    set((s) => ({ filters: { ...s.filters, [key]: toggleArr(s.filters[key] as string[], value) } })),
-  setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
-  toggleQuick: (kind) =>
-    set((s) => {
-      const f = { ...s.filters };
-      if (kind === 'verified') f.trust = toggleArr(f.trust, 'Verified only');
-      else if (kind === 'today') f.avail = toggleArr(f.avail, 'Available today');
-      else if (kind === 'near') f.areas = toggleArr(f.areas, s.area);
-      else if (kind === 'rating4') f.rating = f.rating === '4.0+' ? 'Any' : '4.0+';
-      else if (kind === 'whatsapp') f.contact = toggleArr(f.contact, 'WhatsApp available');
-      return { filters: f };
+      filters: emptyFilters(),
+      toggleFilter: (key, value) =>
+        set((s) => ({ filters: { ...s.filters, [key]: toggleArr(s.filters[key] as string[], value) } })),
+      setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
+      toggleQuick: (kind) =>
+        set((s) => {
+          const f = { ...s.filters };
+          if (kind === 'verified') f.trust = toggleArr(f.trust, 'Verified only');
+          else if (kind === 'today') f.avail = toggleArr(f.avail, 'Available today');
+          else if (kind === 'near') f.areas = toggleArr(f.areas, s.area);
+          else if (kind === 'rating4') f.rating = f.rating === '4.0+' ? 'Any' : '4.0+';
+          else if (kind === 'whatsapp') f.contact = toggleArr(f.contact, 'WhatsApp available');
+          return { filters: f };
+        }),
+      resetFilters: () => set({ filters: emptyFilters() }),
+      activeFilterCount: () => {
+        const f = get().filters;
+        return (
+          f.areas.length +
+          f.avail.length +
+          f.trust.length +
+          (f.rating !== 'Any' ? 1 : 0) +
+          f.contact.length +
+          f.price.length +
+          f.exp.length
+        );
+      },
+
+      toast: null,
+      showToast: (text, icon = 'ph-check-circle') => {
+        if (toastTimer) clearTimeout(toastTimer);
+        set({ toast: { text, icon } });
+        toastTimer = setTimeout(() => set({ toast: null }), 2200);
+      },
+      hideToast: () => {
+        if (toastTimer) clearTimeout(toastTimer);
+        set({ toast: null });
+      },
     }),
-  resetFilters: () => set({ filters: emptyFilters() }),
-  activeFilterCount: () => {
-    const f = get().filters;
-    return (
-      f.areas.length +
-      f.avail.length +
-      f.trust.length +
-      (f.rating !== 'Any' ? 1 : 0) +
-      f.contact.length +
-      f.price.length +
-      f.exp.length
-    );
-  },
-
-  toast: null,
-  showToast: (text, icon = 'ph-check-circle') => {
-    if (toastTimer) clearTimeout(toastTimer);
-    set({ toast: { text, icon } });
-    toastTimer = setTimeout(() => set({ toast: null }), 2200);
-  },
-  hideToast: () => {
-    if (toastTimer) clearTimeout(toastTimer);
-    set({ toast: null });
-  },
-}));
+    {
+      name: 'serrale-basic-app',
+      partialize: (state) => ({
+        saved: state.saved,
+        area: state.area,
+        lang: state.lang,
+      }),
+    },
+  ),
+);

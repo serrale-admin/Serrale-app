@@ -1,5 +1,5 @@
-import { REVIEWS } from '../data/mock';
-import type { Review } from '../types';
+import { REVIEWS } from '../../data/mock';
+import type { Review } from '../../types';
 import { delay } from './client';
 
 export function getProviderReviews(providerId: string, limit?: number): Promise<Review[]> {

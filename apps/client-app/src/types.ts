@@ -28,6 +28,8 @@ export interface Provider {
   price: PriceLevel;
   description: string;
   phone: string;
+  whatsapp?: string;
+  imageUrl?: string;
 }
 
 export interface Review {

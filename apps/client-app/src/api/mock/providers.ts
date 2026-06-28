@@ -1,6 +1,7 @@
-import { CATS, PASTWORK, PROV } from '../data/mock';
-import type { Filters, PastWork, Provider, ProviderQuery, SortKey } from '../types';
-import { delay, paginate, Page, PAGE_SIZE } from './client';
+import { CATS, PASTWORK, PROV } from '../../data/mock';
+import type { Filters, PastWork, Provider, ProviderQuery, SortKey } from '../../types';
+import { Page, PAGE_SIZE, paginate } from '../shared';
+import { delay } from './client';
 
 const catName = (id: string): string => CATS.find((c) => c.id === id)?.name || '';
 
@@ -26,16 +27,12 @@ function sortProviders(list: Provider[], sort: SortKey | undefined, area?: strin
   if (sort === 'Rating') return out.sort((a, b) => b.rating - a.rating);
   if (sort === 'Nearest' && area) return out.sort((a, b) => Number(b.area === area) - Number(a.area === area));
   if (sort === 'Recently added') return out.reverse();
-  // Recommended (default): verified first, then rating.
   return out.sort((a, b) => Number(b.verified) - Number(a.verified) || b.rating - a.rating);
 }
 
-/** Pure, synchronous filter+sort — used by getProviders and for instant counts. */
 export function selectProviders(query: ProviderQuery = {}): Provider[] {
   let list = PROV.slice();
-
   if (query.categoryId) list = list.filter((p) => p.categoryId === query.categoryId);
-
   if (query.search) {
     const q = query.search.toLowerCase();
     list = list.filter(
@@ -46,12 +43,10 @@ export function selectProviders(query: ProviderQuery = {}): Provider[] {
         catName(p.categoryId).toLowerCase().includes(q),
     );
   }
-
   list = list.filter((p) => matchesFilters(p, query.filters));
   return sortProviders(list, query.sort, query.area);
 }
 
-/** Filtered + sorted, paginated provider list (page size 20 per the spec). */
 export function getProviders(query: ProviderQuery = {}, page = 0): Promise<Page<Provider>> {
   return delay(paginate(selectProviders(query), page, PAGE_SIZE));
 }
@@ -60,7 +55,6 @@ export function getProvider(id: string): Promise<Provider | undefined> {
   return delay(PROV.find((p) => p.id === id));
 }
 
-/** Providers near a chosen area for the Home screen (falls back to all). */
 export function getNearbyProviders(area: string, limit = 5): Promise<Provider[]> {
   let near = PROV.filter((p) => (area === 'All Addis Ababa' ? true : p.area === area));
   if (near.length < 3) near = PROV.slice();

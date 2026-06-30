@@ -14,6 +14,12 @@ export const colors = {
   surface: '#FFFFFF',
   ivory: '#FFFDF7',
 
+  // Frosted-glass green surfaces (category cards). Simulated glass: no BlurView dependency.
+  frost: '#DCEFE4',
+  frostDeep: '#CFE6DA',
+  frostBorder: 'rgba(6,71,52,0.13)',
+  frostHi: 'rgba(255,255,255,0.55)',
+
   text: '#102E25',
   muted: '#65756D',
   faint: '#9aa39d',

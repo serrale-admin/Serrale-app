@@ -46,7 +46,7 @@ export default function RequestScreen() {
           </View>
           <Text style={styles.successTitle}>We received your request</Text>
           <Text style={styles.successText}>SERRALE will help match your request with relevant providers near {mutation.variables?.area}.</Text>
-          <Pressable style={[styles.primaryWide, { backgroundColor: colors.green800 }]} onPress={() => router.push('/(tabs)/search')}>
+          <Pressable style={[styles.primaryWide, { backgroundColor: colors.green800 }]} onPress={() => router.push('/providers')}>
             <Text style={styles.primaryWideText}>Browse providers</Text>
           </Pressable>
           <Pressable style={styles.outlineWide} onPress={() => { mutation.reset(); reset(defaultRequest(area)); showToast('No active requests yet', 'ph-tray'); }}>

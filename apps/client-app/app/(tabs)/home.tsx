@@ -1,13 +1,15 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CategoryCard from '../../src/components/CategoryCard';
 import Chip from '../../src/components/Chip';
 import FilterSheet from '../../src/components/FilterSheet';
 import HomeBanner from '../../src/components/HomeBanner';
 import LocationSheet from '../../src/components/LocationSheet';
-import Medallion from '../../src/components/Medallion';
-import ProviderRow from '../../src/components/ProviderRow';
+import ProviderCard from '../../src/components/ProviderCard';
+import ProviderMini from '../../src/components/ProviderMini';
+import SafetyCard from '../../src/components/SafetyCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import { CATS } from '../../src/data/mock';
 import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
@@ -15,9 +17,15 @@ import { Icon } from '../../src/lib/icons';
 import { useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
-import { useState } from 'react';
 
-const QUICK_IDS = ['plumbers', 'electricians', 'cleaners', 'painters', 'nannies', 'carpenters', 'appliance'];
+const QUICK_IDS = ['plumbers', 'electricians', 'cleaners', 'painters'];
+
+/** Splits an array into fixed-size chunks (used for the 4-column category grid). */
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -42,6 +50,7 @@ export default function HomeScreen() {
     .map((id) => liveCats.find((c) => c.id === id))
     .filter((c): c is (typeof liveCats)[number] => Boolean(c));
   const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
+  const popularRows = chunk(popularCats, 4);
 
   const goBookmarks = () => router.push('/bookmarks');
 
@@ -49,13 +58,13 @@ export default function HomeScreen() {
     if (i === 0) router.push('/(tabs)/request');
     else if (i === 1) {
       if (!filters.trust.includes('Verified only')) toggleFilter('trust', 'Verified only');
-      router.push('/(tabs)/search');
-    } else router.push('/categories');
+      router.push('/providers');
+    } else router.push('/(tabs)/search');
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
         {/* Header */}
         <View style={styles.header}>
           <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
@@ -71,9 +80,9 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Search + banner */}
+        {/* Search + hero banner */}
         <View style={{ paddingHorizontal: 16 }}>
-          <Pressable style={styles.search} onPress={() => router.push('/(tabs)/search')}>
+          <Pressable style={styles.search} onPress={() => router.push('/providers')}>
             <Icon name="ph-magnifying-glass" size={19} color={colors.muted} />
             <Text style={styles.searchText} numberOfLines={1}>
               {labels.searchPlaceholder}
@@ -88,26 +97,51 @@ export default function HomeScreen() {
         {/* Quick category chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {quickCats.map((c) => (
-            <Chip key={c.id} label={am ? c.am : c.name} iconName={c.icon} height={38} onPress={() => router.push(`/categories/${c.id}`)} />
+            <Chip
+              key={c.id}
+              label={am ? c.am : c.name}
+              iconName={c.icon}
+              iconColor={colors.green700}
+              iconWeight="fill"
+              height={42}
+              onPress={() => router.push(`/categories/${c.id}`)}
+            />
           ))}
+          <Chip
+            key="more"
+            label={labels.more}
+            iconName="ph-squares-four"
+            iconColor={colors.green700}
+            iconWeight="fill"
+            height={42}
+            onPress={() => router.push('/(tabs)/search')}
+          />
         </ScrollView>
 
         {/* Nearby providers */}
-        <SectionHeader title={labels.nearbyTitle} actionLabel={labels.viewAll} onAction={() => router.push('/(tabs)/search')} />
-        <View style={styles.list}>
-          {nearby.data?.map((p) => <ProviderRow key={p.id} provider={p} />)}
-        </View>
+        <SectionHeader title={labels.nearbyTitle} actionLabel={labels.viewAll} onAction={() => router.push('/providers')} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardRow}>
+          {nearby.data?.map((p) => <ProviderCard key={p.id} provider={p} />)}
+        </ScrollView>
 
         {/* Popular categories */}
-        <SectionHeader title={labels.popularTitle} actionLabel={labels.viewAll} onAction={() => router.push('/categories')} />
+        <SectionHeader title={labels.popularTitle} actionLabel={labels.viewAll} onAction={() => router.push('/(tabs)/search')} />
         <View style={styles.grid}>
-          {popularCats.map((c) => (
-            <Pressable key={c.id} style={styles.gridCell} onPress={() => router.push(`/categories/${c.id}`)}>
-              <Medallion group={c.group} icon={c.icon} />
-              <Text style={styles.gridLabel} numberOfLines={2}>
-                {am ? c.am : c.name}
-              </Text>
-            </Pressable>
+          {popularRows.map((row, ri) => (
+            <View key={ri} style={styles.gridRow}>
+              {row.map((c) => (
+                <CategoryCard
+                  key={c.id}
+                  name={am ? c.am : c.name}
+                  icon={c.icon}
+                  variant="tile"
+                  onPress={() => router.push(`/categories/${c.id}`)}
+                />
+              ))}
+              {/* keep last partial row aligned to 4 columns */}
+              {row.length < 4 &&
+                Array.from({ length: 4 - row.length }).map((_, i) => <View key={`sp-${i}`} style={{ flex: 1 }} />)}
+            </View>
           ))}
         </View>
 
@@ -116,15 +150,15 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>{labels.verifiedTitle}</Text>
           <View style={styles.adminBadge}>
             <Icon name="ph-seal-check" size={12} color={colors.success} weight="fill" />
-            <Text style={styles.adminBadgeText}>Admin reviewed</Text>
+            <Text style={styles.adminBadgeText}>{labels.adminReviewed}</Text>
           </View>
         </View>
-        <View style={styles.list}>
-          {verified.data?.map((p) => <ProviderRow key={p.id} provider={p} />)}
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardRow}>
+          {verified.data?.map((p) => <ProviderMini key={p.id} provider={p} />)}
+        </ScrollView>
 
         {/* Recent work */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 9 }]}>{labels.pastWorkTitle}</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 11 }]}>{labels.pastWorkTitle}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.workRow}>
           {recent.data?.map((w, i) => (
             <View key={i} style={styles.workCard}>
@@ -135,11 +169,9 @@ export default function HomeScreen() {
                 <Text style={styles.workTitle} numberOfLines={1}>
                   {w.title}
                 </Text>
-                <View style={styles.workMeta}>
-                  <Icon name="ph-map-pin" size={11} color={colors.muted} />
-                  <Text style={styles.workMetaText} numberOfLines={1}>
-                    {w.area} · {w.category}
-                  </Text>
+                <View style={styles.statusPill}>
+                  <Icon name="ph-check-circle" size={12} color={colors.success} weight="fill" />
+                  <Text style={styles.statusText}>{labels.completed}</Text>
                 </View>
               </View>
             </View>
@@ -147,21 +179,12 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Safety card */}
-        <Pressable style={styles.safetyCardWrap} onPress={() => router.push('/help')}>
-          <LinearGradient colors={[colors.green800, colors.green700]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.safetyCard}>
-            <View style={styles.safetyIcon}>
-              <Icon name="ph-shield-check" size={21} color={colors.gold} weight="fill" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.safetyTitle}>Stay safe with SERRALE</Text>
-              <Text style={styles.safetySub}>Agree on price, time, and work scope before starting.</Text>
-            </View>
-            <Icon name="ph-caret-right" size={16} color="rgba(255,255,255,0.8)" weight="bold" />
-          </LinearGradient>
-        </Pressable>
+        <View style={styles.safetyWrap}>
+          <SafetyCard title={labels.safetyTitle} subtitle={labels.safetySubtitle} onPress={() => router.push('/help')} />
+        </View>
       </ScrollView>
 
-      <FilterSheet visible={showFilter} onClose={() => setShowFilter(false)} onApply={() => { setShowFilter(false); router.push('/(tabs)/search'); }} />
+      <FilterSheet visible={showFilter} onClose={() => setShowFilter(false)} onApply={() => { setShowFilter(false); router.push('/providers'); }} />
       <LocationSheet visible={showLocation} onClose={() => setShowLocation(false)} value={area} onSelect={setArea} />
     </SafeAreaView>
   );
@@ -169,32 +192,27 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
-  logo: { height: 21, width: 96 },
-  locPill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, ...shadowCard, shadowOpacity: 0.05 },
-  locText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.text, maxWidth: 96 },
-  iconBtn: { width: 38, height: 38, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 9, height: 48, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingLeft: 14, paddingRight: 6, ...shadowCard },
-  searchText: { flex: 1, fontSize: 14, color: colors.faint, fontFamily: fonts.regular },
-  filterBtn: { width: 38, height: 38, borderRadius: 11, backgroundColor: colors.soft, alignItems: 'center', justifyContent: 'center' },
-  chipRow: { gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  list: { paddingHorizontal: 16, gap: 10 },
-  sectionTitle: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 9 },
-  gridCell: { width: '22.6%', minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, ...shadowCard, shadowOpacity: 0.05 },
-  gridLabel: { fontSize: 10.5, fontFamily: fonts.semibold, color: colors.text, textAlign: 'center', lineHeight: 13, paddingHorizontal: 4 },
-  verifiedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 22, paddingBottom: 9 },
-  adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.soft, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
+  logo: { height: 22, width: 100 },
+  locPill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, ...shadowCard, shadowOpacity: 0.05 },
+  locText: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, maxWidth: 110 },
+  iconBtn: { width: 40, height: 40, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 54, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.xl, paddingLeft: 16, paddingRight: 12, ...shadowCard },
+  searchText: { flex: 1, fontSize: 14.5, color: colors.faint, fontFamily: fonts.regular },
+  filterBtn: { width: 30, height: 40, alignItems: 'center', justifyContent: 'center' },
+  chipRow: { gap: 9, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  sectionTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.text },
+  cardRow: { gap: 12, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 4 },
+  grid: { paddingHorizontal: 16, gap: 10 },
+  gridRow: { flexDirection: 'row', gap: 10 },
+  verifiedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 24, paddingBottom: 11 },
+  adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.soft, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
   adminBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.success },
-  workRow: { gap: 11, paddingHorizontal: 16, paddingBottom: 4 },
-  workCard: { width: 172, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg + 2, overflow: 'hidden', ...shadowCard, shadowOpacity: 0.05 },
+  workRow: { gap: 12, paddingHorizontal: 16, paddingBottom: 4 },
+  workCard: { width: 176, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.xl, overflow: 'hidden', ...shadowCard, shadowOpacity: 0.05 },
   workThumb: { height: 96, alignItems: 'center', justifyContent: 'center' },
-  workTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.text },
-  workMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  workMetaText: { fontSize: 11, color: colors.muted, fontFamily: fonts.regular },
-  safetyCardWrap: { marginTop: 22, marginHorizontal: 16 },
-  safetyCard: { padding: 14, borderRadius: radius.xl, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  safetyIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  safetyTitle: { fontSize: 13.5, fontFamily: fonts.bold, color: '#fff' },
-  safetySub: { fontSize: 11.5, color: 'rgba(255,255,255,0.72)', marginTop: 2, lineHeight: 16, fontFamily: fonts.regular },
+  workTitle: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.text },
+  statusPill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, marginTop: 7 },
+  statusText: { fontSize: 12, fontFamily: fonts.bold, color: colors.success },
+  safetyWrap: { marginTop: 24, marginHorizontal: 16 },
 });

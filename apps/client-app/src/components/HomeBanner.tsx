@@ -64,17 +64,27 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
       >
         {SLIDES.map((b, i) => (
           <Pressable key={i} onPress={() => onGo(i)} style={{ width: slideW }}>
-            <LinearGradient colors={b.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.slide}>
-              <View style={styles.blob} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{b.title}</Text>
-                <Text style={styles.sub}>{b.sub}</Text>
-                <View style={styles.cta}>
-                  <Text style={styles.ctaText}>{b.cta}</Text>
-                  <Icon name="ph-arrow-right" size={11} color={colors.text} weight="bold" />
+            <LinearGradient colors={b.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.slide}>
+              {/* Shield motif with concentric glow rings on the left */}
+              <View style={styles.shieldWrap}>
+                <View style={[styles.ring, { width: 96, height: 96, opacity: 0.07 }]} />
+                <View style={[styles.ring, { width: 70, height: 70, opacity: 0.1 }]} />
+                <View style={styles.shield}>
+                  <Icon name={b.icon} size={34} color="#fff" weight="fill" />
                 </View>
               </View>
-              <Icon name={b.icon} size={50} color="rgba(255,255,255,0.2)" weight="fill" />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.title} numberOfLines={2}>
+                  {b.title}
+                </Text>
+                <Text style={styles.sub} numberOfLines={2}>
+                  {b.sub}
+                </Text>
+                <View style={styles.cta}>
+                  <Text style={styles.ctaText}>{b.cta}</Text>
+                  <Icon name="ph-arrow-right" size={12} color={colors.text} weight="bold" />
+                </View>
+              </View>
             </LinearGradient>
           </Pressable>
         ))}
@@ -93,13 +103,15 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
 }
 
 const styles = StyleSheet.create({
-  track: { marginTop: 12, borderRadius: radius.lg + 2, overflow: 'hidden' },
-  slide: { height: 98, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, overflow: 'hidden' },
-  blob: { position: 'absolute', top: -26, right: -20, width: 96, height: 96, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.09)' },
-  title: { fontSize: 15, fontFamily: fonts.bold, color: '#fff' },
-  sub: { fontSize: 11.5, color: 'rgba(255,255,255,0.78)', marginTop: 3, fontFamily: fonts.regular },
-  cta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, alignSelf: 'flex-start', backgroundColor: colors.gold, paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 },
-  ctaText: { fontSize: 11.5, fontFamily: fonts.bold, color: colors.text },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
+  track: { marginTop: 12, borderRadius: radius.xxl, overflow: 'hidden' },
+  slide: { minHeight: 116, flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 18, paddingVertical: 16, overflow: 'hidden' },
+  shieldWrap: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
+  ring: { position: 'absolute', borderRadius: 999, backgroundColor: '#fff' },
+  shield: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 18, fontFamily: fonts.bold, color: '#fff', lineHeight: 23 },
+  sub: { fontSize: 12.5, color: 'rgba(255,255,255,0.82)', marginTop: 4, fontFamily: fonts.regular, lineHeight: 17 },
+  cta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', backgroundColor: colors.gold, paddingHorizontal: 15, height: 38, borderRadius: 12 },
+  ctaText: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.text },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 },
   dot: { height: 6, borderRadius: 999 },
 });

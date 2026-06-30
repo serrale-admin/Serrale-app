@@ -1,134 +1,198 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CategoryCard from '../../src/components/CategoryCard';
 import Chip from '../../src/components/Chip';
-import EmptyState from '../../src/components/EmptyState';
-import FilterSheet from '../../src/components/FilterSheet';
+import IconBubble from '../../src/components/IconBubble';
 import LocationSheet from '../../src/components/LocationSheet';
-import ProviderRow from '../../src/components/ProviderRow';
-import { useProviders } from '../../src/hooks/queries';
+import PromoBanner from '../../src/components/PromoBanner';
+import { CATS } from '../../src/data/mock';
+import { useCategories } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
-import { colors, fonts, radius } from '../../src/lib/theme';
+import { useLabels } from '../../src/lib/labels';
+import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
+import type { Category } from '../../src/types';
 
-const QUICK = [
-  { kind: 'verified', label: 'Verified', icon: 'ph-seal-check' },
-  { kind: 'today', label: 'Available today', icon: 'ph-clock' },
-  { kind: 'near', label: 'Near me', icon: 'ph-map-pin' },
-  { kind: 'rating4', label: 'Rating 4+', icon: 'ph-star' },
-  { kind: 'whatsapp', label: 'WhatsApp', icon: 'ph-whatsapp-logo' },
-];
+type FilterKey = 'popular' | 'home' | 'admin' | 'top';
+const HOME_GROUPS = ['Home & Repair', 'Cleaning & Care'];
 
-export default function SearchScreen() {
+/** Plain provider-count line ("126 providers"). Real API counts; demo data fallback. */
+function countLabel(n: number, word: string): string {
+  return `${n.toLocaleString('en-US')} ${word}`;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+export default function CategoriesScreen() {
   const router = useRouter();
+  const labels = useLabels();
   const area = useAppStore((s) => s.area);
   const setArea = useAppStore((s) => s.setArea);
-  const filters = useAppStore((s) => s.filters);
-  const toggleQuick = useAppStore((s) => s.toggleQuick);
-  const filterCount = useAppStore((s) => s.activeFilterCount)();
+  const am = useAppStore((s) => s.lang) === 'am';
 
-  const [search, setSearch] = useState('');
-  const [showFilter, setShowFilter] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('popular');
   const [showLocation, setShowLocation] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
-  const query = useMemo(() => ({ search, area, filters, sort: 'Recommended' as const }), [search, area, filters]);
-  const providers = useProviders(query);
-  const results = providers.data?.items ?? [];
-  const total = providers.data?.total ?? 0;
-  const suffix = search ? ` for "${search}"` : ` near ${area}`;
+  const categories = useCategories();
+  const source: Category[] = categories.data?.length ? categories.data : CATS;
 
-  const isQuickOn = (kind: string): boolean => {
-    if (kind === 'verified') return filters.trust.includes('Verified only');
-    if (kind === 'today') return filters.avail.includes('Available today');
-    if (kind === 'near') return filters.areas.includes(area);
-    if (kind === 'rating4') return filters.rating === '4.0+';
-    if (kind === 'whatsapp') return filters.contact.includes('WhatsApp available');
-    return false;
-  };
+  const chips: { key: FilterKey; label: string; icon: string }[] = [
+    { key: 'popular', label: labels.categories.popular, icon: 'ph-star' },
+    { key: 'home', label: labels.categories.homeServices, icon: 'ph-house' },
+    { key: 'admin', label: labels.categories.adminReviewed, icon: 'ph-shield-check' },
+    { key: 'top', label: labels.categories.topRated, icon: 'ph-seal-check' },
+  ];
+
+  const list = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let items = source.filter((c) => !q || c.name.toLowerCase().includes(q) || c.am.includes(query.trim()));
+    if (filter === 'home') items = items.filter((c) => HOME_GROUPS.includes(c.group));
+    if (filter === 'popular' || filter === 'top' || filter === 'admin') {
+      items = items.slice().sort((a, b) => b.count - a.count);
+    }
+    return items;
+  }, [source, query, filter]);
+
+  const rows = chunk(list, 2);
+
+  const smallCards = [
+    {
+      title: labels.categories.adminReviewedProviders,
+      sub: labels.categories.adminReviewedProvidersSub,
+      cta: labels.categories.explore,
+      icon: 'ph-shield-check',
+      onPress: () => router.push('/providers'),
+    },
+    {
+      title: labels.categories.postRecentWork,
+      sub: labels.categories.postRecentWorkSub,
+      cta: labels.categories.addWork,
+      icon: 'ph-file-text',
+      onPress: () => router.push('/(tabs)/request'),
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Search field */}
-      <View style={styles.headerWrap}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+          <Pressable style={styles.locPill} onPress={() => setShowLocation(true)}>
+            <Icon name="ph-map-pin" size={14} color={colors.success} weight="fill" />
+            <Text style={styles.locText} numberOfLines={1}>
+              {area}
+            </Text>
+            <Icon name="ph-caret-down" size={11} color={colors.muted} weight="bold" />
+          </Pressable>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.h1}>{labels.categories.title}</Text>
+
+        {/* Search row */}
         <View style={styles.searchRow}>
           <View style={styles.field}>
-            <Icon name="ph-magnifying-glass" size={17} color={colors.muted} />
+            <Icon name="ph-magnifying-glass" size={19} color={colors.muted} />
             <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search services"
+              ref={inputRef}
+              value={query}
+              onChangeText={setQuery}
+              placeholder={labels.categories.searchPlaceholder}
               placeholderTextColor={colors.faint}
               style={styles.input}
-              autoFocus
               returnKeyType="search"
             />
-            {!!search && (
-              <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <Icon name="ph-x-circle" size={17} color="#bcc6bf" weight="fill" />
+            {!!query && (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Icon name="ph-x-circle" size={18} color="#bcc6bf" weight="fill" />
               </Pressable>
             )}
           </View>
-        </View>
-        <View style={styles.filterRow}>
-          <Pressable style={styles.softChip} onPress={() => setShowLocation(true)}>
-            <Icon name="ph-map-pin" size={13} color={colors.success} weight="fill" />
-            <Text style={styles.softChipText}>{area}</Text>
-            <Icon name="ph-caret-down" size={10} color={colors.muted} weight="bold" />
-          </Pressable>
-          <Pressable style={styles.softChip} onPress={() => setShowFilter(true)}>
-            <Icon name="ph-sliders-horizontal" size={14} color={colors.green800} weight="bold" />
-            <Text style={[styles.softChipText, { color: colors.green800 }]}>Filter</Text>
-            {filterCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{filterCount}</Text>
-              </View>
-            )}
+          <Pressable style={styles.filterBtn} onPress={() => inputRef.current?.focus()} accessibilityLabel="Filter categories">
+            <Icon name="ph-sliders-horizontal" size={19} color={colors.green800} weight="bold" />
           </Pressable>
         </View>
-      </View>
 
-      {/* Count + quick chips */}
-      <View style={styles.countWrap}>
-        <Text style={styles.count}>
-          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> providers{suffix}
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-          {QUICK.map((q) => (
-            <Chip key={q.kind} label={q.label} iconName={q.icon} active={isQuickOn(q.kind)} height={30} onPress={() => toggleQuick(q.kind)} />
+        {/* Filter chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+          {chips.map((c) => (
+            <Chip
+              key={c.key}
+              label={c.label}
+              iconName={c.icon}
+              iconColor={colors.green700}
+              active={filter === c.key}
+              height={42}
+              onPress={() => setFilter(c.key)}
+            />
           ))}
         </ScrollView>
-      </View>
 
-      {/* Results */}
-      {providers.isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.green800} />
+        {/* Promo banner */}
+        <View style={styles.section}>
+          <PromoBanner
+            badge={labels.categories.fastReliable}
+            title={labels.categories.needHelpFast}
+            subtitle={labels.categories.needHelpFastSub}
+            cta={labels.categories.requestService}
+            onPress={() => router.push('/(tabs)/request')}
+          />
         </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.results} showsVerticalScrollIndicator={false}>
-          {results.map((p) => <ProviderRow key={p.id} provider={p} />)}
-          {results.length === 0 && (
-            <EmptyState
-              icon="ph-magnifying-glass"
-              circle={colors.soft}
-              title="No providers found yet"
-              text="Try another area or request help and we will look for a provider."
-            >
-              <View style={styles.emptyActions}>
-                <Pressable style={styles.outlineBtn} onPress={() => setShowFilter(true)}>
-                  <Text style={styles.outlineText}>Change filters</Text>
-                </Pressable>
-                <Pressable style={styles.goldBtn} onPress={() => router.push('/(tabs)/request')}>
-                  <Text style={styles.goldText}>Request service</Text>
-                </Pressable>
-              </View>
-            </EmptyState>
-          )}
-        </ScrollView>
-      )}
 
-      <FilterSheet visible={showFilter} onClose={() => setShowFilter(false)} onApply={() => setShowFilter(false)} baseQuery={query} />
+        {/* Two small promo cards */}
+        <View style={[styles.section, styles.smallRow]}>
+          {smallCards.map((c) => (
+            <Pressable key={c.title} style={styles.smallCard} onPress={c.onPress}>
+              <IconBubble icon={c.icon} size={40} iconSize={20} style={{ marginTop: 2 }} />
+              <View style={styles.smallContent}>
+                <Text style={styles.smallTitle} numberOfLines={2}>
+                  {c.title}
+                </Text>
+                <Text style={styles.smallSub} numberOfLines={3}>
+                  {c.sub}
+                </Text>
+                <View style={styles.smallCta}>
+                  <Text style={styles.smallCtaText}>{c.cta}</Text>
+                  <Icon name="ph-arrow-right" size={12} color="#fff" weight="bold" />
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Category grid */}
+        <View style={[styles.section, { gap: 12 }]}>
+          {rows.map((row, ri) => (
+            <View key={ri} style={styles.gridRow}>
+              {row.map((c) => (
+                <CategoryCard
+                  key={c.id}
+                  name={am ? c.am : c.name}
+                  icon={c.icon}
+                  count={countLabel(c.count, labels.providersWord)}
+                  variant="row"
+                  style={{ flex: 1 }}
+                  onPress={() => router.push(`/categories/${c.id}`)}
+                />
+              ))}
+              {row.length < 2 && <View style={{ flex: 1 }} />}
+            </View>
+          ))}
+          {list.length === 0 && (
+            <Text style={styles.empty}>No categories match “{query}”.</Text>
+          )}
+        </View>
+      </ScrollView>
+
       <LocationSheet visible={showLocation} onClose={() => setShowLocation(false)} value={area} onSelect={setArea} />
     </SafeAreaView>
   );
@@ -136,22 +200,40 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headerWrap: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', borderRadius: radius.md, paddingHorizontal: 12 },
-  input: { flex: 1, fontSize: 14, fontFamily: fonts.regular, color: colors.text, padding: 0 },
-  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  softChip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 34, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', backgroundColor: colors.surface },
-  softChipText: { fontSize: 12.5, fontFamily: fonts.semibold, color: colors.text },
-  badge: { minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 999, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#5e4708', fontSize: 10, fontFamily: fonts.bold },
-  countWrap: { paddingHorizontal: 16, paddingBottom: 8 },
-  count: { fontSize: 13.5, color: colors.muted, marginBottom: 9, fontFamily: fonts.regular },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  results: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
-  emptyActions: { flexDirection: 'row', gap: 9, justifyContent: 'center', marginTop: 18 },
-  outlineBtn: { height: 42, paddingHorizontal: 17, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(6,71,52,0.16)', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  outlineText: { color: colors.green800, fontSize: 13, fontFamily: fonts.bold },
-  goldBtn: { height: 42, paddingHorizontal: 17, borderRadius: radius.md, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  goldText: { color: colors.text, fontSize: 13, fontFamily: fonts.bold },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 2, paddingBottom: 6 },
+  logo: { height: 22, width: 100 },
+  locPill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, ...shadowCard, shadowOpacity: 0.05 },
+  locText: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, maxWidth: 110 },
+  h1: { fontFamily: fonts.heading, fontSize: 30, color: colors.green900, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 14 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
+  field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, height: 54, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.xxl, paddingHorizontal: 16, ...shadowCard },
+  input: { flex: 1, fontSize: 14.5, fontFamily: fonts.regular, color: colors.text, padding: 0 },
+  filterBtn: { width: 54, height: 54, borderRadius: radius.xl, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', ...shadowCard },
+  chipRow: { gap: 9, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  section: { paddingHorizontal: 16, paddingTop: 18 },
+  smallRow: { flexDirection: 'row', gap: 12 },
+  smallCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    backgroundColor: colors.frost,
+    borderWidth: 1,
+    borderColor: colors.frostBorder,
+    borderRadius: radius.xxl,
+    padding: 12,
+    minHeight: 152,
+    shadowColor: '#064734',
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  smallContent: { flex: 1, minWidth: 0, gap: 4 },
+  smallTitle: { fontSize: 11.5, fontFamily: fonts.bold, color: colors.green900, lineHeight: 15 },
+  smallSub: { fontSize: 10.5, fontFamily: fonts.regular, color: colors.muted, lineHeight: 14.5 },
+  smallCta: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, marginTop: 4, backgroundColor: colors.green800, paddingHorizontal: 13, height: 34, borderRadius: 11 },
+  smallCtaText: { fontSize: 12.5, fontFamily: fonts.bold, color: '#fff' },
+  gridRow: { flexDirection: 'row', gap: 12 },
+  empty: { fontSize: 13.5, fontFamily: fonts.regular, color: colors.muted, paddingVertical: 24, textAlign: 'center' },
 });

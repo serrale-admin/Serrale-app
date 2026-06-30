@@ -41,7 +41,7 @@ export default function BookmarksScreen() {
             title="No saved providers yet"
             text="Tap the bookmark icon on any provider to save them here."
           >
-            <Pressable style={styles.btn} onPress={() => router.push('/(tabs)/search')}>
+            <Pressable style={styles.btn} onPress={() => router.push('/providers')}>
               <Text style={styles.btnText}>Browse providers</Text>
             </Pressable>
           </EmptyState>

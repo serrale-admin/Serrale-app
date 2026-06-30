@@ -8,12 +8,15 @@ interface Props {
   onPress(): void;
   iconName?: string;
   iconWeight?: IconWeight;
+  /** Icon color when inactive. Defaults to text. Pass a brand green for premium pills. */
+  iconColor?: string;
+  iconSize?: number;
   height?: number;
   style?: ViewStyle;
 }
 
 /** Pill chip with active (filled green) and inactive (white) states. */
-export default function Chip({ label, active, onPress, iconName, iconWeight, height = 34, style }: Props) {
+export default function Chip({ label, active, onPress, iconName, iconWeight, iconColor, iconSize = 13, height = 34, style }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -26,8 +29,8 @@ export default function Chip({ label, active, onPress, iconName, iconWeight, hei
       {iconName && (
         <Icon
           name={iconName}
-          size={13}
-          color={active ? '#fff' : colors.text}
+          size={iconSize}
+          color={active ? '#fff' : iconColor || colors.text}
           weight={iconWeight || (active ? 'fill' : 'regular')}
         />
       )}

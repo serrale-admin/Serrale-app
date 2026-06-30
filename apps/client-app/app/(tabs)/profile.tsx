@@ -72,7 +72,7 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.guestTitle}>Welcome to SERRALE</Text>
             <Text style={styles.guestText}>Continue with phone to save providers and manage requests.</Text>
-            <Pressable style={styles.guestBtn} onPress={() => router.push({ pathname: '/auth/login', params: { reason: 'Log in to manage your profile', next: '/(tabs)/profile' } })}>
+            <Pressable style={styles.guestBtn} onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to manage your profile', next: '/(tabs)/profile' } })}>
               <Icon name="ph-phone" size={16} color={colors.text} weight="fill" />
               <Text style={styles.guestBtnText}>Log in with phone</Text>
             </Pressable>

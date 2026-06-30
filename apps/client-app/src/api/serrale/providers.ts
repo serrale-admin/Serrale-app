@@ -3,7 +3,29 @@ import { http, QueryValue } from '../../lib/http';
 import type { Filters, PastWork, Provider, ProviderQuery } from '../../types';
 import { Page, PAGE_SIZE } from '../shared';
 import { adaptPastWork, adaptProvider, adaptReview, toProviderPage } from './adapters';
-import type { ApiListPayload, ApiProvider } from './types';
+import type { ApiListPayload, ApiPastWork, ApiProvider, ApiReview } from './types';
+
+interface ApiProvidersPayload extends ApiListPayload<ApiProvider> {
+  providers?: ApiProvider[];
+  limit?: number;
+  offset?: number;
+}
+
+interface ApiProviderDetailPayload {
+  provider?: ApiProvider | null;
+}
+
+function unwrapProvider(payload: ApiProvider | ApiProviderDetailPayload | null): ApiProvider | null {
+  if (!payload) return null;
+  if ('id' in payload) return payload;
+  return payload.provider || null;
+}
+
+function extractProviderPage(payload: ApiProvider[] | ApiProvidersPayload, page: number): Page<Provider> {
+  if (Array.isArray(payload)) return toProviderPage(payload, page);
+  const rows = payload.providers || payload.items || payload.results || payload.data || [];
+  return toProviderPage({ items: rows, total: payload.total ?? payload.count ?? rows.length }, page);
+}
 
 /** Translates UI filters into query params (backend ignores unknown keys). */
 function filterParams(filters?: Filters): Record<string, QueryValue> {
@@ -33,33 +55,35 @@ export async function getProviders(query: ProviderQuery = {}, page = 0): Promise
   };
   const path = query.search ? `${DIRECTORY}/search` : `${DIRECTORY}/providers`;
   if (query.search) params.q = query.search;
-  const payload = await http<ApiProvider[] | ApiListPayload<ApiProvider>>(path, { query: params });
-  return toProviderPage(payload, page);
+  const payload = await http<ApiProvider[] | ApiProvidersPayload>(path, { query: params });
+  return extractProviderPage(payload, page);
 }
 
 export async function getProvider(id: string): Promise<Provider | undefined> {
-  const row = await http<ApiProvider | null>(`${DIRECTORY}/providers/${encodeURIComponent(id)}`);
+  const payload = await http<ApiProvider | ApiProviderDetailPayload | null>(`${DIRECTORY}/providers/${encodeURIComponent(id)}`);
+  const row = unwrapProvider(payload);
   return row ? adaptProvider(row) : undefined;
 }
 
 export async function getNearbyProviders(area: string, limit = 5): Promise<Provider[]> {
   const params: Record<string, QueryValue> = { page: 0, page_size: limit };
   if (area && area !== 'All Addis Ababa') params.area = area;
-  const payload = await http<ApiProvider[] | ApiListPayload<ApiProvider>>(`${DIRECTORY}/providers`, { query: params });
-  return toProviderPage(payload, 0).items.slice(0, limit);
+  const payload = await http<ApiProvider[] | ApiProvidersPayload>(`${DIRECTORY}/providers`, { query: params });
+  return extractProviderPage(payload, 0).items.slice(0, limit);
 }
 
 export async function getVerifiedProviders(limit = 3): Promise<Provider[]> {
-  const payload = await http<ApiProvider[] | ApiListPayload<ApiProvider>>(`${DIRECTORY}/providers`, {
+  const payload = await http<ApiProvider[] | ApiProvidersPayload>(`${DIRECTORY}/providers`, {
     query: { page: 0, page_size: limit, verified: true },
   });
-  return toProviderPage(payload, 0).items.slice(0, limit);
+  return extractProviderPage(payload, 0).items.slice(0, limit);
 }
 
 /** Past work comes embedded in the provider detail (`portfolio`). */
 export async function getProviderPastWork(providerId: string): Promise<PastWork[]> {
-  const row = await http<ApiProvider | null>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}`);
-  return (row?.portfolio || []).map((w, i) => adaptPastWork(providerId, w, i));
+  const payload = await http<ApiProvider | ApiProviderDetailPayload | null>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}`);
+  const row = unwrapProvider(payload);
+  return (row?.portfolio || []).map((w: ApiPastWork, i: number) => adaptPastWork(providerId, w, i));
 }
 
 /** No global recent-work endpoint in the contract; live mode returns none for now. */
@@ -69,7 +93,8 @@ export function getRecentWork(_limit = 4): Promise<PastWork[]> {
 
 /** Reviews come embedded in the provider detail (`reviews`). */
 export async function getProviderReviews(providerId: string, limit?: number): Promise<import('../../types').Review[]> {
-  const row = await http<ApiProvider | null>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}`);
-  const list = (row?.reviews || []).map((r) => ({ ...adaptReview(r), providerId }));
+  const payload = await http<ApiProvider | ApiProviderDetailPayload | null>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}`);
+  const row = unwrapProvider(payload);
+  const list = (row?.reviews || []).map((r: ApiReview) => ({ ...adaptReview(r), providerId }));
   return limit ? list.slice(0, limit) : list;
 }

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "SERRALE Basic",
+    "name": "SERRALE",
     "slug": "serrale-basic",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/app-icon-square.png",
     "scheme": "serrale",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#075539"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "assets/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "et.serrale.basic"
@@ -21,7 +23,7 @@
     "android": {
       "package": "et.serrale.basic",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/adaptive-icon-square.png",
         "backgroundColor": "#075539"
       }
     },
@@ -29,6 +31,27 @@
       "bundler": "metro",
       "output": "single"
     },
-    "plugins": ["expo-router", "expo-font"]
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c0bdd64b-34fa-44d2-aef0-a1290ab29a1a"
+      }
+    },
+    "owner": "nati2328"
   }
 }

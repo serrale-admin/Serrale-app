@@ -1,7 +1,5 @@
 import {
-  Fraunces_500Medium,
   Fraunces_600SemiBold,
-  Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 import {
   Inter_400Regular,
@@ -9,7 +7,6 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { NotoSansEthiopic_400Regular } from '@expo-google-fonts/noto-sans-ethiopic';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -27,22 +24,19 @@ import { colors } from '../src/lib/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    Fraunces_500Medium,
     Fraunces_600SemiBold,
-    Fraunces_700Bold,
-    NotoSansEthiopic_400Regular,
   });
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded]);
+    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
+  }, [loaded, error]);
 
-  if (!loaded) return null;
+  if (!loaded && !error) return null;
 
   return (
     <GestureHandlerRootView style={styles.root}>

@@ -67,7 +67,7 @@ export default function RequestScreen() {
           </View>
           <Text style={styles.successTitle}>Post a service request</Text>
           <Text style={styles.successText}>Log in with your phone to tell SERRALE what you need. We'll help you find the right provider.</Text>
-          <Pressable style={[styles.primaryWide, { backgroundColor: colors.green800 }]} onPress={() => router.push({ pathname: '/auth/login', params: { reason: 'Log in to post a request', next: '/(tabs)/request' } })}>
+          <Pressable style={[styles.primaryWide, { backgroundColor: colors.green800 }]} onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to post a request', next: '/(tabs)/request' } })}>
             <Icon name="ph-phone" size={17} color="#fff" weight="fill" />
             <Text style={styles.primaryWideText}>Log in with phone</Text>
           </Pressable>

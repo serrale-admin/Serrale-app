@@ -57,6 +57,7 @@ export interface ApiReview {
 
 export interface ApiProvider {
   id: string;
+  full_name?: string;
   business_name?: string;
   name?: string;
   category?: ApiProviderCategory;
@@ -80,6 +81,7 @@ export interface ApiProvider {
   experience_years?: number;
   price_level?: string;
   price?: string;
+  experience?: string;
   description?: string;
   phone?: string;
   whatsapp?: string;

@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { avatarColor, initialsOf } from '../lib/format';
 import { colors, fonts } from '../lib/theme';
 
@@ -8,18 +8,23 @@ interface Props {
   size: number;
   radius: number;
   fontSize: number;
+  imageUrl?: string;
   /** When set, fills with a gradient instead of the name-derived solid color. */
   gradient?: [string, string];
 }
 
 /** Initials avatar with a stable color (or gradient) fallback. */
-export default function Avatar({ name, size, radius, fontSize, gradient }: Props) {
+export default function Avatar({ name, size, radius, fontSize, imageUrl, gradient }: Props) {
   const label = (
     <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
       {initialsOf(name)}
     </Text>
   );
   const box = { width: size, height: size, borderRadius: radius };
+
+  if (imageUrl) {
+    return <Image source={{ uri: imageUrl }} style={[box, styles.image]} resizeMode="cover" />;
+  }
 
   if (gradient) {
     return (
@@ -33,5 +38,6 @@ export default function Avatar({ name, size, radius, fontSize, gradient }: Props
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  image: { backgroundColor: colors.soft },
   text: { fontFamily: fonts.heading, color: colors.surface, letterSpacing: 0.5 },
 });

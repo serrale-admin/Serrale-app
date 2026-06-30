@@ -13,10 +13,11 @@ export default function ContactSheets() {
   const { mode, provider, close } = useContactStore();
   const showToast = useAppStore((s) => s.showToast);
   const verifyToken = useAppStore((s) => s.verifyToken);
+  const user = useAppStore((s) => s.user);
 
   const logLead = () => {
     if (!provider) return;
-    api.createProviderLead(provider.id, verifyToken).catch(() => {});
+    api.createProviderLead({ providerId: provider.id, verifyToken, fullName: user?.name, phone: user?.phone }).catch(() => {});
   };
 
   const onCall = () => {

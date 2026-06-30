@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
 import { useRequestOtp } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
 import { normalizeEthiopianPhone } from '../../src/lib/phone';
@@ -15,6 +16,7 @@ export default function LoginScreen() {
   const params = useLocalSearchParams<{ reason?: string; next?: string }>();
   const setPendingPhone = useAppStore((s) => s.setPendingPhone);
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
+  const showToast = useAppStore((s) => s.showToast);
   const requestOtp = useRequestOtp();
 
   const { handleSubmit, watch, setValue, formState } = useForm<PhoneForm>({
@@ -29,10 +31,23 @@ export default function LoginScreen() {
     requestOtp.mutate(
       { phone: v.phone },
       {
-        onSuccess: (challenge) => {
+        onSuccess: (challenge: { challengeId: string }) => {
           setPendingPhone(normalizeEthiopianPhone(v.phone) || v.phone);
           setPendingChallengeId(challenge.challengeId);
-          router.push({ pathname: '/auth/verify', params: { next: params.next } });
+          router.replace({ pathname: '/auth/verify', params: { next: params.next } });
+        },
+        onError: (e) => {
+          const message =
+            e instanceof NetworkError
+              ? "Couldn't reach SERRALE. Check your internet and try again."
+              : e instanceof HttpError && e.status === 429
+                ? 'Too many attempts. Please wait a minute before requesting a new code.'
+                : e instanceof ApiBusinessError
+                  ? e.message
+                  : e instanceof Error
+                    ? e.message
+                    : 'Could not send code. Please try again.';
+          showToast(message, 'ph-warning-circle');
         },
       },
     );
@@ -62,7 +77,10 @@ export default function LoginScreen() {
           </View>
           <TextInput
             value={phone}
-            onChangeText={(t) => setValue('phone', t.replace(/[^0-9]/g, '').slice(0, 10))}
+            onChangeText={(t) => {
+              setValue('phone', t.replace(/[^0-9]/g, '').slice(0, 10));
+              if (requestOtp.error) requestOtp.reset();
+            }}
             inputMode="numeric"
             placeholder="9 12 345 678"
             placeholderTextColor={colors.faint}
@@ -78,7 +96,13 @@ export default function LoginScreen() {
         {requestOtp.error instanceof Error && !error && (
           <View style={styles.errorRow}>
             <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-            <Text style={styles.errorText}>{requestOtp.error.message}</Text>
+            <Text style={styles.errorText}>
+              {requestOtp.error instanceof NetworkError
+                ? "Couldn't reach SERRALE. Check your internet and try again."
+                : requestOtp.error instanceof HttpError && requestOtp.error.status === 429
+                  ? 'Too many attempts. Please wait a minute.'
+                  : requestOtp.error.message}
+            </Text>
           </View>
         )}
       </View>

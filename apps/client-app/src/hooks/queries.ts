@@ -54,11 +54,13 @@ export const useCreateRequest = () =>
 
 export const useRequestOtp = () =>
   useMutation({
+    mutationKey: ['requestOtp'],
     mutationFn: (v: { phone: string }) => api.requestOtp(v.phone, 'directory_customer_request'),
   });
 
 export const useVerifyOtp = () =>
   useMutation({
+    mutationKey: ['verifyOtp'],
     mutationFn: (v: { phone: string; code: string; challengeId: string }) =>
       api.verifyOtp({ phone: v.phone, code: v.code, challengeId: v.challengeId, purpose: 'directory_customer_request' } satisfies VerifyArgs),
   });

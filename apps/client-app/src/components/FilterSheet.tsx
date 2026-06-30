@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { selectProviders } from '../api/mock/providers';
+import { useProviders } from '../hooks/queries';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import type { Filters, ProviderQuery } from '../types';
@@ -38,8 +38,9 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
   const toggleFilter = useAppStore((s) => s.toggleFilter);
   const setRating = useAppStore((s) => s.setRating);
   const resetFilters = useAppStore((s) => s.resetFilters);
+  const liveCount = useProviders({ ...(baseQuery || {}), filters });
 
-  const count = selectProviders({ ...baseQuery, filters }).length;
+  const count = liveCount.data?.total ?? liveCount.data?.items.length ?? 0;
 
   return (
     <BottomSheet visible={visible} onClose={onClose} showHandle={false} contentStyle={{ height: height * 0.86, backgroundColor: colors.bg }}>

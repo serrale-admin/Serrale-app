@@ -8,11 +8,11 @@ export const API_BASE_URL: string =
   process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ?? 'https://api.serrale.com/api';
 
 /**
- * When true (default), the app runs against the in-memory mock layer so it works
- * with no backend. Set EXPO_PUBLIC_USE_MOCK=false to hit the real API.
+ * Default to LIVE data. Mock mode must be explicitly opted into so production-ish
+ * local builds do not silently ship fake providers/content.
  */
 export const USE_MOCK: boolean =
-  (process.env.EXPO_PUBLIC_USE_MOCK ?? 'true').toLowerCase() !== 'false';
+  (process.env.EXPO_PUBLIC_USE_MOCK ?? 'false').toLowerCase() !== 'false';
 
 /** Basic directory namespace for all SERRALE Basic endpoints. */
 export const DIRECTORY = '/public-directory';

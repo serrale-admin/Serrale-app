@@ -32,14 +32,11 @@ export const colors = {
 
 /** Font family names exposed by the @expo-google-fonts packages. */
 export const fonts = {
-  heading500: 'Fraunces_500Medium',
   heading: 'Fraunces_600SemiBold',
-  heading700: 'Fraunces_700Bold',
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
-  ethiopic: 'NotoSansEthiopic_400Regular',
 } as const;
 
 export const radius = {

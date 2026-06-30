@@ -1,14 +1,17 @@
-import { GROUP_NAMES } from '../../data/mock';
+import { CATS, GROUP_NAMES } from '../../data/mock';
 import { DIRECTORY } from '../../lib/env';
 import { http } from '../../lib/http';
 import type { Category } from '../../types';
 import type { CategoryGroup } from '../shared';
-import { adaptCategory } from './adapters';
-import type { ApiCategory } from './types';
+
+interface CategoryCountsPayload {
+  counts?: Record<string, number>;
+}
 
 export async function getCategories(): Promise<Category[]> {
-  const rows = await http<ApiCategory[]>(`${DIRECTORY}/categories`);
-  return (rows || []).map(adaptCategory);
+  const payload = await http<CategoryCountsPayload>(`${DIRECTORY}/categories`);
+  const counts = payload?.counts || {};
+  return CATS.map((c) => ({ ...c, count: counts[c.id] ?? c.count ?? 0 }));
 }
 
 export async function getCategory(id: string): Promise<Category | undefined> {

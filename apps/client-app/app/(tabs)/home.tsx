@@ -10,7 +10,7 @@ import Medallion from '../../src/components/Medallion';
 import ProviderRow from '../../src/components/ProviderRow';
 import SectionHeader from '../../src/components/SectionHeader';
 import { CATS } from '../../src/data/mock';
-import { useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
+import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
 import { useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
@@ -35,9 +35,13 @@ export default function HomeScreen() {
   const nearby = useNearbyProviders(area);
   const verified = useVerifiedProviders();
   const recent = useRecentWork();
+  const categories = useCategories();
 
-  const quickCats = QUICK_IDS.map((id) => CATS.find((c) => c.id === id)!);
-  const popularCats = CATS.slice(0, 8);
+  const liveCats = categories.data?.length ? categories.data : CATS;
+  const quickCats = QUICK_IDS
+    .map((id) => liveCats.find((c) => c.id === id))
+    .filter((c): c is (typeof liveCats)[number] => Boolean(c));
+  const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
 
   const goBookmarks = () => router.push('/bookmarks');
 

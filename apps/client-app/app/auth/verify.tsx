@@ -2,8 +2,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useVerifyOtp } from '../../src/hooks/queries';
+import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
+import { useRequestOtp, useVerifyOtp } from '../../src/hooks/queries';
+import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
+import { maskEthiopianPhone } from '../../src/lib/phone';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
@@ -14,6 +17,8 @@ export default function VerifyScreen() {
   const challengeId = useAppStore((s) => s.pendingChallengeId);
   const login = useAppStore((s) => s.login);
   const showToast = useAppStore((s) => s.showToast);
+  const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
+  const requestOtp = useRequestOtp();
   const verifyMutation = useVerifyOtp();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -22,11 +27,16 @@ export default function VerifyScreen() {
   const inputs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
+    if (!challengeId || !phone) {
+      showToast('Enter your phone again to receive a code', 'ph-warning-circle');
+      router.replace({ pathname: '/auth/login', params: { next: params.next } });
+      return;
+    }
     const t = setInterval(() => setResend((r) => (r <= 1 ? 0 : r - 1)), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [challengeId, phone, params.next, router, showToast]);
 
-  const phoneMasked = (phone.replace('+251', '') || '9XXXXXXXX').replace(/(\d{3})(\d{3})(\d{0,3})/, '$1 $2 $3').trim() || '9XX XXX XXX';
+  const phoneMasked = phone ? maskEthiopianPhone(phone).replace('+251 ', '') : '9XX XXX XXX';
 
   const submit = (code: string[]) => {
     if (code.some((d) => d === '')) {
@@ -42,7 +52,23 @@ export default function VerifyScreen() {
           const next = (params.next as string) || '/(tabs)/profile';
           router.replace(next as never);
         },
-        onError: (e) => setError(e instanceof Error ? e.message : 'Incorrect code'),
+        onError: (e) => {
+          const message =
+            e instanceof NetworkError
+              ? "Couldn't reach SERRALE. Check your internet and try again."
+              : e instanceof HttpError && (e.status === 401 || e.status === 400)
+                ? 'That code did not work or expired. Please try again.'
+                : e instanceof HttpError && e.status === 429
+                  ? 'Too many attempts. Please wait a minute and try again.'
+                  : e instanceof ApiBusinessError
+                    ? e.message
+                    : e instanceof Error
+                      ? e.message
+                      : 'Incorrect code';
+          setOtp(['', '', '', '', '', '']);
+          setError(message);
+          setTimeout(() => inputs.current[0]?.focus(), 50);
+        },
       },
     );
   };
@@ -54,7 +80,7 @@ export default function VerifyScreen() {
     setOtp(next);
     setError('');
     if (digit && i < 5) inputs.current[i + 1]?.focus();
-    if (next.every((d) => d !== '')) setTimeout(() => submit(next), 100);
+    if (next.every((d) => d !== '') && !verifyMutation.isPending) setTimeout(() => submit(next), 100);
   };
 
   const onKey = (i: number, key: string) => {
@@ -65,6 +91,34 @@ export default function VerifyScreen() {
     const demo = ['1', '2', '3', '4', '5', '6'];
     setOtp(demo);
     setTimeout(() => submit(demo), 150);
+  };
+
+  const resendCode = () => {
+    if (resend > 0 || !phone) return;
+    setError('');
+    setOtp(['', '', '', '', '', '']);
+    requestOtp.mutate(
+      { phone },
+      {
+        onSuccess: (challenge: { challengeId: string }) => {
+          setPendingChallengeId(challenge.challengeId);
+          setResend(45);
+          showToast('Code resent', 'ph-paper-plane-tilt');
+          setTimeout(() => inputs.current[0]?.focus(), 50);
+        },
+        onError: (e) => {
+          const message =
+            e instanceof NetworkError
+              ? "Couldn't reach SERRALE. Check your internet and try again."
+              : e instanceof HttpError && e.status === 429
+                ? 'Too many attempts. Please wait a minute before requesting a new code.'
+                : e instanceof Error
+                  ? e.message
+                  : 'Could not resend code. Please try again.';
+          setError(message);
+        },
+      },
+    );
   };
 
   return (
@@ -104,16 +158,22 @@ export default function VerifyScreen() {
         )}
 
         <View style={styles.resendRow}>
-          <Text style={styles.resendText}>{resend > 0 ? `Resend code in ${resend}s` : 'You can resend the code now'}</Text>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <Pressable onPress={resendCode} disabled={resend > 0 || requestOtp.isPending} hitSlop={8}>
+            <Text style={styles.resendText}>
+              {requestOtp.isPending ? 'Sending…' : resend > 0 ? `Resend code in ${resend}s` : 'Resend code'}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => router.replace({ pathname: '/auth/login', params: { next: params.next } })} hitSlop={8}>
             <Text style={styles.changeText}>Change number</Text>
           </Pressable>
         </View>
 
-        <Pressable style={styles.demo} onPress={fillDemo}>
-          <Icon name="ph-magic-wand" size={14} color={colors.muted} />
-          <Text style={styles.demoText}>Demo: auto-fill code</Text>
-        </Pressable>
+        {USE_MOCK && (
+          <Pressable style={styles.demo} onPress={fillDemo}>
+            <Icon name="ph-magic-wand" size={14} color={colors.muted} />
+            <Text style={styles.demoText}>Demo: auto-fill code</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.footer}>

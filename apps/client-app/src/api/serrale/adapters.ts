@@ -46,10 +46,16 @@ function adaptPrice(value?: string): PriceLevel {
 
 export function adaptProvider(api: ApiProvider): Provider {
   const verified = api.verified ?? api.is_verified ?? ['approved', 'verified'].includes((api.verification_status || '').toLowerCase());
+  const experience = typeof api.years_experience === 'number'
+    ? api.years_experience
+    : typeof api.experience_years === 'number'
+      ? api.experience_years
+      : Number.parseInt(String(api.experience || '').replace(/[^0-9]/g, ''), 10) || 0;
+
   return {
     id: api.id,
-    name: api.business_name || api.name || 'Provider',
-    service: api.service || api.category?.name || api.category_name || 'Service',
+    name: api.full_name || api.business_name || api.name || 'Provider',
+    service: api.service || api.category?.name || api.category_name || api.category_slug || 'Service',
     categoryId: api.category?.slug || api.category?.id || api.category_slug || api.category_id || '',
     rating: api.rating ?? 0,
     reviewCount: api.review_count ?? api.reviews_count ?? 0,
@@ -58,7 +64,7 @@ export function adaptProvider(api: ApiProvider): Provider {
     adminReviewed: api.admin_reviewed ?? verified,
     availableToday: api.available_today ?? false,
     hasPastWork: api.has_past_work ?? (api.portfolio?.length ?? 0) > 0,
-    exp: api.years_experience ?? api.experience_years ?? 0,
+    exp: experience,
     price: adaptPrice(api.price_level || api.price),
     description: api.description || '',
     phone: api.phone || api.whatsapp || '',

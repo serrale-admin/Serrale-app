@@ -21,7 +21,7 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
 
   return (
     <Pressable style={styles.card} onPress={() => open(p.id)}>
-      <Avatar name={p.name} size={48} radius={12} fontSize={17} />
+      <Avatar name={p.name} size={48} radius={12} fontSize={17} imageUrl={p.imageUrl} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.topRow}>
           <Text style={styles.name} numberOfLines={1}>

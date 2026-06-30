@@ -61,7 +61,7 @@ export default function ProviderDetailScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.hero}>
-          <Avatar name={pv.name} size={74} radius={20} fontSize={27} />
+          <Avatar name={pv.name} size={74} radius={20} fontSize={27} imageUrl={pv.imageUrl} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.name}>{pv.name}</Text>
             <View style={styles.heroMeta}>

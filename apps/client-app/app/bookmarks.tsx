@@ -1,17 +1,28 @@
 import { useRouter } from 'expo-router';
+import { useQueries } from '@tanstack/react-query';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmptyState from '../src/components/EmptyState';
 import ProviderRow from '../src/components/ProviderRow';
 import ScreenHeader from '../src/components/ScreenHeader';
-import { PROV } from '../src/data/mock';
+import * as api from '../src/api';
 import { colors, fonts, radius } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 export default function BookmarksScreen() {
   const router = useRouter();
   const saved = useAppStore((s) => s.saved);
-  const list = PROV.filter((p) => saved[p.id]);
+  const savedIds = Object.keys(saved);
+  const providerQueries = useQueries({
+    queries: savedIds.map((id) => ({
+      queryKey: ['provider', id],
+      queryFn: () => api.getProvider(id),
+      enabled: !!id,
+    })),
+  });
+  const list = providerQueries
+    .map((q) => q.data)
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

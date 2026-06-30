@@ -1,0 +1,35 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "cache": {
+        "key": "preview-v2",
+        "paths": [
+          "./node_modules",
+          "./android/.gradle"
+        ]
+      },
+      "env": {
+        "EX_UPDATES_NATIVE_DEBUG": "0"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Filters, Lang } from '../types';
 
 /** Minimal placeholder for the authenticated user shape. The concrete type
@@ -34,7 +35,7 @@ interface AppState {
   verifyToken: string;
   pendingPhone: string;
   pendingChallengeId: string;
-  login(user: AuthUser, verifyToken: string): void;
+  login(user: AuthUser, verifyToken?: string): void;
   logout(): void;
   setPendingPhone(phone: string): void;
   setPendingChallengeId(id: string): void;
@@ -69,6 +70,22 @@ const toggleArr = (arr: string[], val: string): string[] =>
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
+/**
+ * Persistence migration. Older installs persisted plaintext auth
+ * (verifyToken / loggedIn / user / userToken) alongside prefs. Strip those on
+ * rehydrate so upgraded installs shed the old tokens; auth now lives in
+ * SecureStore + in-memory state only. Exported for unit testing.
+ */
+export function migratePersistedState(persistedState: any, _version: number): any {
+  if (persistedState) {
+    delete persistedState.verifyToken;
+    delete persistedState.loggedIn;
+    delete persistedState.user;
+    delete persistedState.userToken;
+  }
+  return persistedState;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -77,7 +94,7 @@ export const useAppStore = create<AppState>()(
       verifyToken: '',
       pendingPhone: '',
       pendingChallengeId: '',
-      login: (user, verifyToken) =>
+      login: (user, verifyToken = '') =>
         set({ loggedIn: true, user, verifyToken, pendingPhone: '', pendingChallengeId: '' }),
       logout: () => set({ loggedIn: false, user: null, verifyToken: '', saved: {}, pendingPhone: '', pendingChallengeId: '' }),
       setPendingPhone: (pendingPhone) => set({ pendingPhone }),
@@ -140,14 +157,15 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'serrale-basic-app',
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         saved: state.saved,
         area: state.area,
         lang: state.lang,
-        loggedIn: state.loggedIn,
-        user: state.user,
-        verifyToken: state.verifyToken,
       }),
+      version: 1,
+      migrate: migratePersistedState,
     },
   ),
 );
+

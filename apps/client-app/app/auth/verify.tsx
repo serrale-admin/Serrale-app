@@ -15,7 +15,6 @@ export default function VerifyScreen() {
   const params = useLocalSearchParams<{ next?: string }>();
   const phone = useAppStore((s) => s.pendingPhone);
   const challengeId = useAppStore((s) => s.pendingChallengeId);
-  const login = useAppStore((s) => s.login);
   const showToast = useAppStore((s) => s.showToast);
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
   const requestOtp = useRequestOtp();
@@ -46,11 +45,31 @@ export default function VerifyScreen() {
     verifyMutation.mutate(
       { phone, code: code.join(''), challengeId },
       {
-        onSuccess: (result) => {
-          login({ name: 'SERRALE user', phone }, result.verifyToken);
-          showToast('Welcome to SERRALE', 'ph-hand-waving');
-          const next = (params.next as string) || '/(tabs)/profile';
-          router.replace(next as never);
+        onSuccess: async (result) => {
+          try {
+            const { handleExchange } = require('../../src/lib/session-manager');
+            await handleExchange(phone, result.verifyToken);
+            showToast('Welcome to SERRALE', 'ph-hand-waving');
+            const next = (params.next as string) || '/(tabs)/profile';
+            router.replace(next as never);
+          } catch (e) {
+            // Distinguish a temporary backend outage (SESSION_STORE_UNAVAILABLE,
+            // 503) from a consumed/invalid verify token (INVALID_VERIFY_TOKEN,
+            // which the backend returns as 401 OR 400). Branch on the stable
+            // code first; fall back to status for older responses.
+            const code = e instanceof HttpError ? e.code : undefined;
+            const message =
+              code === 'SESSION_STORE_UNAVAILABLE' || (e instanceof HttpError && e.status === 503)
+                ? 'Temporary server session issue. Please try again in a moment.'
+                : code === 'INVALID_VERIFY_TOKEN' || (e instanceof HttpError && e.status === 401)
+                  ? 'Verification token expired or invalid. Please restart login.'
+                  : e instanceof Error
+                    ? e.message
+                    : 'Session exchange failed. Please try again.';
+            setOtp(['', '', '', '', '', '']);
+            setError(message);
+            setTimeout(() => inputs.current[0]?.focus(), 50);
+          }
         },
         onError: (e) => {
           const message =
@@ -72,6 +91,7 @@ export default function VerifyScreen() {
       },
     );
   };
+
 
   const setDigit = (i: number, v: string) => {
     const digit = v.replace(/[^0-9]/g, '').slice(-1);

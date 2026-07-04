@@ -41,6 +41,7 @@ export interface RequestOptions {
   query?: Record<string, QueryValue>;
   signal?: AbortSignal;
   timeoutMs?: number;
+  skipAuthInterceptor?: boolean;
 }
 
 /** The SERRALE API envelope: `{ success, data }` on success, `{ success:false, error }` on failure. */
@@ -49,6 +50,20 @@ interface Envelope<T> {
   data?: T;
   error?: { code?: string; message?: string } | string;
   message?: string;
+}
+
+type TokenProvider = () => Promise<string | null>;
+type UnauthorizedHandler = (replay: () => Promise<any>, isSafe: boolean) => Promise<any>;
+
+let tokenProvider: TokenProvider | null = null;
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setTokenProvider(provider: TokenProvider) {
+  tokenProvider = provider;
+}
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler) {
+  unauthorizedHandler = handler;
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
@@ -74,11 +89,13 @@ function errorMessage(e: Envelope<unknown>): { message: string; code?: string } 
  * UI maps to error states. Returns `data` as `T`.
  */
 export async function http<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, token, query, signal, timeoutMs = 15000 } = opts;
+  const { method = 'GET', body, token, query, signal, timeoutMs = 15000, skipAuthInterceptor } = opts;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   if (signal) signal.addEventListener('abort', () => controller.abort());
+
+  const activeToken = token || (tokenProvider ? await tokenProvider() : undefined);
 
   let res: Response;
   try {
@@ -87,7 +104,7 @@ export async function http<T>(path: string, opts: RequestOptions = {}): Promise<
       headers: {
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
@@ -106,6 +123,14 @@ export async function http<T>(path: string, opts: RequestOptions = {}): Promise<
     parsed = text ? (JSON.parse(text) as Envelope<T>) : null;
   } catch {
     parsed = null;
+  }
+
+  if (res.status === 401 && !skipAuthInterceptor && unauthorizedHandler) {
+    const isSafe = method === 'GET';
+    return await unauthorizedHandler(
+      () => http<T>(path, { ...opts, skipAuthInterceptor: true }),
+      isSafe
+    );
   }
 
   if (!res.ok) {

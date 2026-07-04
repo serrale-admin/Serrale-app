@@ -158,30 +158,30 @@ Important implementation details:
 
 ## 6. Authentication and local state
 
-Basic mobile currently uses phone OTP for the customer request flow:
+Basic mobile supports phone OTP for the customer request flow and persistent sessions:
 
 ```text
 directory_customer_request
   -> POST /otp/request
   -> POST /otp/verify
   -> one-time verify_token
-  -> POST /leads/request
+  -> POST /customers/session (exchange -> access + refresh tokens)
+  -> POST /leads/request (using Bearer access token)
 ```
 
-The Zustand store is `apps/client-app/src/store/appStore.ts` and persists under `serrale-basic-app`:
-
-- selected area;
-- language;
-- saved provider IDs;
-- lightweight logged-in user fields;
-- current verify token.
+### Customer Persistent Sessions (Added 2026-07)
+- **Secure Persistent Storage**: Access/refresh tokens and metadata are stored securely using `expo-secure-store` with JSON serialization.
+- **Single-Use Rotation**: Opaque rotating refresh tokens are exchanged for a new access token (1h) and a new refresh token (30d). Presenting an already-used or revoked token triggers family-wide revocation to mitigate breaches.
+- **Bootstrap Restoring**: On app startup, the bootstrap sequence restores existing credentials. Valid tokens sign the user in immediately; expired access tokens trigger an automatic background refresh request.
+- **Fresh Install Guard**: Stale tokens surviving Keychain storage after app reinstallation are automatically cleared on first launch by verifying an `installed` marker in `AsyncStorage`.
+- **HTTP Client Auto-Auth**: The HTTP helper automatically injects the `Authorization: Bearer <access_token>` header when a customer session is active.
+- **Zustand Store (`appStore.ts`)**: Synchronizes lightweight auth state (`loggedIn` flag and basic user info) with session availability.
 
 Current limitations must not be described as completed backend features:
 
 - Saved providers are local Zustand state, not server-synchronized bookmarks.
-- Mobile login is a lightweight OTP gate for requests, not the full Basic provider account/session implementation used by the web directory.
+- Mobile login is a customer-only OTP session; provider onboarding/profile management is not part of the current bottom tabs.
 - Recent work is not fetched globally in live mode.
-- Provider-only Manage/onboarding is not part of the current mobile tab set.
 
 Do not reuse Plus tokens, Supabase browser sessions, or Plus profile helpers for Basic mobile auth.
 

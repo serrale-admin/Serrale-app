@@ -17,6 +17,7 @@ import ContactSheets from '../src/components/ContactSheets';
 import Toast from '../src/components/Toast';
 import { queryClient } from '../src/lib/queryClient';
 import { colors } from '../src/lib/theme';
+import { initializeSessionManager } from '../src/lib/session-manager';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,10 +30,15 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    initializeSessionManager().catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
 
   if (!loaded && !error) return null;
+
 
   return (
     <GestureHandlerRootView style={styles.root}>

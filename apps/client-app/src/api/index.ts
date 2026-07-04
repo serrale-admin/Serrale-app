@@ -25,6 +25,10 @@ export const createServiceRequest = impl.createServiceRequest;
 export const createProviderLead = impl.createProviderLead;
 export const requestOtp = impl.requestOtp;
 export const verifyOtp = impl.verifyOtp;
+export const exchangeSession = impl.exchangeSession;
+export const refreshSession = impl.refreshSession;
+export const logoutSession = impl.logoutSession;
+
 
 export type { Page, CategoryGroup, CreatedRequest, OtpChallenge, OtpPurpose, VerifyResult } from './shared';
 export { PAGE_SIZE } from './shared';

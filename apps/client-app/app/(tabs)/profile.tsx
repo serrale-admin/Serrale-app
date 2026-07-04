@@ -22,8 +22,12 @@ export default function ProfileScreen() {
   const loggedIn = useAppStore((s) => s.loggedIn);
   const user = useAppStore((s) => s.user);
   const area = useAppStore((s) => s.area);
-  const logout = useAppStore((s) => s.logout);
   const showToast = useAppStore((s) => s.showToast);
+
+  const onLogout = async () => {
+    const { handleLogout } = require('../../src/lib/session-manager');
+    await handleLogout();
+  };
 
   const becomeProvider: Row = {
     label: 'Become a service provider',
@@ -48,7 +52,7 @@ export default function ProfileScreen() {
         [
           becomeProvider,
           { label: 'Settings', icon: 'ph-gear', onPress: () => router.push('/settings') },
-          { label: 'Log out', icon: 'ph-sign-out', onPress: logout, tint: '#FBEAE6', iconColor: colors.danger, labelColor: colors.danger, chevron: false },
+          { label: 'Log out', icon: 'ph-sign-out', onPress: onLogout, tint: '#FBEAE6', iconColor: colors.danger, labelColor: colors.danger, chevron: false },
         ],
       ]
     : [

@@ -28,3 +28,42 @@ export function verifyOtp(args: VerifyArgs): Promise<VerifyResult> {
   }
   return delay({ verified: true, verifyToken: 'mock-verify-token-' + Date.now() }, 400);
 }
+
+/** Mock exchangeSession */
+export function exchangeSession(phone: string, _verifyToken: string): Promise<any> {
+  const normalized = normalizeEthiopianPhone(phone) || phone;
+  return delay(
+    {
+      access_token: 'mock-access-token-' + Date.now(),
+      refresh_token: 'mock-refresh-token-' + Date.now(),
+      access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      customer: {
+        id: 'mock-customer-uuid',
+        phone: normalized,
+        phone_verified: true,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    },
+    400,
+  );
+}
+
+/** Mock refreshSession */
+export function refreshSession(_refreshToken: string): Promise<any> {
+  return delay(
+    {
+      access_token: 'mock-access-token-rotated-' + Date.now(),
+      refresh_token: 'mock-refresh-token-rotated-' + Date.now(),
+      access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+    },
+    400,
+  );
+}
+
+/** Mock logoutSession */
+export function logoutSession(_refreshToken: string): Promise<{ ok: boolean }> {
+  return delay({ ok: true }, 200);
+}
+

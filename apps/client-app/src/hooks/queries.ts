@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as api from '../api';
 import type { VerifyArgs } from '../api';
-import { useAppStore } from '../store/appStore';
 import type { ProviderQuery, ServiceRequest } from '../types';
 
 export const keys = {
@@ -49,8 +48,9 @@ export const useProviderReviews = (id: string) =>
 
 export const useCreateRequest = () =>
   useMutation({
-    mutationFn: (input: ServiceRequest) => api.createServiceRequest(input, useAppStore.getState().verifyToken),
+    mutationFn: (input: ServiceRequest) => api.createServiceRequest(input, undefined),
   });
+
 
 export const useRequestOtp = () =>
   useMutation({

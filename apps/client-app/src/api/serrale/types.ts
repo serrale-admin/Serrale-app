@@ -103,3 +103,27 @@ export interface ApiListPayload<T> {
   page_size?: number;
   has_more?: boolean;
 }
+
+export interface ApiSessionCustomer {
+  id: string;
+  phone: string;
+  phone_verified: boolean;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  last_seen_at?: string;
+}
+
+export interface ApiSessionExchange {
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+  customer: ApiSessionCustomer;
+}
+
+export interface ApiSessionRefresh {
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+}
+

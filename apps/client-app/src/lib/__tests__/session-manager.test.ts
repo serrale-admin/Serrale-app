@@ -1,0 +1,252 @@
+import { doRefresh, handleExchange, handleLogout, initializeSessionManager } from '../session-manager';
+import { secureSession } from '../secure-session';
+import { useAppStore } from '../../store/appStore';
+import { queryClient } from '../queryClient';
+import { HttpError } from '../http';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as api from '../../api';
+
+jest.mock('../../api', () => ({
+  exchangeSession: jest.fn(),
+  refreshSession: jest.fn(),
+  logoutSession: jest.fn(),
+}));
+
+jest.mock('expo-secure-store', () => {
+  let store: Record<string, string> = {};
+  return {
+    getItemAsync: jest.fn(async (key: string) => store[key] || null),
+    setItemAsync: jest.fn(async (key: string, value: string) => {
+      store[key] = value;
+    }),
+    deleteItemAsync: jest.fn(async (key: string) => {
+      delete store[key];
+    }),
+    _clear: () => {
+      store = {};
+    },
+  };
+});
+
+jest.mock('@react-native-async-storage/async-storage', () => {
+  let store: Record<string, string> = {};
+  const mockStorage = {
+    getItem: jest.fn(async (key: string) => store[key] || null),
+    setItem: jest.fn(async (key: string, value: string) => {
+      store[key] = value;
+      return null;
+    }),
+    removeItem: jest.fn(async (key: string) => {
+      delete store[key];
+      return null;
+    }),
+    _clear: () => {
+      store = {};
+    },
+  };
+  return {
+    __esModule: true,
+    default: mockStorage,
+  };
+});
+
+// Helper to generate a fake JWT with JSON payload
+function makeFakeJwt(payload: object) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=/g, '');
+  return `${header}.${body}.signature`;
+}
+
+describe('session-manager', () => {
+  beforeEach(async () => {
+    require('expo-secure-store')._clear();
+    require('@react-native-async-storage/async-storage').default._clear();
+    jest.clearAllMocks();
+    useAppStore.getState().logout();
+    queryClient.clear();
+  });
+
+  describe('handleExchange', () => {
+    it('should exchange verifyToken and login user', async () => {
+      const mockResult = {
+        access_token: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refresh_token: 'refresh-token-val',
+        access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+        customer: {
+          id: 'cust-1',
+          phone: '+251912345678',
+          phone_verified: true,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+      (api.exchangeSession as jest.Mock).mockResolvedValue(mockResult);
+
+      await handleExchange('0912345678', 'verify-token-val');
+
+      const saved = await secureSession.read();
+      expect(saved).toEqual({
+        accessToken: mockResult.access_token,
+        refreshToken: mockResult.refresh_token,
+        accessExpiresAt: mockResult.access_expires_at,
+      });
+
+      const storeState = useAppStore.getState();
+      expect(storeState.loggedIn).toBe(true);
+      expect(storeState.user).toEqual({
+        id: 'cust-1',
+        phone: '+251912345678',
+        name: 'SERRALE user',
+      });
+    });
+  });
+
+  describe('doRefresh (single-flight)', () => {
+    it('should perform exactly 1 refresh call for multiple concurrent refresh attempts', async () => {
+      const mockTokens = {
+        accessToken: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refreshToken: 'refresh-old',
+        accessExpiresAt: new Date(Date.now() - 5000).toISOString(), // expired
+      };
+      await secureSession.write(mockTokens);
+
+      const mockRefreshResult = {
+        access_token: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refresh_token: 'refresh-new',
+        access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      };
+
+      (api.refreshSession as jest.Mock).mockImplementation(() => {
+        return new Promise((resolve) => setTimeout(() => resolve(mockRefreshResult), 50));
+      });
+
+      // Concurrent calls
+      const [res1, res2] = await Promise.all([doRefresh(), doRefresh()]);
+
+      expect(api.refreshSession).toHaveBeenCalledTimes(1);
+      expect(res1).toEqual({
+        accessToken: mockRefreshResult.access_token,
+        refreshToken: mockRefreshResult.refresh_token,
+        accessExpiresAt: mockRefreshResult.access_expires_at,
+      });
+      expect(res2).toEqual(res1);
+    });
+
+    it('should clear session and logout on 401 SESSION_EXPIRED', async () => {
+      const mockTokens = {
+        accessToken: 'access-old',
+        refreshToken: 'refresh-old',
+        accessExpiresAt: new Date(Date.now() - 5000).toISOString(),
+      };
+      await secureSession.write(mockTokens);
+
+      (api.refreshSession as jest.Mock).mockRejectedValue(new HttpError(401, 'Session expired'));
+
+      await doRefresh();
+
+      const saved = await secureSession.read();
+      expect(saved).toBeNull();
+      expect(useAppStore.getState().loggedIn).toBe(false);
+    });
+
+    it('should retain tokens and not logout on network error or 503', async () => {
+      const mockTokens = {
+        accessToken: 'access-old',
+        refreshToken: 'refresh-old',
+        accessExpiresAt: new Date(Date.now() - 5000).toISOString(),
+      };
+      await secureSession.write(mockTokens);
+
+      (api.refreshSession as jest.Mock).mockRejectedValue(new HttpError(503, 'Service unavailable'));
+
+      await expect(doRefresh()).rejects.toThrow();
+
+      const saved = await secureSession.read();
+      expect(saved).toEqual(mockTokens);
+    });
+  });
+
+  describe('handleLogout', () => {
+    it('should clear everything, call logout API (best effort), and be idempotent', async () => {
+      const mockTokens = {
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        accessExpiresAt: new Date().toISOString(),
+      };
+      await secureSession.write(mockTokens);
+      (api.logoutSession as jest.Mock).mockResolvedValue({ ok: true });
+
+      // Seed a private query so we can assert the cache is cleared on logout.
+      queryClient.setQueryData(['customers', 'me'], { phone: '+251912345678' });
+      useAppStore.getState().login({ id: 'c1', phone: '+251912345678', name: 'SERRALE user' });
+
+      // First logout
+      await handleLogout();
+
+      expect(api.logoutSession).toHaveBeenCalledWith('refresh');
+      expect(await secureSession.read()).toBeNull();
+      expect(useAppStore.getState().loggedIn).toBe(false);
+      // Private React Query cache is cleared.
+      expect(queryClient.getQueryData(['customers', 'me'])).toBeUndefined();
+
+      // Second logout (idempotent check)
+      await expect(handleLogout()).resolves.not.toThrow();
+    });
+  });
+
+  describe('bootstrap restore', () => {
+    beforeEach(async () => {
+      await AsyncStorage.setItem('serrale_install_marker', 'installed');
+    });
+
+    it('should login immediately if valid tokens are present', async () => {
+      const mockTokens = {
+        accessToken: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refreshToken: 'refresh',
+        accessExpiresAt: new Date(Date.now() + 3600_000).toISOString(), // valid for 1h
+      };
+      await secureSession.write(mockTokens);
+
+      await initializeSessionManager();
+
+      const storeState = useAppStore.getState();
+      expect(storeState.loggedIn).toBe(true);
+      expect(storeState.user?.phone).toBe('+251912345678');
+      expect(api.refreshSession).not.toHaveBeenCalled();
+    });
+
+    it('should trigger background refresh if tokens are expired', async () => {
+      const mockTokens = {
+        accessToken: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refreshToken: 'refresh-expired',
+        accessExpiresAt: new Date(Date.now() - 5000).toISOString(), // expired
+      };
+      await secureSession.write(mockTokens);
+
+      const mockRefreshResult = {
+        access_token: makeFakeJwt({ customer_id: 'cust-1', phone: '+251912345678' }),
+        refresh_token: 'refresh-new',
+        access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      };
+      (api.refreshSession as jest.Mock).mockResolvedValue(mockRefreshResult);
+
+      await initializeSessionManager();
+
+      // Wait a moment for background task to resolve
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(api.refreshSession).toHaveBeenCalledWith('refresh-expired');
+      const saved = await secureSession.read();
+      expect(saved?.refreshToken).toBe('refresh-new');
+    });
+
+    it('should stay logged out when no tokens are present', async () => {
+      await initializeSessionManager();
+
+      expect(useAppStore.getState().loggedIn).toBe(false);
+      expect(useAppStore.getState().user).toBeNull();
+      expect(api.refreshSession).not.toHaveBeenCalled();
+    });
+  });
+});

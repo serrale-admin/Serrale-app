@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -11,45 +12,61 @@ import {
   View,
 } from 'react-native';
 import { Icon } from '../lib/icons';
-import { colors, fonts, radius } from '../lib/theme';
+import { colors, fonts, layout, radius } from '../lib/theme';
 
 interface Slide {
   title: string;
   sub: string;
   cta: string;
-  icon: string;
-  grad: [string, string];
+  bg: [string, string];
 }
 
 const SLIDES: Slide[] = [
-  { title: "Need a provider? We'll help", sub: 'Post a request in under a minute', cta: 'Request', icon: 'ph-hand-heart', grad: ['#075539', '#0f6c49'] },
-  { title: 'Verified, admin-reviewed pros', sub: 'Trusted local providers near you', cta: 'Explore', icon: 'ph-seal-check', grad: ['#0c6b4d', '#16956a'] },
-  { title: 'Call or WhatsApp directly', sub: 'Reach providers instantly', cta: 'Browse', icon: 'ph-phone-call', grad: ['#0a5f54', '#15867b'] },
+  {
+    title: 'Verified, admin-reviewed pros',
+    sub: 'Trusted local providers near you',
+    cta: 'Explore',
+    bg: ['#004C39', '#00614A'],
+  },
+  {
+    title: "Need a provider? We'll help",
+    sub: 'Post a request in under a minute',
+    cta: 'Request',
+    bg: ['#004936', '#00634B'],
+  },
+  {
+    title: 'Call or WhatsApp directly',
+    sub: 'Reach local providers instantly',
+    cta: 'Browse',
+    bg: ['#004A3A', '#006652'],
+  },
 ];
 
-/** Thin auto-sliding promo carousel shown below the Home search bar. */
+const artwork = require('../../assets/home-trust-banner.png');
+
+/** Reference-based Home carousel with native copy over dedicated decorative artwork. */
 export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
   const { width } = useWindowDimensions();
-  const slideW = width - 32; // 16px horizontal screen padding
+  const slideW = Math.min(width, layout.contentMaxWidth) - layout.gutter * 2;
   const ref = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       const next = (index + 1) % SLIDES.length;
       ref.current?.scrollTo({ x: next * slideW, animated: true });
       setIndex(next);
-    }, 4500);
-    return () => clearInterval(t);
+    }, 5000);
+    return () => clearInterval(timer);
   }, [index, slideW]);
 
-  const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setIndex(Math.round(e.nativeEvent.contentOffset.x / slideW));
+  const onEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setIndex(Math.round(event.nativeEvent.contentOffset.x / slideW));
   };
 
-  const goTo = (i: number) => {
-    ref.current?.scrollTo({ x: i * slideW, animated: true });
-    setIndex(i);
+  const goTo = (slideIndex: number) => {
+    ref.current?.scrollTo({ x: slideIndex * slideW, animated: true });
+    setIndex(slideIndex);
   };
 
   return (
@@ -60,41 +77,50 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onEnd}
-        style={styles.track}
+        style={[styles.track, { width: slideW }]}
       >
-        {SLIDES.map((b, i) => (
-          <Pressable key={i} onPress={() => onGo(i)} style={{ width: slideW }}>
-            <LinearGradient colors={b.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.slide}>
-              {/* Shield motif with concentric glow rings on the left */}
-              <View style={styles.shieldWrap}>
-                <View style={[styles.ring, { width: 96, height: 96, opacity: 0.07 }]} />
-                <View style={[styles.ring, { width: 70, height: 70, opacity: 0.1 }]} />
-                <View style={styles.shield}>
-                  <Icon name={b.icon} size={34} color="#fff" weight="fill" />
-                </View>
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
+        {SLIDES.map((slide, slideIndex) => (
+          <Pressable
+            key={slide.title}
+            onPress={() => onGo(slideIndex)}
+            style={({ pressed }) => [{ width: slideW }, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`${slide.title}. ${slide.cta}`}
+          >
+            <LinearGradient colors={slide.bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.slide}>
+              <Image source={artwork} style={styles.artwork} resizeMode="cover" accessibilityIgnoresInvertColors />
+              <View style={styles.copy}>
                 <Text style={styles.title} numberOfLines={2}>
-                  {b.title}
+                  {slide.title}
                 </Text>
                 <Text style={styles.sub} numberOfLines={2}>
-                  {b.sub}
+                  {slide.sub}
                 </Text>
                 <View style={styles.cta}>
-                  <Text style={styles.ctaText}>{b.cta}</Text>
-                  <Icon name="ph-arrow-right" size={12} color={colors.text} weight="bold" />
+                  <Text style={styles.ctaText}>{slide.cta}</Text>
+                  <Icon name="ph-caret-right" size={11} color={colors.green900} weight="bold" />
                 </View>
               </View>
             </LinearGradient>
           </Pressable>
         ))}
       </ScrollView>
-      <View style={styles.dots}>
-        {SLIDES.map((_, i) => (
+      <View style={styles.dots} accessibilityRole="tablist">
+        {SLIDES.map((slide, slideIndex) => (
           <Pressable
-            key={i}
-            onPress={() => goTo(i)}
-            style={[styles.dot, { width: index === i ? 20 : 6, backgroundColor: index === i ? colors.green800 : 'rgba(6,71,52,0.2)' }]}
+            key={slide.title}
+            onPress={() => goTo(slideIndex)}
+            hitSlop={8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: index === slideIndex }}
+            accessibilityLabel={`Banner ${slideIndex + 1}`}
+            style={[
+              styles.dot,
+              {
+                width: index === slideIndex ? 16 : 5,
+                backgroundColor: index === slideIndex ? colors.green800 : 'rgba(6,71,52,0.18)',
+              },
+            ]}
           />
         ))}
       </View>
@@ -103,15 +129,41 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
 }
 
 const styles = StyleSheet.create({
-  track: { marginTop: 12, borderRadius: radius.xxl, overflow: 'hidden' },
-  slide: { minHeight: 116, flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 18, paddingVertical: 16, overflow: 'hidden' },
-  shieldWrap: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
-  ring: { position: 'absolute', borderRadius: 999, backgroundColor: '#fff' },
-  shield: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 18, fontFamily: fonts.bold, color: '#fff', lineHeight: 23 },
-  sub: { fontSize: 12.5, color: 'rgba(255,255,255,0.82)', marginTop: 4, fontFamily: fonts.regular, lineHeight: 17 },
-  cta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', backgroundColor: colors.gold, paddingHorizontal: 15, height: 38, borderRadius: 12 },
-  ctaText: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.text },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 },
-  dot: { height: 6, borderRadius: 999 },
+  track: { marginTop: 8, borderRadius: radius.xl, overflow: 'hidden' },
+  pressed: { opacity: 0.86 },
+  slide: {
+    height: 112,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: radius.xl,
+  },
+  artwork: { position: 'absolute', top: 0, left: 0, width: '43%', height: '100%' },
+  copy: {
+    flex: 1,
+    width: '61%',
+    marginLeft: '39%',
+    justifyContent: 'center',
+    paddingLeft: 8,
+    paddingRight: 10,
+    paddingVertical: 10,
+  },
+  title: { fontSize: 14.5, lineHeight: 17, fontFamily: fonts.bold, color: '#fff', letterSpacing: -0.2 },
+  sub: { marginTop: 3, fontSize: 10.5, lineHeight: 13, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.82)' },
+  cta: {
+    marginTop: 8,
+    minWidth: 74,
+    height: 29,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 13,
+    borderRadius: radius.md,
+    backgroundColor: colors.gold,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  ctaText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green900 },
+  dots: { minHeight: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  dot: { height: 5, borderRadius: radius.pill },
 });

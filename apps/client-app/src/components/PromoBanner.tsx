@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../lib/icons';
 import { colors, fonts, radius } from '../lib/theme';
 
@@ -17,7 +17,9 @@ interface Props {
  * headline, subtext, gold CTA, and a layered shield motif on the right.
  * Solid/gradient green — no imagery dependency, no decorative noise.
  */
-export default function PromoBanner({ badge, title, subtitle, cta, icon = 'ph-shield-check', onPress }: Props) {
+const artwork = require('../../assets/home-trust-banner.png');
+
+export default function PromoBanner({ badge, title, subtitle, cta, onPress }: Props) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={cta}>
       <LinearGradient
@@ -26,13 +28,6 @@ export default function PromoBanner({ badge, title, subtitle, cta, icon = 'ph-sh
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        {/* Concentric glow rings behind the shield motif */}
-        <View style={styles.rings} pointerEvents="none">
-          <View style={[styles.ring, { width: 150, height: 150, opacity: 0.06 }]} />
-          <View style={[styles.ring, { width: 108, height: 108, opacity: 0.09 }]} />
-          <View style={[styles.ring, { width: 70, height: 70, opacity: 0.12 }]} />
-        </View>
-
         <View style={styles.content}>
           {!!badge && (
             <View style={styles.badge}>
@@ -47,9 +42,7 @@ export default function PromoBanner({ badge, title, subtitle, cta, icon = 'ph-sh
           </View>
         </View>
 
-        <View style={styles.shield} pointerEvents="none">
-          <Icon name={icon} size={42} color="#fff" weight="fill" />
-        </View>
+        <Image source={artwork} style={styles.artwork} resizeMode="cover" />
       </LinearGradient>
     </Pressable>
   );
@@ -86,17 +79,5 @@ const styles = StyleSheet.create({
     borderRadius: 13,
   },
   ctaText: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  rings: { position: 'absolute', right: 8, top: 0, bottom: 0, width: 160, alignItems: 'center', justifyContent: 'center' },
-  ring: { position: 'absolute', borderRadius: 999, backgroundColor: '#fff' },
-  shield: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.26)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
+  artwork: { width: 132, height: 118, marginLeft: 6, borderRadius: radius.lg },
 });

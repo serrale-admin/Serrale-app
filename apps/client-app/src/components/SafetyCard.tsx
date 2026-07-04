@@ -35,8 +35,8 @@ export default function SafetyCard({
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 15, borderRadius: radius.xxl, flexDirection: 'row', alignItems: 'center', gap: 13 },
-  icon: { width: 42, height: 42, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 14.5, fontFamily: fonts.bold, color: '#fff' },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.74)', marginTop: 2, lineHeight: 16.5, fontFamily: fonts.regular },
+  card: { padding: 12, borderRadius: radius.xxl, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  icon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 13.5, fontFamily: fonts.bold, color: '#fff' },
+  sub: { fontSize: 11.5, color: 'rgba(255,255,255,0.74)', marginTop: 2, lineHeight: 15.5, fontFamily: fonts.regular },
 });

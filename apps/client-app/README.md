@@ -16,7 +16,7 @@ technical spec, implementing the Claude Design handoff UI.
 - **Zod** + **React Hook Form** — form validation (request form, phone login)
 - **phosphor-react-native** + **react-native-svg** — icons
 - **expo-linear-gradient** — gradients
-- Fonts: **Fraunces** (headings), **Inter** (UI), **Noto Sans Ethiopic** (Amharic)
+- Fonts: **Inter** (headings and UI), **Noto Sans Ethiopic** (Amharic)
 
 ## Run
 

@@ -16,7 +16,7 @@ interface Props {
 }
 
 /** Pill chip with active (filled green) and inactive (white) states. */
-export default function Chip({ label, active, onPress, iconName, iconWeight, iconColor, iconSize = 13, height = 34, style }: Props) {
+export default function Chip({ label, active, onPress, iconName, iconWeight, iconColor, iconSize = 12, height = 32, style }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -45,10 +45,10 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 13,
+    gap: 4,
+    paddingHorizontal: 11,
     borderRadius: 999,
     borderWidth: 1,
   },
-  label: { fontSize: 12.5, fontFamily: fonts.semibold },
+  label: { fontSize: 11.5, fontFamily: fonts.semibold },
 });

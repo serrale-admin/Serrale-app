@@ -178,6 +178,7 @@ export default function CategoriesScreen() {
                   key={c.id}
                   name={am ? c.am : c.name}
                   icon={c.icon}
+                  imageKey={c.id}
                   count={countLabel(c.count, labels.providersWord)}
                   variant="row"
                   style={{ flex: 1 }}
@@ -201,7 +202,7 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 2, paddingBottom: 6 },
-  logo: { height: 22, width: 100 },
+  logo: { height: 38, width: 104, tintColor: colors.green800 },
   locPill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, ...shadowCard, shadowOpacity: 0.05 },
   locText: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, maxWidth: 110 },
   h1: { fontFamily: fonts.heading, fontSize: 30, color: colors.green900, paddingHorizontal: 16, paddingTop: 6, paddingBottom: 14 },

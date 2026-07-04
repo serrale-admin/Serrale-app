@@ -7,18 +7,18 @@ export const colors = {
   green900: '#033528',
   green800: '#064734',
   green700: '#086246',
-  soft: '#EAF8EF',
-  sage: '#BFD8C8',
+  soft: '#F1FBF5',
+  sage: '#CDE1D4',
 
-  bg: '#FAF7EF',
+  bg: '#FFFEFC',
   surface: '#FFFFFF',
-  ivory: '#FFFDF7',
+  ivory: '#FFFEFA',
 
   // Frosted-glass green surfaces (category cards). Simulated glass: no BlurView dependency.
-  frost: '#DCEFE4',
-  frostDeep: '#CFE6DA',
-  frostBorder: 'rgba(6,71,52,0.13)',
-  frostHi: 'rgba(255,255,255,0.55)',
+  frost: '#E8F4EC',
+  frostDeep: '#DCEDE2',
+  frostBorder: 'rgba(6,71,52,0.11)',
+  frostHi: 'rgba(255,255,255,0.6)',
 
   text: '#102E25',
   muted: '#65756D',
@@ -31,14 +31,14 @@ export const colors = {
   whatsapp: '#0f6f4d',
   danger: '#C8553D',
 
-  border: 'rgba(6,71,52,0.12)',
-  borderSoft: 'rgba(6,71,52,0.08)',
-  divider: 'rgba(6,71,52,0.07)',
+  border: 'rgba(6,71,52,0.1)',
+  borderSoft: 'rgba(6,71,52,0.06)',
+  divider: 'rgba(6,71,52,0.05)',
 } as const;
 
 /** Font family names exposed by the @expo-google-fonts packages. */
 export const fonts = {
-  heading: 'Fraunces_600SemiBold',
+  heading: 'Inter_700Bold',
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semibold: 'Inter_600SemiBold',
@@ -46,11 +46,11 @@ export const fonts = {
 } as const;
 
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 14,
-  xl: 18,
-  xxl: 24,
+  sm: 6,
+  md: 9,
+  lg: 12,
+  xl: 14,
+  xxl: 16,
   pill: 999,
 } as const;
 
@@ -63,13 +63,22 @@ export const space = {
   6: 24,
 } as const;
 
+/** Shared compact layout values used across the mobile product UI. */
+export const layout = {
+  gutter: 14,
+  sectionGap: 16,
+  controlHeight: 44,
+  touchTarget: 44,
+  contentMaxWidth: 520,
+} as const;
+
 /** Soft card shadow (iOS) + elevation (Android). */
 export const shadowCard = {
   shadowColor: '#064734',
-  shadowOpacity: 0.06,
-  shadowRadius: 14,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 2,
+  shadowOpacity: 0.045,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 1,
 } as const;
 
 export const shadowSheet = {

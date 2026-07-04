@@ -9,6 +9,7 @@ interface Props {
   iconColor?: string;
   weight?: IconWeight;
   style?: ViewStyle;
+  shape?: 'circle' | 'rounded';
 }
 
 /**
@@ -17,14 +18,21 @@ interface Props {
  */
 export default function IconBubble({
   icon,
-  size = 52,
-  iconSize = 24,
+  size = 48,
+  iconSize = 22,
   iconColor = colors.green800,
   weight = 'fill',
   style,
+  shape = 'rounded',
 }: Props) {
   return (
-    <View style={[styles.bubble, { width: size, height: size, borderRadius: size / 2 }, style]}>
+    <View
+      style={[
+        styles.bubble,
+        { width: size, height: size, borderRadius: shape === 'circle' ? size / 2 : Math.min(14, size * 0.3) },
+        style,
+      ]}
+    >
       <Icon name={icon} size={iconSize} color={iconColor} weight={weight} />
     </View>
   );
@@ -34,13 +42,13 @@ const styles = StyleSheet.create({
   bubble: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.soft,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
+    borderColor: colors.frostBorder,
     shadowColor: '#064734',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
 });

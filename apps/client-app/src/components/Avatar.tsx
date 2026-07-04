@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { avatarColor, initialsOf } from '../lib/format';
+import { providerImage } from '../lib/provider-images';
 import { colors, fonts } from '../lib/theme';
 
 interface Props {
@@ -21,9 +22,14 @@ export default function Avatar({ name, size, radius, fontSize, imageUrl, gradien
     </Text>
   );
   const box = { width: size, height: size, borderRadius: radius };
+  const localImage = providerImage(name);
 
   if (imageUrl) {
     return <Image source={{ uri: imageUrl }} style={[box, styles.image]} resizeMode="cover" />;
+  }
+
+  if (localImage) {
+    return <Image source={localImage} style={[box, styles.image]} resizeMode="cover" />;
   }
 
   if (gradient) {

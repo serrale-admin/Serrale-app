@@ -12,14 +12,14 @@ const ICONS: Record<string, string> = {
   profile: 'ph-user',
 };
 
-/** Custom bottom tab bar: pill behind the active icon + label. */
+/** Compact reference-style tab bar with an emphasized Request action. */
 export default function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const labels = useLabels();
   const tabLabel = (name: string) => labels.tabs[name as keyof typeof labels.tabs] || name;
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) + 12 }]}>
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
         const focused = state.index === index;
         const color = focused ? colors.green800 : colors.faint;
@@ -27,10 +27,23 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
+
         return (
-          <Pressable key={route.key} style={styles.tab} onPress={onPress} accessibilityRole="button">
-            <View style={[styles.pill, focused && styles.pillActive]}>
-              <Icon name={ICONS[route.name] || 'ph-house'} size={21} color={color} weight={focused ? 'fill' : 'regular'} />
+          <Pressable
+            key={route.key}
+            style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={tabLabel(route.name)}
+            accessibilityState={{ selected: focused }}
+          >
+            <View style={styles.iconWrap}>
+              <Icon
+                name={ICONS[route.name] || 'ph-house'}
+                size={21}
+                color={color}
+                weight={focused ? 'fill' : 'regular'}
+              />
             </View>
             <Text style={[styles.label, { color }]}>{tabLabel(route.name)}</Text>
           </Pressable>
@@ -42,16 +55,22 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
 
 const styles = StyleSheet.create({
   bar: {
+    minHeight: 58,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 7,
-    paddingHorizontal: 8,
+    alignItems: 'flex-start',
+    paddingTop: 5,
+    paddingHorizontal: 6,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(6,71,52,0.09)',
+    borderTopColor: colors.borderSoft,
+    shadowColor: colors.green900,
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: -1 },
+    elevation: 3,
   },
-  tab: { flex: 1, alignItems: 'center', gap: 3 },
-  pill: { width: 48, height: 27, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  pillActive: { backgroundColor: colors.soft },
-  label: { fontSize: 10, fontFamily: fonts.semibold },
+  tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'flex-start', gap: 2 },
+  pressed: { opacity: 0.62 },
+  iconWrap: { width: 42, height: 28, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 9.5, lineHeight: 12, fontFamily: fonts.semibold },
 });

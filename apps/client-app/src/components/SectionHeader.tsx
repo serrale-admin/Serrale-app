@@ -14,7 +14,7 @@ export default function SectionHeader({ title, actionLabel, onAction }: Props) {
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
       {actionLabel && (
-        <Pressable style={styles.action} onPress={onAction} hitSlop={8}>
+        <Pressable style={styles.action} onPress={onAction} hitSlop={10} accessibilityRole="button">
           <Text style={styles.actionText}>{actionLabel}</Text>
           <Icon name="ph-caret-right" size={11} color={colors.success} weight="bold" />
         </Pressable>
@@ -28,11 +28,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 22,
-    paddingBottom: 9,
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  title: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  actionText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.success },
+  title: { fontSize: 15.5, lineHeight: 20, fontFamily: fonts.bold, color: colors.text, letterSpacing: -0.18 },
+  action: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  actionText: { fontSize: 11.5, fontFamily: fonts.semibold, color: colors.success },
 });

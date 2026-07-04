@@ -1,7 +1,4 @@
 import {
-  Fraunces_600SemiBold,
-} from '@expo-google-fonts/fraunces';
-import {
   Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
@@ -29,7 +26,6 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    Fraunces_600SemiBold,
   });
 
   useEffect(() => {

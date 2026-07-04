@@ -1,83 +1,133 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Image, ImageBackground, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { categoryImage } from '../lib/category-images';
 import { Icon } from '../lib/icons';
 import { colors, fonts, radius } from '../lib/theme';
-import IconBubble from './IconBubble';
 
 interface Props {
   name: string;
   icon: string;
-  /** Optional provider count line (row variant). */
+  imageKey?: string;
   count?: string;
-  /** 'tile' = compact, icon bubble on top (Home). 'row' = icon bubble left + count (Categories). */
-  variant?: 'tile' | 'row';
+  variant?: 'shortcut' | 'tile' | 'row';
   onPress(): void;
   style?: ViewStyle;
 }
 
-/**
- * Premium frosted-green category card. Light green glass surface, subtle green
- * border, soft shadow, white icon bubble with a deep-green glyph. Flexible
- * height so longer Amharic labels wrap without clipping.
- */
-export default function CategoryCard({ name, icon, count, variant = 'tile', onPress, style }: Props) {
-  const isRow = variant === 'row';
+/** Category treatments: compact icon pills plus photographic discovery cards. */
+export default function CategoryCard({ name, icon, imageKey, count, variant = 'tile', onPress, style }: Props) {
+  if (variant === 'shortcut') {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.shortcut, pressed && styles.pressed, style]}
+        accessibilityRole="button"
+        accessibilityLabel={name}
+      >
+        <Icon name={icon} size={17} color={colors.green700} weight="fill" />
+        <Text style={styles.shortcutName} numberOfLines={1}>{name}</Text>
+      </Pressable>
+    );
+  }
+
+  if (variant === 'row') {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed, style]}
+        accessibilityRole="button"
+        accessibilityLabel={name}
+      >
+        <Image source={categoryImage(imageKey)} style={styles.rowImage} resizeMode="cover" />
+        <View style={styles.rowText}>
+          <Text style={styles.rowName} numberOfLines={2}>{name}</Text>
+          {!!count && <Text style={styles.count} numberOfLines={1}>{count}</Text>}
+        </View>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, isRow ? styles.row : styles.tile, pressed && styles.pressed, style]}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed, style]}
       accessibilityRole="button"
       accessibilityLabel={name}
     >
-      {/* Inner glass highlight */}
-      <LinearGradient
-        colors={[colors.frostHi, 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.glaze}
-        pointerEvents="none"
-      />
-      <IconBubble icon={icon} size={isRow ? 42 : 44} iconSize={isRow ? 21 : 22} />
-      <View style={isRow ? styles.rowText : styles.tileText}>
-        <Text style={isRow ? styles.rowName : styles.tileName} numberOfLines={2}>
-          {name}
-        </Text>
-        {isRow && !!count && (
-          <View style={styles.metaRow}>
-            <Icon name="ph-users-three" size={11} color={colors.success} weight="fill" />
-            <Text style={styles.count} numberOfLines={1}>
-              {count}
-            </Text>
-          </View>
-        )}
-      </View>
+      <ImageBackground source={categoryImage(imageKey)} style={styles.tileImage} imageStyle={styles.tileImageShape} resizeMode="contain">
+        <View style={styles.tileIcon}>
+          <Icon name={icon} size={14} color="#fff" weight="fill" />
+        </View>
+      </ImageBackground>
+      <Text style={styles.tileName} numberOfLines={2}>{name}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.frost,
+  pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
+  shortcut: {
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.frostBorder,
-    borderRadius: radius.xxl,
-    overflow: 'hidden',
-    shadowColor: '#064734',
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    borderColor: colors.borderSoft,
+    borderRadius: radius.pill,
+    shadowColor: colors.green900,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  pressed: { opacity: 0.85 },
-  glaze: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%' },
-  // Home tile: icon bubble centered on top, label below.
-  tile: { flex: 1, alignItems: 'center', gap: 9, paddingVertical: 14, paddingHorizontal: 4, minHeight: 104 },
-  tileText: { width: '100%' },
-  tileName: { fontSize: 11, fontFamily: fonts.bold, color: colors.green900, textAlign: 'center', lineHeight: 14, letterSpacing: -0.2 },
-  // Categories row: icon bubble left, name + count stacked right.
-  row: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 11, minHeight: 82 },
+  shortcutName: { fontSize: 10.5, fontFamily: fonts.semibold, color: colors.text },
+  tile: {
+    height: 94,
+    overflow: 'hidden',
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  tileImage: { height: 65, width: '100%', backgroundColor: '#F3F6F4' },
+  tileImageShape: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
+  tileIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0,77,57,0.86)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileName: {
+    flex: 1,
+    minHeight: 28,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    fontSize: 10.5,
+    lineHeight: 13,
+    fontFamily: fonts.bold,
+    textAlign: 'center',
+  },
+  row: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 7,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: radius.lg,
+  },
+  rowImage: { width: 58, height: 54, borderRadius: radius.md, backgroundColor: colors.soft },
   rowText: { flex: 1, minWidth: 0 },
-  rowName: { fontSize: 14.5, fontFamily: fonts.bold, color: colors.green900, lineHeight: 18 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  count: { fontSize: 10.5, fontFamily: fonts.semibold, color: colors.muted, flexShrink: 1 },
+  rowName: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, lineHeight: 16 },
+  count: { marginTop: 3, fontSize: 10.5, fontFamily: fonts.regular, color: colors.muted },
 });

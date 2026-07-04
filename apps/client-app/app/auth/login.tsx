@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
+import Button from '../../src/components/Button';
+import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
 import { normalizeEthiopianPhone } from '../../src/lib/phone';
@@ -55,12 +57,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.headerRow}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={6} accessibilityLabel="Back">
-          <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
-        </Pressable>
-      </View>
-
+      <ScreenHeader />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={8}
+      >
       <View style={styles.body}>
         <View style={styles.iconBox}>
           <Icon name="ph-phone" size={26} color="#fff" weight="fill" />
@@ -84,7 +86,7 @@ export default function LoginScreen() {
             inputMode="numeric"
             placeholder="9 12 345 678"
             placeholderTextColor={colors.faint}
-            style={[styles.input, { borderColor: error ? colors.danger : 'rgba(6,71,52,0.14)' }]}
+            style={[styles.input, { borderColor: error ? colors.danger : colors.borderField }]}
           />
         </View>
         {!!error && (
@@ -108,21 +110,24 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.primary} onPress={onSend} disabled={requestOtp.isPending}>
-          <Text style={styles.primaryText}>{requestOtp.isPending ? 'Sending…' : 'Send code'}</Text>
-        </Pressable>
-        <Pressable style={styles.guest} onPress={() => router.replace('/(tabs)/home')}>
+        <Button
+          label={requestOtp.isPending ? 'Sending…' : 'Send code'}
+          loading={requestOtp.isPending}
+          fullWidth
+          onPress={onSend}
+        />
+        <Pressable style={styles.guest} onPress={() => router.replace('/(tabs)/home')} accessibilityRole="button">
           <Text style={styles.guestText}>Continue as guest</Text>
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headerRow: { paddingLeft: 8, paddingTop: 2 },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
   body: { flex: 1, paddingHorizontal: 22, paddingTop: 10 },
   iconBox: { width: 54, height: 54, borderRadius: radius.lg + 2, backgroundColor: '#0a5d3f', alignItems: 'center', justifyContent: 'center' },
   h1: { fontFamily: fonts.heading, fontSize: 25, color: colors.text, marginTop: 18, marginBottom: 6 },
@@ -135,8 +140,6 @@ const styles = StyleSheet.create({
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   errorText: { fontSize: 12, color: colors.danger, fontFamily: fonts.regular },
   footer: { paddingHorizontal: 22, paddingBottom: 22 },
-  primary: { height: 52, borderRadius: radius.lg, backgroundColor: colors.green800, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
   guest: { height: 48, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
   guestText: { color: colors.muted, fontSize: 13.5, fontFamily: fonts.semibold },
 });

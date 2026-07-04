@@ -2,6 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '../../src/components/Avatar';
+import Badge from '../../src/components/Badge';
+import Button from '../../src/components/Button';
+import ErrorBlock from '../../src/components/ErrorBlock';
 import { useProviderActions } from '../../src/hooks/useProviderActions';
 import { useCategory, useProvider, useProviderReviews, useProviderWork } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
@@ -24,10 +27,27 @@ export default function ProviderDetailScreen() {
   const work = useProviderWork(id);
   const reviews = useProviderReviews(id);
 
+  if (provider.isError) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.topBar}>
+          <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
+            <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
+          </Pressable>
+        </View>
+        <ErrorBlock
+          title="Couldn't load this provider"
+          text="Please check your connection and try again."
+          onRetry={() => provider.refetch()}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (provider.isLoading || !pv) {
     return (
       <SafeAreaView style={[styles.safe, styles.center]} edges={['top']}>
-        <ActivityIndicator color={colors.green800} />
+        <ActivityIndicator color={colors.green800} accessibilityLabel="Loading provider" />
       </SafeAreaView>
     );
   }
@@ -46,14 +66,14 @@ export default function ProviderDetailScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityLabel="Back" hitSlop={6}>
+        <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable style={styles.iconBtn} onPress={() => showToast('Profile link copied', 'ph-link')} accessibilityLabel="Share">
+        <Pressable style={styles.iconBtn} onPress={() => showToast('Profile link copied', 'ph-link')} accessibilityRole="button" accessibilityLabel="Share">
           <Icon name="ph-share-network" size={19} color={colors.text} />
         </Pressable>
-        <Pressable style={styles.iconBtn} onPress={() => save(pv.id)} accessibilityLabel="Save">
+        <Pressable style={styles.iconBtn} onPress={() => save(pv.id)} accessibilityRole="button" accessibilityLabel={saved ? 'Saved' : 'Save'}>
           <Icon name="ph-bookmark-simple" size={21} color={saved ? colors.gold : colors.text} weight={saved ? 'fill' : 'regular'} />
         </Pressable>
       </View>
@@ -66,12 +86,7 @@ export default function ProviderDetailScreen() {
             <Text style={styles.name}>{pv.name}</Text>
             <View style={styles.heroMeta}>
               <Text style={styles.service}>{pv.service}</Text>
-              {pv.verified && (
-                <View style={styles.verifiedBadge}>
-                  <Icon name="ph-seal-check" size={11} color={colors.success} weight="fill" />
-                  <Text style={styles.verifiedText}>Verified</Text>
-                </View>
-              )}
+              {pv.verified && <Badge label="Verified" tone="trust" icon="ph-seal-check" />}
             </View>
             <View style={styles.ratingRow}>
               <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
@@ -107,7 +122,7 @@ export default function ProviderDetailScreen() {
               <View key={i} style={[styles.serviceRow, i < services.length - 1 && styles.serviceDivider]}>
                 <Icon name="ph-check-circle" size={17} color={colors.success} />
                 <Text style={styles.serviceName}>{sv.name}</Text>
-                <Text style={styles.servicePrice}>{sv.price}</Text>
+                <Badge label={sv.price} tone="gold" />
               </View>
             ))}
           </View>
@@ -140,7 +155,7 @@ export default function ProviderDetailScreen() {
           <View style={styles.reviewHead}>
             <Text style={styles.sectionTitle}>Reviews</Text>
             {reviews.data && reviews.data.length > 0 && (
-              <Pressable onPress={() => showToast('Showing all reviews', 'ph-chats')} hitSlop={8}>
+              <Pressable onPress={() => showToast('Showing all reviews', 'ph-chats')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all reviews">
                 <Text style={styles.viewAll}>View all</Text>
               </Pressable>
             )}
@@ -172,7 +187,7 @@ export default function ProviderDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.safetyTitle}>Stay safe</Text>
             <Text style={styles.safetyText}>Agree on price, time, and work scope clearly before starting work.</Text>
-            <Pressable style={styles.reportBtn} onPress={() => showToast('Report sent to SERRALE', 'ph-flag')}>
+            <Pressable style={styles.reportBtn} onPress={() => showToast('Report sent to SERRALE', 'ph-flag')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Report provider">
               <Icon name="ph-flag" size={13} color={colors.danger} />
               <Text style={styles.reportText}>Report provider</Text>
             </Pressable>
@@ -183,14 +198,8 @@ export default function ProviderDetailScreen() {
 
       {/* Sticky Call / WhatsApp bar */}
       <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
-        <Pressable style={styles.callBtn} onPress={() => call(pv)}>
-          <Icon name="ph-phone-call" size={18} color="#fff" weight="fill" />
-          <Text style={styles.callText}>Call</Text>
-        </Pressable>
-        <Pressable style={styles.waBtn} onPress={() => whatsapp(pv)}>
-          <Icon name="ph-whatsapp-logo" size={19} color={colors.whatsapp} weight="fill" />
-          <Text style={styles.waText}>WhatsApp</Text>
-        </Pressable>
+        <Button label="Call" icon="ph-phone-call" iconWeight="fill" onPress={() => call(pv)} style={styles.stickyBtn} />
+        <Button label="WhatsApp" variant="whatsapp" icon="ph-whatsapp-logo" iconWeight="fill" onPress={() => whatsapp(pv)} style={styles.stickyBtn} />
       </View>
     </SafeAreaView>
   );
@@ -206,8 +215,6 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.heading, fontSize: 22, color: colors.text },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   service: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text },
-  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.soft, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 },
-  verifiedText: { color: colors.success, fontSize: 10.5, fontFamily: fonts.bold },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   ratingText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12.5 },
   metaMuted: { color: colors.muted, fontSize: 12.5, fontFamily: fonts.regular },
@@ -221,7 +228,6 @@ const styles = StyleSheet.create({
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, paddingHorizontal: 14 },
   serviceDivider: { borderBottomWidth: 1, borderBottomColor: colors.divider },
   serviceName: { flex: 1, fontSize: 13.5, fontFamily: fonts.medium, color: colors.text },
-  servicePrice: { fontSize: 11, fontFamily: fonts.bold, color: '#9a8a5a', backgroundColor: colors.goldSoft, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
   workCard: { width: 158, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.1)', borderRadius: radius.lg + 1, overflow: 'hidden' },
   workThumb: { height: 90, alignItems: 'center', justifyContent: 'center' },
   workTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.text },
@@ -243,8 +249,5 @@ const styles = StyleSheet.create({
   reportBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   reportText: { fontSize: 12, fontFamily: fonts.bold, color: colors.danger },
   stickyBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, paddingTop: 11, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: 'rgba(6,71,52,0.09)' },
-  callBtn: { flex: 1, height: 50, borderRadius: radius.lg, backgroundColor: colors.green800, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  callText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
-  waBtn: { flex: 1, height: 50, borderRadius: radius.lg, borderWidth: 1, borderColor: 'rgba(22,135,95,0.3)', backgroundColor: colors.soft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  waText: { color: colors.whatsapp, fontSize: 15, fontFamily: fonts.bold },
+  stickyBtn: { flex: 1 },
 });

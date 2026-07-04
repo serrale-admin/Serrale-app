@@ -1,12 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '../src/components/Button';
 import EmptyState from '../src/components/EmptyState';
+import ErrorBlock from '../src/components/ErrorBlock';
 import ProviderRow from '../src/components/ProviderRow';
 import ScreenHeader from '../src/components/ScreenHeader';
+import { SkeletonProviderList } from '../src/components/Skeleton';
 import * as api from '../src/api';
-import { colors, fonts, radius } from '../src/lib/theme';
+import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 export default function BookmarksScreen() {
@@ -24,10 +27,25 @@ export default function BookmarksScreen() {
     .map((q) => q.data)
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
+  const isLoading = savedIds.length > 0 && providerQueries.some((q) => q.isLoading);
+  const isError = savedIds.length > 0 && list.length === 0 && providerQueries.some((q) => q.isError);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title="Saved providers" />
-      {list.length > 0 ? (
+      {isLoading ? (
+        <View style={styles.list}>
+          <SkeletonProviderList count={4} />
+        </View>
+      ) : isError ? (
+        <View style={styles.emptyWrap}>
+          <ErrorBlock
+            title="Couldn't load saved providers"
+            text="Please check your connection and try again."
+            onRetry={() => providerQueries.forEach((q) => q.refetch())}
+          />
+        </View>
+      ) : list.length > 0 ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {list.map((p) => <ProviderRow key={p.id} provider={p} />)}
           <View style={{ height: 20 }} />
@@ -41,9 +59,7 @@ export default function BookmarksScreen() {
             title="No saved providers yet"
             text="Tap the bookmark icon on any provider to save them here."
           >
-            <Pressable style={styles.btn} onPress={() => router.push('/providers')}>
-              <Text style={styles.btnText}>Browse providers</Text>
-            </Pressable>
+            <Button label="Browse providers" onPress={() => router.push('/providers')} style={styles.cta} />
           </EmptyState>
         </View>
       )}
@@ -55,6 +71,5 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   list: { paddingHorizontal: 16, gap: 10 },
   emptyWrap: { flex: 1, justifyContent: 'center' },
-  btn: { marginTop: 20, height: 46, paddingHorizontal: 22, borderRadius: radius.md + 1, backgroundColor: colors.green800, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
+  cta: { marginTop: 20, paddingHorizontal: 22 },
 });

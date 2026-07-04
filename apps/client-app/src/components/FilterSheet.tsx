@@ -4,6 +4,7 @@ import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import type { Filters, ProviderQuery } from '../types';
 import BottomSheet from './BottomSheet';
+import Button from './Button';
 import Chip from './Chip';
 
 interface Section {
@@ -79,12 +80,8 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.clear} onPress={resetFilters}>
-          <Text style={styles.clearText}>Clear</Text>
-        </Pressable>
-        <Pressable style={styles.apply} onPress={onApply}>
-          <Text style={styles.applyText}>Show {count} providers</Text>
-        </Pressable>
+        <Button label="Clear" variant="secondary" onPress={resetFilters} style={styles.clear} />
+        <Button label={`Show ${count} providers`} onPress={onApply} style={styles.apply} />
       </View>
     </BottomSheet>
   );
@@ -110,8 +107,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(6,71,52,0.09)',
   },
-  clear: { height: 50, paddingHorizontal: 20, borderRadius: radius.lg, borderWidth: 1, borderColor: 'rgba(6,71,52,0.16)', alignItems: 'center', justifyContent: 'center' },
-  clearText: { color: colors.green800, fontSize: 14, fontFamily: fonts.bold },
-  apply: { flex: 1, height: 50, borderRadius: radius.lg, backgroundColor: colors.green800, alignItems: 'center', justifyContent: 'center' },
-  applyText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
+  clear: { paddingHorizontal: 20 },
+  apply: { flex: 1 },
 });

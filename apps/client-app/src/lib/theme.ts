@@ -27,14 +27,26 @@ export const colors = {
   gold: '#F6B93B',
   goldSoft: '#FFF4D8',
   goldText: '#b8851a',
+  /** Darker amber for small text on goldSoft — meets WCAG AA (4.9:1). */
+  goldSoftText: '#8a6410',
+  onGold: '#5e4708',
   success: '#16875F',
   whatsapp: '#0f6f4d',
+  whatsappSoft: 'rgba(22,135,95,0.25)',
   danger: '#C8553D',
+  dangerSoft: '#FBEAE6',
 
   border: 'rgba(6,71,52,0.1)',
+  borderStrong: 'rgba(6,71,52,0.14)',
+  borderField: 'rgba(6,71,52,0.14)',
+  borderInput: 'rgba(6,71,52,0.18)',
   borderSoft: 'rgba(6,71,52,0.06)',
   divider: 'rgba(6,71,52,0.05)',
+  onDark: '#FFFFFF',
 } as const;
+
+/** Opacity applied to pressable surfaces while pressed. */
+export const pressedOpacity = 0.64;
 
 /** Font family names exposed by the @expo-google-fonts packages. */
 export const fonts = {

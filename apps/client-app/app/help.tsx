@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Card from '../src/components/Card';
+import ListRow from '../src/components/ListRow';
 import ScreenHeader from '../src/components/ScreenHeader';
-import { Icon } from '../src/lib/icons';
-import { colors, fonts, radius, shadowCard } from '../src/lib/theme';
+import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 export default function HelpScreen() {
@@ -23,20 +24,12 @@ export default function HelpScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title="Help & Support" />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
+        <Card variant="group">
           {rows.map((r, i) => (
-            <Pressable key={i} style={[styles.row, i > 0 && styles.divider]} onPress={r.onPress}>
-              <View style={styles.icon}>
-                <Icon name={r.icon} size={18} color={colors.success} weight="fill" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>{r.label}</Text>
-                <Text style={styles.sub}>{r.sub}</Text>
-              </View>
-              <Icon name="ph-caret-right" size={14} color="#cdd5cf" weight="bold" />
-            </Pressable>
+            <ListRow key={i} label={r.label} sub={r.sub} icon={r.icon} onPress={r.onPress} divided={i > 0} />
           ))}
-        </View>
+        </Card>
+        <View style={{ height: 20 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -45,10 +38,4 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { paddingHorizontal: 16, paddingTop: 4 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.09)', borderRadius: radius.xl, overflow: 'hidden', ...shadowCard, shadowOpacity: 0.04 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14 },
-  divider: { borderTopWidth: 1, borderTopColor: colors.divider },
-  icon: { width: 36, height: 36, borderRadius: 11, backgroundColor: colors.soft, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 14, fontFamily: fonts.semibold, color: colors.text },
-  sub: { fontSize: 11.5, color: colors.faint, marginTop: 1, fontFamily: fonts.regular },
 });

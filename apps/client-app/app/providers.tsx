@@ -1,15 +1,20 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Badge from '../src/components/Badge';
+import Button from '../src/components/Button';
 import Chip from '../src/components/Chip';
 import EmptyState from '../src/components/EmptyState';
+import ErrorBlock from '../src/components/ErrorBlock';
+import { TextField } from '../src/components/Field';
 import FilterSheet from '../src/components/FilterSheet';
 import LocationSheet from '../src/components/LocationSheet';
 import ProviderRow from '../src/components/ProviderRow';
+import { SkeletonProviderList } from '../src/components/Skeleton';
 import { useProviders } from '../src/hooks/queries';
 import { Icon } from '../src/lib/icons';
-import { colors, fonts, radius } from '../src/lib/theme';
+import { colors, fonts } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 const QUICK = [
@@ -65,23 +70,16 @@ export default function ProvidersScreen() {
           <Pressable style={styles.back} onPress={() => router.back()} hitSlop={8} accessibilityLabel="Back">
             <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
           </Pressable>
-          <View style={styles.field}>
-            <Icon name="ph-magnifying-glass" size={17} color={colors.muted} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search plumber, painter, nanny…"
-              placeholderTextColor={colors.faint}
-              style={styles.input}
-              autoFocus={!search}
-              returnKeyType="search"
-            />
-            {!!search && (
-              <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <Icon name="ph-x-circle" size={17} color="#bcc6bf" weight="fill" />
-              </Pressable>
-            )}
-          </View>
+          <TextField
+            icon="ph-magnifying-glass"
+            value={search}
+            onChangeText={setSearch}
+            onClear={() => setSearch('')}
+            placeholder="Search plumber, painter, nanny…"
+            autoFocus={!search}
+            returnKeyType="search"
+            containerStyle={styles.field}
+          />
         </View>
         <View style={styles.filterRow}>
           <Pressable style={styles.softChip} onPress={() => setShowLocation(true)}>
@@ -89,14 +87,10 @@ export default function ProvidersScreen() {
             <Text style={styles.softChipText}>{area}</Text>
             <Icon name="ph-caret-down" size={10} color={colors.muted} weight="bold" />
           </Pressable>
-          <Pressable style={styles.softChip} onPress={() => setShowFilter(true)}>
+          <Pressable style={styles.softChip} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel="Filters">
             <Icon name="ph-sliders-horizontal" size={14} color={colors.green800} weight="bold" />
             <Text style={[styles.softChipText, { color: colors.green800 }]}>Filter</Text>
-            {filterCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{filterCount}</Text>
-              </View>
-            )}
+            {filterCount > 0 && <Badge label={filterCount} tone="count" />}
           </Pressable>
         </View>
       </View>
@@ -115,9 +109,15 @@ export default function ProvidersScreen() {
 
       {/* Results */}
       {providers.isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.green800} />
+        <View style={styles.results}>
+          <SkeletonProviderList />
         </View>
+      ) : providers.isError ? (
+        <ErrorBlock
+          title="Couldn't load providers"
+          text="Please check your connection and try again."
+          onRetry={() => providers.refetch()}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.results} showsVerticalScrollIndicator={false}>
           {results.map((p) => <ProviderRow key={p.id} provider={p} />)}
@@ -129,12 +129,8 @@ export default function ProvidersScreen() {
               text="Try another area or request help and we will look for a provider."
             >
               <View style={styles.emptyActions}>
-                <Pressable style={styles.outlineBtn} onPress={() => setShowFilter(true)}>
-                  <Text style={styles.outlineText}>Change filters</Text>
-                </Pressable>
-                <Pressable style={styles.goldBtn} onPress={() => router.push('/(tabs)/request')}>
-                  <Text style={styles.goldText}>Request service</Text>
-                </Pressable>
+                <Button label="Change filters" variant="secondary" size="sm" onPress={() => setShowFilter(true)} />
+                <Button label="Request service" variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} />
               </View>
             </EmptyState>
           )}
@@ -152,20 +148,12 @@ const styles = StyleSheet.create({
   headerWrap: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   back: { width: 36, height: 44, marginLeft: -8, alignItems: 'center', justifyContent: 'center' },
-  field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', borderRadius: radius.lg, paddingHorizontal: 13 },
-  input: { flex: 1, fontSize: 14, fontFamily: fonts.regular, color: colors.text, padding: 0 },
+  field: { flex: 1, height: 46 },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  softChip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 34, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', backgroundColor: colors.surface },
+  softChip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 34, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.borderField, backgroundColor: colors.surface },
   softChipText: { fontSize: 12.5, fontFamily: fonts.semibold, color: colors.text },
-  badge: { minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 999, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#5e4708', fontSize: 10, fontFamily: fonts.bold },
   countWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   count: { fontSize: 13.5, color: colors.muted, marginBottom: 9, fontFamily: fonts.regular },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   results: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
-  emptyActions: { flexDirection: 'row', gap: 9, justifyContent: 'center', marginTop: 18 },
-  outlineBtn: { height: 42, paddingHorizontal: 17, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(6,71,52,0.16)', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  outlineText: { color: colors.green800, fontSize: 13, fontFamily: fonts.bold },
-  goldBtn: { height: 42, paddingHorizontal: 17, borderRadius: radius.md, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  goldText: { color: colors.text, fontSize: 13, fontFamily: fonts.bold },
+  emptyActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginTop: 18 },
 });

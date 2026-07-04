@@ -1,10 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Badge from '../../src/components/Badge';
+import Button from '../../src/components/Button';
 import Chip from '../../src/components/Chip';
+import EmptyState from '../../src/components/EmptyState';
+import ErrorBlock from '../../src/components/ErrorBlock';
 import FilterSheet from '../../src/components/FilterSheet';
 import ProviderRow from '../../src/components/ProviderRow';
+import ScreenHeader from '../../src/components/ScreenHeader';
+import { SkeletonProviderList } from '../../src/components/Skeleton';
 import { useCategory, useProviders } from '../../src/hooks/queries';
 import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
@@ -41,26 +47,17 @@ export default function CategoryDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={6} accessibilityLabel="Back">
-          <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
-        </Pressable>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.title} numberOfLines={1}>
-            {cat ? (am ? cat.am : cat.name) : ''}
-          </Text>
-          <Text style={styles.sub}>{cat ? fmt(cat.count) : ''} providers near {area}</Text>
-        </View>
-        <Pressable style={styles.filterBtn} onPress={() => setShowFilter(true)}>
-          <Icon name="ph-sliders-horizontal" size={15} color={colors.green800} weight="bold" />
-          <Text style={styles.filterBtnText}>Filter</Text>
-          {filterCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{filterCount}</Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title={cat ? (am ? cat.am : cat.name) : ''}
+        subtitle={cat ? `${fmt(cat.count)} providers near ${area}` : `Providers near ${area}`}
+        right={
+          <Pressable style={styles.filterBtn} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel="Filters">
+            <Icon name="ph-sliders-horizontal" size={15} color={colors.green800} weight="bold" />
+            <Text style={styles.filterBtnText}>Filter</Text>
+            {filterCount > 0 && <Badge label={filterCount} tone="count" />}
+          </Pressable>
+        }
+      />
 
       {/* Subcategory chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subRow} style={{ flexGrow: 0 }}>
@@ -74,28 +71,34 @@ export default function CategoryDetailScreen() {
         <Text style={styles.resultCount}>
           <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{results.length}</Text> providers
         </Text>
-        <Pressable style={styles.sortBtn} onPress={cycleSort}>
+        <Pressable style={styles.sortBtn} onPress={cycleSort} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Sort: ${sort}`}>
           <Icon name="ph-sliders-horizontal" size={14} color={colors.green800} weight="bold" />
           <Text style={styles.sortText}>{sort}</Text>
         </Pressable>
       </View>
 
       {providers.isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.green800} />
+        <View style={styles.list}>
+          <SkeletonProviderList />
         </View>
+      ) : providers.isError ? (
+        <ErrorBlock
+          title="Couldn't load providers"
+          text="Please check your connection and try again."
+          onRetry={() => providers.refetch()}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {results.map((p) => <ProviderRow key={p.id} provider={p} />)}
           {results.length === 0 && (
-            <View style={styles.empty}>
-              <Icon name="ph-magnifying-glass" size={42} color="#bcc6bf" />
-              <Text style={styles.emptyTitle}>No providers found</Text>
-              <Text style={styles.emptyText}>Try another area or request help and we will look for a provider.</Text>
-              <Pressable style={styles.goldBtn} onPress={() => router.push('/(tabs)/request')}>
-                <Text style={styles.goldText}>Request service</Text>
-              </Pressable>
-            </View>
+            <EmptyState
+              icon="ph-magnifying-glass"
+              circle={colors.soft}
+              title="No providers found"
+              text="Try another area or request help and we will look for a provider."
+            >
+              <Button label="Request service" variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} style={styles.emptyCta} />
+            </EmptyState>
           )}
           <View style={{ height: 20 }} />
         </ScrollView>
@@ -108,24 +111,13 @@ export default function CategoryDetailScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 12, paddingBottom: 10 },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
-  sub: { fontSize: 12, color: colors.muted, fontFamily: fonts.regular },
-  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', borderRadius: radius.sm + 2, backgroundColor: colors.surface },
+  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.borderField, borderRadius: radius.sm + 2, backgroundColor: colors.surface },
   filterBtnText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.green800 },
-  badge: { minWidth: 17, height: 17, paddingHorizontal: 4, borderRadius: 999, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#5e4708', fontSize: 10, fontFamily: fonts.bold },
   subRow: { gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   sortRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   resultCount: { fontSize: 12.5, color: colors.muted, fontFamily: fonts.regular },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   sortText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.green800 },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 16, gap: 10, paddingBottom: 24 },
-  empty: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.text, marginTop: 14 },
-  emptyText: { fontSize: 13, color: colors.muted, marginTop: 6, lineHeight: 20, textAlign: 'center', fontFamily: fonts.regular },
-  goldBtn: { marginTop: 16, height: 42, paddingHorizontal: 20, borderRadius: radius.md, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  goldText: { color: colors.text, fontSize: 13.5, fontFamily: fonts.bold },
+  emptyCta: { marginTop: 16 },
 });

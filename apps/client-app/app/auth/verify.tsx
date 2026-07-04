@@ -1,13 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
+import Button from '../../src/components/Button';
+import OtpInput from '../../src/components/OtpInput';
+import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp, useVerifyOtp } from '../../src/hooks/queries';
 import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
 import { maskEthiopianPhone } from '../../src/lib/phone';
-import { colors, fonts, radius } from '../../src/lib/theme';
+import { colors, fonts } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
 export default function VerifyScreen() {
@@ -143,32 +146,26 @@ export default function VerifyScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.headerRow}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={6} accessibilityLabel="Back">
-          <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
-        </Pressable>
-      </View>
-
+      <ScreenHeader />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={8}
+      >
       <View style={styles.body}>
         <Text style={styles.h1}>Enter verification code</Text>
         <Text style={styles.subtitle}>
           We sent a 6-digit code to <Text style={{ color: colors.text, fontFamily: fonts.bold }}>+251 {phoneMasked}</Text>.
         </Text>
 
-        <View style={styles.otpRow}>
-          {otp.map((d, i) => (
-            <TextInput
-              key={i}
-              ref={(el) => { inputs.current[i] = el; }}
-              value={d}
-              onChangeText={(v) => setDigit(i, v)}
-              onKeyPress={(e) => onKey(i, e.nativeEvent.key)}
-              inputMode="numeric"
-              maxLength={1}
-              autoFocus={i === 0}
-              style={[styles.otpBox, { borderColor: d ? colors.success : 'rgba(6,71,52,0.18)' }]}
-            />
-          ))}
+        <View style={styles.otpWrap}>
+          <OtpInput
+            value={otp}
+            onChangeDigit={setDigit}
+            onKeyPress={onKey}
+            setRef={(i, el) => { inputs.current[i] = el; }}
+            errored={!!error}
+          />
         </View>
         {!!error && (
           <View style={styles.errorRow}>
@@ -197,23 +194,25 @@ export default function VerifyScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.primary} onPress={() => submit(otp)} disabled={verifyMutation.isPending}>
-          <Text style={styles.primaryText}>{verifyMutation.isPending ? 'Verifying…' : 'Verify'}</Text>
-        </Pressable>
+        <Button
+          label={verifyMutation.isPending ? 'Verifying…' : 'Verify'}
+          loading={verifyMutation.isPending}
+          fullWidth
+          onPress={() => submit(otp)}
+        />
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headerRow: { paddingLeft: 8, paddingTop: 2 },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
   body: { flex: 1, paddingHorizontal: 22, paddingTop: 10 },
   h1: { fontFamily: fonts.heading, fontSize: 25, color: colors.text, marginTop: 8, marginBottom: 6 },
   subtitle: { fontSize: 13.5, color: colors.muted, lineHeight: 21, fontFamily: fonts.regular },
-  otpRow: { flexDirection: 'row', gap: 9, marginTop: 26 },
-  otpBox: { flex: 1, height: 58, textAlign: 'center', backgroundColor: colors.surface, borderWidth: 1.5, borderRadius: radius.md + 1, fontSize: 23, fontFamily: fonts.bold, color: colors.text },
+  otpWrap: { marginTop: 26 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   errorText: { fontSize: 12, color: colors.danger, fontFamily: fonts.regular },
   resendRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
@@ -222,6 +221,4 @@ const styles = StyleSheet.create({
   demo: { marginTop: 20, height: 40, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(6,71,52,0.22)', borderRadius: 11, backgroundColor: colors.ivory, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   demoText: { fontSize: 12.5, fontFamily: fonts.semibold, color: colors.muted },
   footer: { paddingHorizontal: 22, paddingBottom: 22 },
-  primary: { height: 52, borderRadius: radius.lg, backgroundColor: colors.green800, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
 });

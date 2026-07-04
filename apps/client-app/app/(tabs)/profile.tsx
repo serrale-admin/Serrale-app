@@ -1,8 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '../../src/components/Avatar';
+import Button from '../../src/components/Button';
+import Card from '../../src/components/Card';
+import ListRow from '../../src/components/ListRow';
 import { Icon } from '../../src/lib/icons';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
@@ -52,7 +55,7 @@ export default function ProfileScreen() {
         [
           becomeProvider,
           { label: 'Settings', icon: 'ph-gear', onPress: () => router.push('/settings') },
-          { label: 'Log out', icon: 'ph-sign-out', onPress: onLogout, tint: '#FBEAE6', iconColor: colors.danger, labelColor: colors.danger, chevron: false },
+          { label: 'Log out', icon: 'ph-sign-out', onPress: onLogout, tint: colors.dangerSoft, iconColor: colors.danger, labelColor: colors.danger, chevron: false },
         ],
       ]
     : [
@@ -76,10 +79,16 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.guestTitle}>Welcome to SERRALE</Text>
             <Text style={styles.guestText}>Continue with phone to save providers and manage requests.</Text>
-            <Pressable style={styles.guestBtn} onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to manage your profile', next: '/(tabs)/profile' } })}>
-              <Icon name="ph-phone" size={16} color={colors.text} weight="fill" />
-              <Text style={styles.guestBtnText}>Log in with phone</Text>
-            </Pressable>
+            <Button
+              label="Log in with phone"
+              icon="ph-phone"
+              iconWeight="fill"
+              variant="gold"
+              size="md"
+              fullWidth
+              onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to manage your profile', next: '/(tabs)/profile' } })}
+              style={styles.guestBtn}
+            />
           </LinearGradient>
         )}
 
@@ -99,17 +108,21 @@ export default function ProfileScreen() {
 
         <View style={styles.groups}>
           {groups.map((rows, gi) => (
-            <View key={gi} style={styles.group}>
+            <Card key={gi} variant="group">
               {rows.map((r, ri) => (
-                <Pressable key={ri} style={[styles.row, ri > 0 && styles.rowDivider]} onPress={r.onPress}>
-                  <View style={[styles.rowIcon, { backgroundColor: r.tint || colors.soft }]}>
-                    <Icon name={r.icon} size={17} color={r.iconColor || colors.success} weight="fill" />
-                  </View>
-                  <Text style={[styles.rowLabel, { color: r.labelColor || colors.text }]}>{r.label}</Text>
-                  {r.chevron !== false && <Icon name="ph-caret-right" size={14} color="#cdd5cf" weight="bold" />}
-                </Pressable>
+                <ListRow
+                  key={ri}
+                  label={r.label}
+                  icon={r.icon}
+                  iconColor={r.iconColor || colors.success}
+                  iconTint={r.tint || colors.soft}
+                  labelColor={r.labelColor || colors.text}
+                  chevron={r.chevron !== false}
+                  onPress={r.onPress}
+                  divided={ri > 0}
+                />
               ))}
-            </View>
+            </Card>
           ))}
           <Text style={styles.version}>SERRALE Basic · v1.0</Text>
         </View>
@@ -125,18 +138,12 @@ const styles = StyleSheet.create({
   guestAvatar: { width: 62, height: 62, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   guestTitle: { fontFamily: fonts.heading, fontSize: 18, color: '#fff', marginTop: 12 },
   guestText: { fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 18, marginTop: 5, textAlign: 'center', fontFamily: fonts.regular },
-  guestBtn: { marginTop: 16, width: '100%', height: 46, borderRadius: radius.md + 1, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7 },
-  guestBtnText: { color: colors.text, fontSize: 14, fontFamily: fonts.bold },
+  guestBtn: { marginTop: 16 },
   userCard: { marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.1)', borderRadius: radius.xl + 2, padding: 16, ...shadowCard, shadowOpacity: 0.05 },
   userName: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
   userPhone: { fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.regular },
   userArea: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   userAreaText: { fontSize: 11.5, color: colors.success, fontFamily: fonts.semibold },
   groups: { paddingHorizontal: 16, paddingTop: 18, gap: 13 },
-  group: { backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.09)', borderRadius: radius.xl, overflow: 'hidden', ...shadowCard, shadowOpacity: 0.04 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 13, paddingHorizontal: 14 },
-  rowDivider: { borderTopWidth: 1, borderTopColor: colors.divider },
-  rowIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  rowLabel: { flex: 1, fontSize: 14, fontFamily: fonts.semibold },
   version: { textAlign: 'center', fontSize: 11, color: '#aab4ac', paddingVertical: 6, fontFamily: fonts.regular },
 });

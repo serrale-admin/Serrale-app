@@ -6,10 +6,11 @@ import {
 } from '@expo-google-fonts/inter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { setCurrentRoute } from '../src/lib/http';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -29,9 +30,17 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const pathname = usePathname();
+
   useEffect(() => {
     initializeSessionManager().catch(() => {});
   }, []);
+
+  // Tag outgoing requests with the current route template (PII-free) so the
+  // network layer can attach it as diagnostic metadata. See lib/http.ts.
+  useEffect(() => {
+    setCurrentRoute(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});

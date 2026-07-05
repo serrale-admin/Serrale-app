@@ -1,4 +1,4 @@
-import { normalizeEthiopianPhone } from '../../lib/phone';
+import { normalizeEthiopianPhone, PHONE_INVALID_MESSAGE } from '../../lib/phone';
 import type { OtpChallenge, OtpPurpose, VerifyResult } from '../shared';
 import { delay } from './client';
 
@@ -12,9 +12,13 @@ export interface VerifyArgs {
 let challengeSeq = 1;
 
 /** Requests an OTP (mock): validates the phone, returns a fake challenge. */
-export function requestOtp(phone: string, _purpose: OtpPurpose): Promise<OtpChallenge> {
+export function requestOtp(
+  phone: string,
+  _purpose: OtpPurpose,
+  _idempotencyKey?: string,
+): Promise<OtpChallenge> {
   const normalized = normalizeEthiopianPhone(phone);
-  if (!normalized) return Promise.reject(new Error('Enter a valid Ethiopian phone number.'));
+  if (!normalized) return Promise.reject(new Error(PHONE_INVALID_MESSAGE));
   return delay(
     { challengeId: 'mock-challenge-' + challengeSeq++, expiresAt: new Date(Date.now() + 300_000).toISOString() },
     400,

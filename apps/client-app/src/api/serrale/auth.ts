@@ -1,17 +1,29 @@
 import { DIRECTORY } from '../../lib/env';
 import { http } from '../../lib/http';
-import { normalizeEthiopianPhone } from '../../lib/phone';
+import { normalizeEthiopianPhone, PHONE_INVALID_MESSAGE } from '../../lib/phone';
 import type { OtpChallenge, OtpPurpose, VerifyResult } from '../shared';
 import type { ApiOtpChallenge, ApiOtpVerify, ApiSessionExchange, ApiSessionRefresh } from './types';
 import type { VerifyArgs } from '../mock/auth';
 
-/** POST /otp/request — sends an OTP via the backend (AfroMessage) and returns a challenge. */
-export async function requestOtp(phone: string, purpose: OtpPurpose): Promise<OtpChallenge> {
+/**
+ * POST /otp/request — sends an OTP via the backend (AfroMessage) and returns a challenge.
+ *
+ * `idempotencyKey` (when supplied) is sent as the `Idempotency-Key` header. The
+ * backend replays the same challenge for a repeated key within a 60s window
+ * (publicDirectory.ts otpReplayKey/otpReplayCache), so one logical "send" — even
+ * if the request is retried — never fans out into multiple SMS.
+ */
+export async function requestOtp(
+  phone: string,
+  purpose: OtpPurpose,
+  idempotencyKey?: string,
+): Promise<OtpChallenge> {
   const normalized = normalizeEthiopianPhone(phone);
-  if (!normalized) return Promise.reject(new Error('Enter a valid Ethiopian phone number.'));
+  if (!normalized) return Promise.reject(new Error(PHONE_INVALID_MESSAGE));
   const data = await http<ApiOtpChallenge>(`${DIRECTORY}/otp/request`, {
     method: 'POST',
     body: { phone: normalized, purpose },
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     skipAuthInterceptor: true, // Pre-auth: never trigger a session refresh from OTP calls.
   });
   return { challengeId: data.challenge_id, expiresAt: data.expires_at, reused: data.reused };

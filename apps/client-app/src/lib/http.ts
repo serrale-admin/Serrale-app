@@ -8,8 +8,25 @@ export class NetworkError extends Error {
   }
 }
 
+/**
+ * Raw retry signals captured off a 429 response (additive; no parsing here).
+ * Interpretation — precedence, stricter-wins, HTTP-date rejection — lives in
+ * `lib/otp-retry.ts` (`retryInfoFromError`), keeping this module free of any
+ * OTP-specific logic.
+ */
+export interface HttpRetryRaw {
+  /** The envelope's error object (may carry `retry_after_seconds` / `next_allowed_at`). */
+  body?: Record<string, unknown>;
+  /** Raw `Retry-After` header value, or null when absent. */
+  retryAfter: string | null;
+  /** Raw `RateLimit-Reset` header value (express standardHeaders), or null. */
+  rateLimitReset: string | null;
+}
+
 /** Non-2xx HTTP response. */
 export class HttpError extends Error {
+  /** Populated on 429 responses only — see `retryInfoFromError` in lib/otp-retry.ts. */
+  retryRaw?: HttpRetryRaw;
   constructor(
     public status: number,
     message: string,
@@ -42,6 +59,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
   skipAuthInterceptor?: boolean;
+  /** Extra request headers (e.g. an Idempotency-Key for OTP sends). */
+  headers?: Record<string, string>;
 }
 
 /** The SERRALE API envelope: `{ success, data }` on success, `{ success:false, error }` on failure. */
@@ -89,7 +108,7 @@ function errorMessage(e: Envelope<unknown>): { message: string; code?: string } 
  * UI maps to error states. Returns `data` as `T`.
  */
 export async function http<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, token, query, signal, timeoutMs = 15000, skipAuthInterceptor } = opts;
+  const { method = 'GET', body, token, query, signal, timeoutMs = 15000, skipAuthInterceptor, headers: extraHeaders } = opts;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -105,6 +124,7 @@ export async function http<T>(path: string, opts: RequestOptions = {}): Promise<
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        ...(extraHeaders || {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
@@ -135,7 +155,21 @@ export async function http<T>(path: string, opts: RequestOptions = {}): Promise<
 
   if (!res.ok) {
     const { message, code } = parsed ? errorMessage(parsed) : { message: `Request failed (${res.status})`, code: undefined };
-    throw new HttpError(res.status, message, code);
+    const error = new HttpError(res.status, message, code);
+    // Additive 429 enrichment: capture the RAW cooldown signals (error-body fields
+    // + Retry-After / RateLimit-Reset headers) so the OTP UI can show a specific
+    // wait. No parsing here — see `retryInfoFromError` in lib/otp-retry.ts.
+    if (res.status === 429) {
+      error.retryRaw = {
+        body:
+          parsed && parsed.error && typeof parsed.error === 'object'
+            ? (parsed.error as Record<string, unknown>)
+            : undefined,
+        retryAfter: res.headers?.get?.('Retry-After') ?? null,
+        rateLimitReset: res.headers?.get?.('RateLimit-Reset') ?? null,
+      };
+    }
+    throw error;
   }
   if (parsed && parsed.success === false) {
     const { message, code } = errorMessage(parsed);

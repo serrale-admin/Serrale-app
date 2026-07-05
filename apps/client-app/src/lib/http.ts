@@ -20,8 +20,25 @@ export class NetworkError extends Error {
   }
 }
 
+/**
+ * Raw retry signals captured off a 429 response (additive; no parsing here).
+ * Interpretation — precedence, stricter-wins, HTTP-date rejection — lives in
+ * `lib/otp-retry.ts` (`retryInfoFromError`), keeping this module free of any
+ * OTP-specific logic.
+ */
+export interface HttpRetryRaw {
+  /** The envelope's error object (may carry `retry_after_seconds` / `next_allowed_at`). */
+  body?: Record<string, unknown>;
+  /** Raw `Retry-After` header value, or null when absent. */
+  retryAfter: string | null;
+  /** Raw `RateLimit-Reset` header value (express standardHeaders), or null. */
+  rateLimitReset: string | null;
+}
+
 /** Non-2xx HTTP response. */
 export class HttpError extends Error {
+  /** Populated on 429 responses only — see `retryInfoFromError` in lib/otp-retry.ts. */
+  retryRaw?: HttpRetryRaw;
   constructor(
     public status: number,
     message: string,
@@ -56,6 +73,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
   skipAuthInterceptor?: boolean;
+  /** Extra request headers (e.g. an Idempotency-Key for OTP sends). */
+  headers?: Record<string, string>;
 }
 
 /** The SERRALE API envelope: `{ success, data }` on success, `{ success:false, error }` on failure. */
@@ -262,6 +281,10 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     signal,
     timeoutMs = defaultTimeoutFor(method, path),
     skipAuthInterceptor,
+    // T3: per-call extra headers (e.g. Idempotency-Key on OTP sends). Spread into
+    // the fetch headers below, AFTER metadataHeaders(), so a per-call header wins
+    // a name collision (there are none today) but can never clobber metadata.
+    headers: extraHeaders,
   } = opts;
 
   const controller = new AbortController();
@@ -280,6 +303,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
         ...metadataHeaders(),
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        ...(extraHeaders || {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
@@ -315,8 +339,28 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
 
   if (!res.ok) {
     const { message, code } = parsed ? errorMessage(parsed) : { message: `Request failed (${res.status})`, code: undefined };
+    // T4: parsed Retry-After (ms) feeds the retry POLICY (GET 429/503 backoff via
+    // classifyRetry → `outcome.retryAfterMs`). Writes are never retried, so this is
+    // only ever consulted for eligible reads.
     const retryAfterMs = parseRetryAfter(readHeader(res, 'Retry-After'));
-    throw new HttpError(res.status, message, code, retryAfterMs);
+    const error = new HttpError(res.status, message, code, retryAfterMs);
+    // T3: additive 429 enrichment — capture the RAW cooldown signals (error-body
+    // fields + Retry-After / RateLimit-Reset headers) so the OTP UI can show a
+    // specific wait. This rides on the thrown error and is a SEPARATE consumer of
+    // the same headers from T4's retryAfterMs above (no shared mutable state; the
+    // two never interfere). No parsing here — see `retryInfoFromError` in
+    // lib/otp-retry.ts. Uses the defensive `readHeader` helper for test-shape safety.
+    if (res.status === 429) {
+      error.retryRaw = {
+        body:
+          parsed && parsed.error && typeof parsed.error === 'object'
+            ? (parsed.error as Record<string, unknown>)
+            : undefined,
+        retryAfter: readHeader(res, 'Retry-After'),
+        rateLimitReset: readHeader(res, 'RateLimit-Reset'),
+      };
+    }
+    throw error;
   }
   if (parsed && parsed.success === false) {
     const { message, code } = errorMessage(parsed);

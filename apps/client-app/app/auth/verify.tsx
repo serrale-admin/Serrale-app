@@ -9,9 +9,17 @@ import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp, useVerifyOtp } from '../../src/hooks/queries';
 import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
-import { maskEthiopianPhone } from '../../src/lib/phone';
+import { DEFAULT_RESEND_COOLDOWN_SECONDS, formatRetryMessage, newIdempotencyKey, retryInfoFromError } from '../../src/lib/otp-retry';
+import { displayEthiopianPhone } from '../../src/lib/phone';
+import { safeNextRoute } from '../../src/lib/safe-route';
 import { colors, fonts } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
+
+// Verify-side error codes that mean the challenge is DEAD (spent/expired). The
+// user cannot retype their way out of these — route them back to re-request a
+// fresh code. OTP_INCORRECT is deliberately excluded: that one keeps the
+// challenge so the user can retype (attempt_count is bounded server-side).
+const DEAD_CHALLENGE_CODES = new Set(['OTP_EXPIRED', 'OTP_INVALID_STATUS', 'OTP_MAX_ATTEMPTS', 'OTP_NOT_FOUND']);
 
 export default function VerifyScreen() {
   const router = useRouter();
@@ -25,8 +33,27 @@ export default function VerifyScreen() {
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
-  const [resend, setResend] = useState(45);
+  // Seeded from the backend cooldown constant (there is no server-provided
+  // resend gate on the happy path — see otp-retry.ts). A stricter 429 overrides
+  // this via `startResendCooldown`.
+  const [resend, setResend] = useState(DEFAULT_RESEND_COOLDOWN_SECONDS);
   const inputs = useRef<(TextInput | null)[]>([]);
+  // Synchronous in-flight guards (mutation `isPending` only flips next render, so
+  // it cannot stop a rapid synchronous burst of taps — the refs can).
+  const verifying = useRef(false);
+  const resending = useRef(false);
+
+  /** Restart the resend countdown, never SHORTENING an in-progress stricter wait. */
+  const startResendCooldown = (seconds: number) => {
+    setResend((current) => Math.max(current, Math.ceil(seconds)));
+  };
+
+  /** Route back to phone entry to request a fresh code, preserving `next`. */
+  const goReRequest = (message: string) => {
+    setPendingChallengeId('');
+    showToast(message, 'ph-warning-circle');
+    router.replace({ pathname: '/auth/login', params: { next: params.next } });
+  };
 
   useEffect(() => {
     if (!challengeId || !phone) {
@@ -38,55 +65,67 @@ export default function VerifyScreen() {
     return () => clearInterval(t);
   }, [challengeId, phone, params.next, router, showToast]);
 
-  const phoneMasked = phone ? maskEthiopianPhone(phone).replace('+251 ', '') : '9XX XXX XXX';
+  // Readable local (national) form, e.g. "0912 345 678" — what Ethiopians dial.
+  const phoneDisplay = phone ? displayEthiopianPhone(phone) : '09XX XXX XXX';
 
   const submit = (code: string[]) => {
     if (code.some((d) => d === '')) {
       setError('Enter the 6-digit code.');
       return;
     }
+    // One verify per submission — block duplicate taps and the auto-submit
+    // firing on top of a manual Verify press.
+    if (verifying.current || verifyMutation.isPending) return;
+    verifying.current = true;
     verifyMutation.mutate(
       { phone, code: code.join(''), challengeId },
       {
+        onSettled: () => {
+          verifying.current = false;
+        },
         onSuccess: async (result) => {
           try {
             const { handleExchange } = require('../../src/lib/session-manager');
             await handleExchange(phone, result.verifyToken);
             showToast('Welcome to SERRALE', 'ph-hand-waving');
-            const next = (params.next as string) || '/(tabs)/profile';
-            router.replace(next as never);
+            // Validate `next` to an internal route only — never navigate to an
+            // arbitrary/external URL smuggled through the login→verify chain.
+            router.replace(safeNextRoute(params.next) as never);
           } catch (e) {
-            // Distinguish a temporary backend outage (SESSION_STORE_UNAVAILABLE,
-            // 503) from a consumed/invalid verify token (INVALID_VERIFY_TOKEN,
-            // which the backend returns as 401 OR 400). Branch on the stable
-            // code first; fall back to status for older responses.
+            // The verify_token was consumed by the exchange attempt. A consumed/
+            // invalid token (INVALID_VERIFY_TOKEN; 401 or 400) can't be reused, so
+            // send the user back to re-request cleanly. A transient outage
+            // (SESSION_STORE_UNAVAILABLE / 503) is retryable in place.
             const code = e instanceof HttpError ? e.code : undefined;
-            const message =
-              code === 'SESSION_STORE_UNAVAILABLE' || (e instanceof HttpError && e.status === 503)
-                ? 'Temporary server session issue. Please try again in a moment.'
-                : code === 'INVALID_VERIFY_TOKEN' || (e instanceof HttpError && e.status === 401)
-                  ? 'Verification token expired or invalid. Please restart login.'
-                  : e instanceof Error
-                    ? e.message
-                    : 'Session exchange failed. Please try again.';
-            setOtp(['', '', '', '', '', '']);
-            setError(message);
-            setTimeout(() => inputs.current[0]?.focus(), 50);
+            if (code === 'SESSION_STORE_UNAVAILABLE' || (e instanceof HttpError && e.status === 503)) {
+              setOtp(['', '', '', '', '', '']);
+              setError('Temporary server session issue. Please try again in a moment.');
+              setTimeout(() => inputs.current[0]?.focus(), 50);
+              return;
+            }
+            goReRequest('Your verification expired. Please request a new code.');
           }
         },
         onError: (e) => {
+          const code = e instanceof HttpError ? e.code : undefined;
+          // A dead challenge (expired / already used / too many attempts) cannot
+          // be retyped — route back to request a fresh code.
+          if (code && DEAD_CHALLENGE_CODES.has(code)) {
+            goReRequest('That code expired. Please request a new one.');
+            return;
+          }
+          // Everything else stays on-screen. Generic, security-safe copy: never
+          // reveal whether the phone is registered or why the code failed.
           const message =
             e instanceof NetworkError
               ? "Couldn't reach SERRALE. Check your internet and try again."
-              : e instanceof HttpError && (e.status === 401 || e.status === 400)
-                ? 'That code did not work or expired. Please try again.'
-                : e instanceof HttpError && e.status === 429
-                  ? 'Too many attempts. Please wait a minute and try again.'
+              : e instanceof HttpError && e.status === 429
+                ? formatRetryMessage(retryInfoFromError(e))
+                : e instanceof HttpError && (e.status === 401 || e.status === 400)
+                  ? 'That code is incorrect. Please check the SMS and try again.'
                   : e instanceof ApiBusinessError
-                    ? e.message
-                    : e instanceof Error
-                      ? e.message
-                      : 'Incorrect code';
+                    ? 'That code is incorrect. Please check the SMS and try again.'
+                    : 'That code is incorrect. Please check the SMS and try again.';
           setOtp(['', '', '', '', '', '']);
           setError(message);
           setTimeout(() => inputs.current[0]?.focus(), 50);
@@ -103,7 +142,9 @@ export default function VerifyScreen() {
     setOtp(next);
     setError('');
     if (digit && i < 5) inputs.current[i + 1]?.focus();
-    if (next.every((d) => d !== '') && !verifyMutation.isPending) setTimeout(() => submit(next), 100);
+    if (next.every((d) => d !== '') && !verifying.current && !verifyMutation.isPending) {
+      setTimeout(() => submit(next), 100);
+    }
   };
 
   const onKey = (i: number, key: string) => {
@@ -117,27 +158,40 @@ export default function VerifyScreen() {
   };
 
   const resendCode = () => {
-    if (resend > 0 || !phone) return;
+    // In-flight guard + countdown gate: one resend per user action. The ref stops
+    // a synchronous burst; the countdown and isPending guard the rest.
+    if (resend > 0 || !phone || resending.current || requestOtp.isPending) return;
+    resending.current = true;
     setError('');
     setOtp(['', '', '', '', '', '']);
+    const idempotencyKey = newIdempotencyKey();
     requestOtp.mutate(
-      { phone },
+      { phone, idempotencyKey },
       {
+        onSettled: () => {
+          resending.current = false;
+        },
         onSuccess: (challenge: { challengeId: string }) => {
           setPendingChallengeId(challenge.challengeId);
-          setResend(45);
+          setResend(DEFAULT_RESEND_COOLDOWN_SECONDS);
           showToast('Code resent', 'ph-paper-plane-tilt');
           setTimeout(() => inputs.current[0]?.focus(), 50);
         },
         onError: (e) => {
+          if (e instanceof HttpError && e.status === 429) {
+            // A stricter server cooldown OVERRIDES the local timer — drive the
+            // countdown from the server's retry seconds and show a specific wait.
+            const info = retryInfoFromError(e);
+            if (info.seconds != null) startResendCooldown(info.seconds);
+            setError(formatRetryMessage(info));
+            return;
+          }
           const message =
             e instanceof NetworkError
               ? "Couldn't reach SERRALE. Check your internet and try again."
-              : e instanceof HttpError && e.status === 429
-                ? 'Too many attempts. Please wait a minute before requesting a new code.'
-                : e instanceof Error
-                  ? e.message
-                  : 'Could not resend code. Please try again.';
+              : e instanceof Error
+                ? e.message
+                : 'Could not resend code. Please try again.';
           setError(message);
         },
       },
@@ -155,7 +209,7 @@ export default function VerifyScreen() {
       <View style={styles.body}>
         <Text style={styles.h1}>Enter verification code</Text>
         <Text style={styles.subtitle}>
-          We sent a 6-digit code to <Text style={{ color: colors.text, fontFamily: fonts.bold }}>+251 {phoneMasked}</Text>.
+          We sent a 6-digit code to <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{phoneDisplay}</Text>.
         </Text>
 
         <View style={styles.otpWrap}>

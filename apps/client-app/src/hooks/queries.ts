@@ -54,8 +54,11 @@ export const useCreateRequest = () =>
 
 export const useRequestOtp = () =>
   useMutation({
+    // A shared mutationKey lets React Query dedupe/track this send across the
+    // login and verify (resend) screens; the in-flight guard uses `isPending`.
     mutationKey: ['requestOtp'],
-    mutationFn: (v: { phone: string }) => api.requestOtp(v.phone, 'directory_customer_request'),
+    mutationFn: (v: { phone: string; idempotencyKey?: string }) =>
+      api.requestOtp(v.phone, 'directory_customer_request', v.idempotencyKey),
   });
 
 export const useVerifyOtp = () =>

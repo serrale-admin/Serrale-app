@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import Button from '../../src/components/Button';
 import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
+import { formatRetryMessage, newIdempotencyKey, retryInfoFromError } from '../../src/lib/otp-retry';
 import { normalizeEthiopianPhone } from '../../src/lib/phone';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { PhoneForm, phoneSchema } from '../../src/schemas/auth';
@@ -20,6 +22,10 @@ export default function LoginScreen() {
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
   const showToast = useAppStore((s) => s.showToast);
   const requestOtp = useRequestOtp();
+  // Synchronous in-flight guard. `requestOtp.isPending` flips on the NEXT render,
+  // so within one synchronous burst of taps it is still false — a ref flipped
+  // immediately is what actually collapses N rapid taps into a single send.
+  const sending = useRef(false);
 
   const { handleSubmit, watch, setValue, formState } = useForm<PhoneForm>({
     resolver: zodResolver(phoneSchema),
@@ -30,8 +36,15 @@ export default function LoginScreen() {
   const error = formState.errors.phone?.message;
 
   const onSend = handleSubmit((v) => {
+    // One logical send per user action: ignore duplicate taps while a send is
+    // in flight. (React Query dedupes on mutationKey too, and the Idempotency-Key
+    // makes a retried request replay the same challenge instead of a new SMS.)
+    if (sending.current || requestOtp.isPending) return;
+    sending.current = true;
+    // One idempotency key per send action.
+    const idempotencyKey = newIdempotencyKey();
     requestOtp.mutate(
-      { phone: v.phone },
+      { phone: v.phone, idempotencyKey },
       {
         onSuccess: (challenge: { challengeId: string }) => {
           setPendingPhone(normalizeEthiopianPhone(v.phone) || v.phone);
@@ -43,13 +56,16 @@ export default function LoginScreen() {
             e instanceof NetworkError
               ? "Couldn't reach SERRALE. Check your internet and try again."
               : e instanceof HttpError && e.status === 429
-                ? 'Too many attempts. Please wait a minute before requesting a new code.'
+                ? formatRetryMessage(retryInfoFromError(e))
                 : e instanceof ApiBusinessError
                   ? e.message
                   : e instanceof Error
                     ? e.message
                     : 'Could not send code. Please try again.';
           showToast(message, 'ph-warning-circle');
+        },
+        onSettled: () => {
+          sending.current = false;
         },
       },
     );
@@ -102,7 +118,7 @@ export default function LoginScreen() {
               {requestOtp.error instanceof NetworkError
                 ? "Couldn't reach SERRALE. Check your internet and try again."
                 : requestOtp.error instanceof HttpError && requestOtp.error.status === 429
-                  ? 'Too many attempts. Please wait a minute.'
+                  ? formatRetryMessage(retryInfoFromError(requestOtp.error))
                   : requestOtp.error.message}
             </Text>
           </View>

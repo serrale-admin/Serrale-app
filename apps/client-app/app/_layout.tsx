@@ -6,11 +6,11 @@ import {
 } from '@expo-google-fonts/inter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { setCurrentRoute } from '../src/lib/http';
+import { segmentsToRouteTemplate, setCurrentRoute } from '../src/lib/http';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -30,7 +30,10 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const pathname = usePathname();
+  // Unresolved file-path segments (e.g. ['provider', '[id]']) — NOT the
+  // resolved/concrete path. Using usePathname() here would leak dynamic-segment
+  // values (ids, phone numbers, etc.) into request metadata. See lib/http.ts.
+  const segments = useSegments();
 
   useEffect(() => {
     initializeSessionManager().catch(() => {});
@@ -39,8 +42,8 @@ export default function RootLayout() {
   // Tag outgoing requests with the current route template (PII-free) so the
   // network layer can attach it as diagnostic metadata. See lib/http.ts.
   useEffect(() => {
-    setCurrentRoute(pathname);
-  }, [pathname]);
+    setCurrentRoute(segmentsToRouteTemplate(segments));
+  }, [segments]);
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});

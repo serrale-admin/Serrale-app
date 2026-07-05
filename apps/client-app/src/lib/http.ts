@@ -112,12 +112,34 @@ const APP_SURFACE = 'basic';
 
 /**
  * Current in-app route, updated by the router layer via `setCurrentRoute`. Purely
- * diagnostic and best-effort; defaults to 'unknown'. Never contains PII (route
- * templates only — e.g. `/provider/[id]`, not the concrete id or any user data).
+ * diagnostic and best-effort; defaults to 'unknown'.
+ *
+ * MUST be a route TEMPLATE only — e.g. `/provider/[id]`, `/(tabs)/home` — built
+ * from expo-router's `useSegments()` (unresolved file-path segments), never a
+ * concrete resolved path from `usePathname()`/`useUnstableGlobalHref()`. Concrete
+ * paths can embed dynamic-segment values (ids, phone numbers, etc.) and would leak
+ * that data into request metadata / server-side logs. See `_layout.tsx`, which is
+ * the sole caller and owns the segments→template join.
  */
 let currentRoute = 'unknown';
 
-/** Router layer calls this (e.g. from a usePathname effect) to tag requests. */
+/**
+ * Joins expo-router `useSegments()` output into a route TEMPLATE string, e.g.
+ * `['provider', '[id]'] → '/provider/[id]'`. Segments are unresolved file-path
+ * pieces (dynamic segments stay as literal `[id]`, group segments stay as
+ * literal `(tabs)`), so the result is always PII-free by construction — there is
+ * no concrete param value to accidentally include. Root route (`[]`) → `'/'`.
+ */
+export function segmentsToRouteTemplate(segments: readonly string[]): string {
+  if (!segments || segments.length === 0) return '/';
+  return `/${segments.join('/')}`;
+}
+
+/**
+ * Router layer calls this (from a `useSegments()` effect in `_layout.tsx`) to tag
+ * requests with the current route TEMPLATE. Callers must never pass a concrete
+ * path (e.g. from `usePathname()`) — see the `currentRoute` doc comment above.
+ */
 export function setCurrentRoute(route: string | null | undefined) {
   currentRoute = route && route.trim() ? route.trim() : 'unknown';
 }

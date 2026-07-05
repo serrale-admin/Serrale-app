@@ -16,6 +16,8 @@ import {
   setUnauthorizedHandler,
   getNetworkStatus,
   subscribeNetworkStatus,
+  setCurrentRoute,
+  segmentsToRouteTemplate,
   __resetNetworkReliability,
 } from '../http';
 import {
@@ -372,5 +374,76 @@ describe('http reliability layer', () => {
     }
     unsub();
     expect(statuses).toContain('open');
+  });
+
+  describe('route template propagation (X-Serrale-Platform)', () => {
+    afterEach(() => {
+      // currentRoute is module-level state not touched by
+      // __resetNetworkReliability(); reset it so it can't leak into other
+      // tests in this file that assert on X-Serrale-Platform.
+      setCurrentRoute(undefined);
+    });
+
+    it('emits whatever setCurrentRoute is given, verbatim, as the route= segment', async () => {
+      global.fetch = jest.fn(async () => jsonResponse(200, envelope({ ok: true }))) as unknown as typeof fetch;
+
+      setCurrentRoute(segmentsToRouteTemplate(['provider', '[id]']));
+      let headers: Record<string, string> = {};
+      (global.fetch as jest.Mock).mockImplementationOnce(async (_url: string, init?: RequestInit) => {
+        headers = { ...(init?.headers as Record<string, string>) };
+        return jsonResponse(200, envelope({ ok: true }));
+      });
+      await http('/public-directory/providers');
+
+      // Template form only — no concrete id ever substituted in.
+      expect(headers['X-Serrale-Platform']).toBe('app_surface=basic; route=/provider/[id]');
+    });
+
+    it('never contains a concrete resolved path, only the template form', async () => {
+      let headers: Record<string, string> = {};
+      global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+        headers = { ...(init?.headers as Record<string, string>) };
+        return jsonResponse(200, envelope({ ok: true }));
+      }) as unknown as typeof fetch;
+
+      // Simulates what _layout.tsx's useSegments() effect would feed in for a
+      // concrete visit to e.g. /provider/42 — the dynamic segment stays literal.
+      setCurrentRoute(segmentsToRouteTemplate(['provider', '[id]']));
+      await http('/public-directory/providers');
+
+      expect(headers['X-Serrale-Platform']).not.toContain('/provider/42');
+      expect(headers['X-Serrale-Platform']).toContain('/provider/[id]');
+    });
+
+    it('falls back to "unknown" when no route has been set', async () => {
+      let headers: Record<string, string> = {};
+      global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+        headers = { ...(init?.headers as Record<string, string>) };
+        return jsonResponse(200, envelope({ ok: true }));
+      }) as unknown as typeof fetch;
+
+      setCurrentRoute(undefined);
+      await http('/public-directory/categories');
+
+      expect(headers['X-Serrale-Platform']).toBe('app_surface=basic; route=unknown');
+    });
+  });
+
+  describe('segmentsToRouteTemplate (segments → route template join helper)', () => {
+    it('joins nested segments into a slash-delimited template', () => {
+      expect(segmentsToRouteTemplate(['(tabs)', 'home'])).toBe('/(tabs)/home');
+    });
+
+    it('preserves dynamic-segment brackets literally (no param substitution)', () => {
+      expect(segmentsToRouteTemplate(['provider', '[id]'])).toBe('/provider/[id]');
+    });
+
+    it('maps the root route (empty segments) to "/"', () => {
+      expect(segmentsToRouteTemplate([])).toBe('/');
+    });
+
+    it('handles a single top-level segment', () => {
+      expect(segmentsToRouteTemplate(['providers'])).toBe('/providers');
+    });
   });
 });

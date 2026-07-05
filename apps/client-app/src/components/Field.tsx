@@ -112,7 +112,6 @@ const styles = StyleSheet.create({
   fieldErrored: { borderColor: colors.danger },
   input: { flex: 1, fontSize: 14, fontFamily: fonts.regular, color: colors.text, padding: 0 },
   select: {
-    minHeight: layout.controlHeight,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',

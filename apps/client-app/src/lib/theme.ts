@@ -30,10 +30,12 @@ export const colors = {
   /** Darker amber for small text on goldSoft — meets WCAG AA (4.9:1). */
   goldSoftText: '#8a6410',
   onGold: '#5e4708',
-  success: '#16875F',
+  /** Darkened from #16875F for WCAG AA on soft/white surfaces (4.72-4.99:1). */
+  success: '#157F59',
   whatsapp: '#0f6f4d',
   whatsappSoft: 'rgba(22,135,95,0.25)',
-  danger: '#C8553D',
+  /** Darkened from #C8553D for WCAG AA (4.5:1) on bg/surface/ivory (4.68-4.72:1). */
+  danger: '#C0503A',
   dangerSoft: '#FBEAE6',
 
   border: 'rgba(6,71,52,0.1)',

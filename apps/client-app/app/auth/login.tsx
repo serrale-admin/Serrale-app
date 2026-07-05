@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   h1: { fontFamily: fonts.heading, fontSize: 25, color: colors.text, marginTop: 18, marginBottom: 6 },
   subtitle: { fontSize: 13.5, color: colors.muted, lineHeight: 21, fontFamily: fonts.regular },
   inputRow: { flexDirection: 'row', gap: 9, marginTop: 24 },
-  prefix: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(6,71,52,0.14)', borderRadius: radius.md + 1 },
+  prefix: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderField, borderRadius: radius.md + 1 },
   flag: { fontSize: 16 },
   prefixText: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
   input: { flex: 1, height: 52, paddingHorizontal: 16, backgroundColor: colors.surface, borderWidth: 1, borderRadius: radius.md + 1, fontSize: 16, fontFamily: fonts.semibold, color: colors.text, letterSpacing: 0.5 },

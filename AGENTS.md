@@ -145,15 +145,15 @@ GET  /api/public-directory/search/suggest
 POST /api/public-directory/otp/request
 POST /api/public-directory/otp/verify
 POST /api/public-directory/leads/request
-POST /api/public-directory/leads/provider
+POST /api/public-directory/providers/:id/contact-events
 ```
 
 Important implementation details:
 
-- Category names, icons, groups, and image keys come from local category metadata; the live category endpoint supplies counts.
-- Provider detail may contain portfolio and reviews; adapters convert backend shapes into mobile types.
+- Categories are the 24 backend ontology slugs (`backend/src/services/directorySearchOntology.ts`); the app supplies local presentation metadata (icon, group, subs, Amharic name) keyed by slug, and the live category endpoint supplies only counts. Unknown slugs still render, using a title-cased fallback name.
+- Live provider rows carry no rating, review, verified, availability, or portfolio data — `adaptProvider` hardcodes those fields (rating/reviewCount to 0, verified/availableToday/hasPastWork to false) rather than fabricating them, and the UI hides rating chrome when the value is 0. Mock/demo mode is the only place that shows populated ratings, reviews, and past work.
 - Live mode has no global recent-work endpoint, so `getRecentWork()` currently returns an empty list.
-- Call and WhatsApp actions must not be blocked by analytics/lead logging. Provider lead creation is best-effort and the native intent opens even if logging fails.
+- Call and WhatsApp actions must not be blocked by analytics. Contact-event logging (`POST /providers/:id/contact-events`) is fire-and-forget and never awaited before the native `tel:`/`wa.me` intent opens, so a logging failure can never block the action.
 - Provider queries use page size 20. Preserve pagination-compatible return shapes.
 
 ## 6. Authentication and local state
@@ -166,7 +166,7 @@ directory_customer_request
   -> POST /otp/verify
   -> one-time verify_token
   -> POST /customers/session (exchange -> access + refresh tokens)
-  -> POST /leads/request (using Bearer access token)
+  -> POST /leads/request (Bearer access token + Idempotency-Key header, no verify_token in the body)
 ```
 
 ### Customer Persistent Sessions (Added 2026-07)

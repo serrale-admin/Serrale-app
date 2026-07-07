@@ -38,23 +38,33 @@ export default function RequestScreen() {
   const [showCat, setShowCat] = useState(false);
   const [showArea, setShowArea] = useState(false);
 
+  const startOver = () => {
+    mutation.reset();
+    reset(defaultRequest(area));
+  };
+
   // Success state
   if (mutation.isSuccess) {
+    const wasDuplicate = mutation.data?.duplicate;
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView contentContainerStyle={styles.centerWrap} showsVerticalScrollIndicator={false}>
           <View style={[styles.bigCircle, { backgroundColor: colors.soft }]}>
             <Icon name="ph-check-circle" size={48} color={colors.success} weight="fill" />
           </View>
-          <Text style={styles.successTitle}>We received your request</Text>
-          <Text style={styles.successText}>SERRALE will help match your request with relevant providers near {mutation.variables?.area}.</Text>
+          <Text style={styles.successTitle}>{wasDuplicate ? 'Your request is already in' : 'We received your request'}</Text>
+          <Text style={styles.successText}>
+            {wasDuplicate
+              ? 'We already have this request on file — no need to send it again. SERRALE will keep matching it with providers.'
+              : `SERRALE will help match your request with relevant providers near ${mutation.variables?.area}.`}
+          </Text>
           <Button label="Browse providers" fullWidth onPress={() => router.push('/providers')} style={styles.stackedBtn} />
           <Button
-            label="View my requests"
+            label="Post another request"
             variant="secondary"
             size="md"
             fullWidth
-            onPress={() => { mutation.reset(); reset(defaultRequest(area)); showToast('No active requests yet', 'ph-tray'); }}
+            onPress={startOver}
             style={styles.stackedBtnTight}
           />
         </ScrollView>
@@ -88,6 +98,8 @@ export default function RequestScreen() {
 
   const cat = CATS.find((c) => c.id === values.categoryId);
   const onInvalid = () => showToast(!values.categoryId ? 'Choose a service' : 'Describe the work briefly', 'ph-warning-circle');
+  // The idempotency key lives inside useCreateRequest: stable across retry-taps
+  // of this submission, refreshed only after a confirmed success.
   const submit = handleSubmit((v) => mutation.mutate(v), onInvalid);
 
   return (
@@ -183,8 +195,16 @@ export default function RequestScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
+        {mutation.isError && (
+          <View style={styles.errorRow}>
+            <Icon name="ph-warning-circle" size={16} color={colors.danger} weight="fill" />
+            <Text style={styles.errorText} numberOfLines={2}>
+              {(mutation.error as Error)?.message || "Couldn't submit. Check your connection and try again."}
+            </Text>
+          </View>
+        )}
         <Button
-          label={mutation.isPending ? 'Submitting…' : 'Submit request'}
+          label={mutation.isPending ? 'Submitting…' : mutation.isError ? 'Try again' : 'Submit request'}
           icon="ph-paper-plane-tilt"
           variant="gold"
           fullWidth
@@ -231,4 +251,6 @@ const styles = StyleSheet.create({
   contactActive: { backgroundColor: colors.surface },
   contactText: { fontSize: 13, fontFamily: fonts.bold },
   footer: { paddingHorizontal: 16, paddingTop: 11, paddingBottom: 20, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: 'rgba(6,71,52,0.09)' },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
+  errorText: { flex: 1, fontSize: 12.5, color: colors.danger, fontFamily: fonts.regular, lineHeight: 17 },
 });

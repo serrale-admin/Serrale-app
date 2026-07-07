@@ -15,9 +15,14 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
   const { open, save, call, whatsapp } = useProviderActions();
   const saved = useAppStore((s) => !!s.saved[p.id]);
 
+  // Real trust signals only: Verified / admin Reviewed / actual past work.
   const badge = p.verified ? 'Verified' : p.adminReviewed ? 'Reviewed' : p.hasPastWork ? 'Past work' : '';
-  const availLabel = p.availableToday ? 'Today' : 'This week';
-  const availColor = p.availableToday ? colors.success : '#9a8a5a';
+  // Rating renders only when review data exists (demo/mock). Live rows have no
+  // ratings (contract matrix M-3), so the meta row leads with the service.
+  const hasRating = p.reviewCount > 0 && p.rating > 0;
+  // Availability shows only when we positively know it — no fabricated
+  // "This week" claim when availability is simply unknown (always, in live mode).
+  const showAvail = p.availableToday;
 
   return (
     <Pressable style={styles.card} onPress={() => open(p.id)}>
@@ -45,9 +50,13 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
         </View>
 
         <View style={styles.metaRow}>
-          <Icon name="ph-star" size={11} color={colors.gold} weight="fill" />
-          <Text style={styles.rating}>{p.rating.toFixed(1)}</Text>
-          <Text style={styles.dot}>·</Text>
+          {hasRating && (
+            <>
+              <Icon name="ph-star" size={11} color={colors.gold} weight="fill" />
+              <Text style={styles.rating}>{p.rating.toFixed(1)}</Text>
+              <Text style={styles.dot}>·</Text>
+            </>
+          )}
           <Text style={styles.service}>{p.service}</Text>
           <Text style={styles.dot}>·</Text>
           <Icon name="ph-map-pin" size={11} color={colors.muted} />
@@ -56,9 +65,11 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
           </Text>
         </View>
 
-        <Text style={styles.desc} numberOfLines={1}>
-          {p.description}
-        </Text>
+        {!!p.description && (
+          <Text style={styles.desc} numberOfLines={1}>
+            {p.description}
+          </Text>
+        )}
 
         <View style={styles.actions}>
           <Pressable style={styles.callBtn} onPress={() => call(p)}>
@@ -69,12 +80,14 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
             <Icon name="ph-whatsapp-logo" size={13} color={colors.whatsapp} weight="fill" />
             <Text style={styles.waText}>WhatsApp</Text>
           </Pressable>
-          <View style={styles.availWrap}>
-            <View style={[styles.availDot, { backgroundColor: availColor }]} />
-            <Text style={[styles.availText, { color: availColor }]} numberOfLines={1}>
-              {availLabel}
-            </Text>
-          </View>
+          {showAvail && (
+            <View style={styles.availWrap}>
+              <View style={[styles.availDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.availText, { color: colors.success }]} numberOfLines={1}>
+                Today
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </Pressable>

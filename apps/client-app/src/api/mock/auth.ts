@@ -1,5 +1,6 @@
 import { normalizeEthiopianPhone, PHONE_INVALID_MESSAGE } from '../../lib/phone';
 import type { OtpChallenge, OtpPurpose, VerifyResult } from '../shared';
+import type { ApiSessionExchange, ApiSessionRefresh } from '../serrale/types';
 import { delay } from './client';
 
 export interface VerifyArgs {
@@ -34,7 +35,7 @@ export function verifyOtp(args: VerifyArgs): Promise<VerifyResult> {
 }
 
 /** Mock exchangeSession */
-export function exchangeSession(phone: string, _verifyToken: string): Promise<any> {
+export function exchangeSession(phone: string, _verifyToken: string): Promise<ApiSessionExchange> {
   const normalized = normalizeEthiopianPhone(phone) || phone;
   return delay(
     {
@@ -55,7 +56,7 @@ export function exchangeSession(phone: string, _verifyToken: string): Promise<an
 }
 
 /** Mock refreshSession */
-export function refreshSession(_refreshToken: string): Promise<any> {
+export function refreshSession(_refreshToken: string): Promise<ApiSessionRefresh> {
   return delay(
     {
       access_token: 'mock-access-token-rotated-' + Date.now(),

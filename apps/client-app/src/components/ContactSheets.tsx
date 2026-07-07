@@ -12,17 +12,19 @@ const waDigits = (phone: string) => phone.replace(/[^0-9]/g, '');
 export default function ContactSheets() {
   const { mode, provider, close } = useContactStore();
   const showToast = useAppStore((s) => s.showToast);
-  const verifyToken = useAppStore((s) => s.verifyToken);
-  const user = useAppStore((s) => s.user);
+  const userArea = useAppStore((s) => s.area);
 
-  const logLead = () => {
+  // Best-effort contact analytics via the public contact-events endpoint. This is
+  // fire-and-forget by design (never awaited, never throws) so a logging failure
+  // can never delay or block the tel:/whatsapp action. (Contract matrix M-2/M-6.)
+  const logContact = (eventType: 'phone_click' | 'whatsapp_click') => {
     if (!provider) return;
-    api.createProviderLead({ providerId: provider.id, verifyToken, fullName: user?.name, phone: user?.phone }).catch(() => {});
+    void api.logProviderContact({ providerId: provider.id, eventType, sourceFlow: 'contact_sheet', userArea });
   };
 
   const onCall = () => {
     if (!provider) return;
-    logLead();
+    logContact('phone_click');
     Linking.openURL(`tel:${provider.phone}`).catch(() => {});
     close();
     showToast(`Calling ${provider.name}…`, 'ph-phone-call');
@@ -30,7 +32,7 @@ export default function ContactSheets() {
 
   const onWhatsapp = () => {
     if (!provider) return;
-    logLead();
+    logContact('whatsapp_click');
     const msg = `Hello, I found your service on SERRALE. I need help with ${provider.service.toLowerCase()}. Are you available?`;
     const url = `whatsapp://send?phone=${waDigits(provider.phone)}&text=${encodeURIComponent(msg)}`;
     Linking.openURL(url).catch(() => {});

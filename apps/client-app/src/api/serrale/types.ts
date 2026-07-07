@@ -18,90 +18,53 @@ export interface ApiOtpVerify {
   verify_token: string;
 }
 
-export interface ApiCategory {
-  id: string;
-  name: string;
-  slug?: string;
-  icon_url?: string | null;
-  group?: string;
-  provider_count?: number;
-  count?: number;
-}
+/**
+ * GET /public-directory/categories returns `{ counts }` only — a
+ * `{ [category_slug]: activeProviderCount }` map (contract matrix §1). There is
+ * no per-category object with name/icon/group on the wire; the app supplies all
+ * presentation metadata locally (src/data/mock.ts). This alias exists only for
+ * the counts envelope.
+ */
+export type ApiCategoryCounts = Record<string, number>;
 
-export interface ApiProviderCategory {
-  id?: string;
-  name?: string;
-  slug?: string;
-}
-
-export interface ApiPastWork {
-  id?: string;
-  title?: string;
-  caption?: string;
-  note?: string;
-  category?: string;
-  area?: string;
-  location_text?: string;
-  image_url?: string;
-}
-
-export interface ApiReview {
-  id?: string;
-  user_name?: string;
-  author?: string;
-  area?: string;
-  rating?: number;
-  comment?: string;
-  text?: string;
-}
-
+/**
+ * The REAL public provider row. `PUBLIC_FIELDS` on both `/providers` and
+ * `/providers/:id` is exactly: id, full_name, phone, whatsapp, category_slug,
+ * area, experience, bio, photo_url, created_at (+ distance_km in geo/nearby
+ * mode). The backend has NO rating/review/verified/available_today/price/
+ * portfolio/reviews columns — see contract matrix M-3. Do not add fabricated
+ * fields here.
+ */
 export interface ApiProvider {
   id: string;
-  full_name?: string;
-  business_name?: string;
-  name?: string;
-  category?: ApiProviderCategory;
-  category_id?: string;
-  category_slug?: string;
-  category_name?: string;
-  service?: string;
-  rating?: number;
-  review_count?: number;
-  reviews_count?: number;
-  location_text?: string;
-  area?: string;
-  sub_city?: string;
-  verification_status?: string;
-  is_verified?: boolean;
-  verified?: boolean;
-  admin_reviewed?: boolean;
-  available_today?: boolean;
-  has_past_work?: boolean;
-  years_experience?: number;
-  experience_years?: number;
-  price_level?: string;
-  price?: string;
-  experience?: string;
-  description?: string;
-  phone?: string;
-  whatsapp?: string;
-  photo_url?: string;
-  image_url?: string;
-  avatar_url?: string;
-  portfolio?: ApiPastWork[];
-  reviews?: ApiReview[];
+  full_name?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  category_slug?: string | null;
+  area?: string | null;
+  experience?: string | null;
+  bio?: string | null;
+  photo_url?: string | null;
+  created_at?: string | null;
+  /** Only present in GPS/nearby mode. */
+  distance_km?: number | null;
 }
 
-/** Paginated list envelope (data may be a bare array OR an object with items+total). */
+/**
+ * Provider list envelope from `/providers` and `/search`:
+ * `{ providers, total, limit, offset, nearby }` (contract matrix §1). The
+ * optional aliases keep the adapter defensive against minor shape drift.
+ */
 export interface ApiListPayload<T> {
+  providers?: T[];
   items?: T[];
   results?: T[];
   data?: T[];
   total?: number;
   count?: number;
-  page?: number;
-  page_size?: number;
-  has_more?: boolean;
+  limit?: number;
+  offset?: number;
+  nearby?: boolean;
 }
 
 export interface ApiSessionCustomer {

@@ -16,7 +16,8 @@ import { useAppStore } from '../../src/store/appStore';
 import type { Category } from '../../src/types';
 
 type FilterKey = 'popular' | 'home' | 'admin' | 'top';
-const HOME_GROUPS = ['Home & Repair', 'Cleaning & Care'];
+/** Web-aligned group name backing the "Home services" chip. */
+const HOME_GROUPS = ['Home Services'];
 
 /** Plain provider-count line ("126 providers"). Real API counts; demo data fallback. */
 function countLabel(n: number, word: string): string {

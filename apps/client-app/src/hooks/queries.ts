@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useRef } from 'react';
 import * as api from '../api';
 import type { VerifyArgs } from '../api';
+import { generateRequestId } from '../lib/request-policy';
 import type { ProviderQuery, ServiceRequest } from '../types';
 
 export const keys = {
@@ -46,10 +48,25 @@ export const useProviderWork = (id: string) =>
 export const useProviderReviews = (id: string) =>
   useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 2), enabled: !!id });
 
-export const useCreateRequest = () =>
-  useMutation({
-    mutationFn: (input: ServiceRequest) => api.createServiceRequest(input, undefined),
+/**
+ * Service-request submission with a stable Idempotency-Key per LOGICAL
+ * submission: the key is minted on the first attempt and reused across
+ * retry-taps (offline/timeout → error → tap again), so the backend replays the
+ * original result instead of creating a duplicate lead. Only a confirmed
+ * success clears the key; the next distinct submission then gets a fresh one.
+ */
+export const useCreateRequest = () => {
+  const keyRef = useRef<string | null>(null);
+  return useMutation({
+    mutationFn: (input: ServiceRequest) => {
+      if (!keyRef.current) keyRef.current = generateRequestId();
+      return api.createServiceRequest(input, keyRef.current);
+    },
+    onSuccess: () => {
+      keyRef.current = null;
+    },
   });
+};
 
 
 export const useRequestOtp = () =>

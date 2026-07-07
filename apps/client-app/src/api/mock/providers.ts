@@ -1,4 +1,4 @@
-import { CATS, PASTWORK, PROV } from '../../data/mock';
+import { AREA_ALL, CATS, PASTWORK, PROV } from '../../data/mock';
 import type { Filters, PastWork, Provider, ProviderQuery, SortKey } from '../../types';
 import { Page, PAGE_SIZE, paginate } from '../shared';
 import { delay } from './client';
@@ -56,7 +56,7 @@ export function getProvider(id: string): Promise<Provider | undefined> {
 }
 
 export function getNearbyProviders(area: string, limit = 5): Promise<Provider[]> {
-  let near = PROV.filter((p) => (area === 'All Addis Ababa' ? true : p.area === area));
+  let near = PROV.filter((p) => (area === AREA_ALL ? true : p.area === area));
   if (near.length < 3) near = PROV.slice();
   return delay(near.slice(0, limit));
 }

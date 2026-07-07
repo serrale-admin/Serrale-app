@@ -22,7 +22,7 @@ export const getRecentWork = impl.getRecentWork;
 export const getProviderReviews = impl.getProviderReviews;
 export const searchSuggest = impl.searchSuggest;
 export const createServiceRequest = impl.createServiceRequest;
-export const createProviderLead = impl.createProviderLead;
+export const logProviderContact = impl.logProviderContact;
 export const requestOtp = impl.requestOtp;
 export const verifyOtp = impl.verifyOtp;
 export const exchangeSession = impl.exchangeSession;
@@ -30,7 +30,9 @@ export const refreshSession = impl.refreshSession;
 export const logoutSession = impl.logoutSession;
 
 
-export type { Page, CategoryGroup, CreatedRequest, OtpChallenge, OtpPurpose, VerifyResult } from './shared';
+export type { Page, CategoryGroup, CreatedRequest, OtpChallenge, OtpPurpose, VerifyResult, SearchSuggestion } from './shared';
 export { PAGE_SIZE } from './shared';
 export type { VerifyArgs } from './mock/auth';
+export type { ContactEventType } from './serrale/requests';
+export { MIN_SUGGEST_LENGTH, SUGGEST_LIMIT } from './serrale/search';
 export { NetworkError, HttpError, ApiBusinessError } from '../lib/http';

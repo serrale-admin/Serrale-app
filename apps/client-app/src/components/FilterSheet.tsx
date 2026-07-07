@@ -1,28 +1,12 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { AREA_ALL, AREAS } from '../data/mock';
 import { useProviders } from '../hooks/queries';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
-import type { Filters, ProviderQuery } from '../types';
+import type { ProviderQuery } from '../types';
 import BottomSheet from './BottomSheet';
 import Button from './Button';
 import Chip from './Chip';
-
-interface Section {
-  title: string;
-  key: keyof Filters;
-  options: string[];
-  rating?: boolean;
-}
-
-const SECTIONS: Section[] = [
-  { title: 'Location', key: 'areas', options: ['Bole', 'Yeka', 'Kirkos', 'Arada', 'Lideta', 'Gullele', 'Kolfe Keranio', 'Nifas Silk-Lafto', 'Akaki Kality', 'Lemi Kura'] },
-  { title: 'Availability', key: 'avail', options: ['Available today', 'Open now', 'This week'] },
-  { title: 'Trust', key: 'trust', options: ['Verified only', 'Admin reviewed', 'Has past work', 'Has reviews'] },
-  { title: 'Rating', key: 'rating', options: ['4.5+', '4.0+', 'Any'], rating: true },
-  { title: 'Contact', key: 'contact', options: ['Phone available', 'WhatsApp available'] },
-  { title: 'Price level', key: 'price', options: ['Budget', 'Standard', 'Premium'] },
-  { title: 'Experience', key: 'exp', options: ['1+ years', '3+ years', '5+ years'] },
-];
 
 interface Props {
   visible: boolean;
@@ -32,19 +16,27 @@ interface Props {
   baseQuery?: ProviderQuery;
 }
 
-/** Filter bottom sheet — narrows provider results without leaving the screen. */
+/** Selectable areas: the canonical list minus the city-wide sentinel. */
+const AREA_OPTIONS = AREAS.filter((a) => a !== AREA_ALL);
+
+/**
+ * Filter bottom sheet. Only surfaces dimensions the backend can actually filter
+ * by — today that is Location (`?area=`, single value). Rating/availability/
+ * price/experience controls were removed because the live API has no such
+ * columns or params (contract matrix M-3/M-4); showing them implied filtering
+ * that never happened.
+ */
 export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Props) {
   const { height } = useWindowDimensions();
   const filters = useAppStore((s) => s.filters);
-  const toggleFilter = useAppStore((s) => s.toggleFilter);
-  const setRating = useAppStore((s) => s.setRating);
+  const selectAreaFilter = useAppStore((s) => s.selectAreaFilter);
   const resetFilters = useAppStore((s) => s.resetFilters);
   const liveCount = useProviders({ ...(baseQuery || {}), filters });
 
   const count = liveCount.data?.total ?? liveCount.data?.items.length ?? 0;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} showHandle={false} contentStyle={{ height: height * 0.86, backgroundColor: colors.bg }}>
+    <BottomSheet visible={visible} onClose={onClose} showHandle={false} contentStyle={{ maxHeight: height * 0.86, backgroundColor: colors.bg }}>
       <View style={styles.header}>
         <View style={styles.handleRow}>
           <View style={styles.handle} />
@@ -57,31 +49,27 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {SECTIONS.map((sec) => (
-          <View key={sec.title} style={{ marginBottom: 20 }}>
-            <Text style={styles.secTitle}>{sec.title}</Text>
-            <View style={styles.chips}>
-              {sec.options.map((o) => {
-                const active = sec.rating ? filters.rating === o : (filters[sec.key] as string[]).includes(o);
-                return (
-                  <Chip
-                    key={o}
-                    label={o}
-                    active={active}
-                    height={36}
-                    onPress={() => (sec.rating ? setRating(o) : toggleFilter(sec.key, o))}
-                  />
-                );
-              })}
-            </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={{ marginBottom: 20 }}>
+          <Text style={styles.secTitle}>Location</Text>
+          <Text style={styles.secHint}>Pick one area, or none for all of Addis Ababa.</Text>
+          <View style={styles.chips}>
+            {AREA_OPTIONS.map((o) => (
+              <Chip
+                key={o}
+                label={o}
+                active={filters.areas[0] === o}
+                height={36}
+                onPress={() => selectAreaFilter(o)}
+              />
+            ))}
           </View>
-        ))}
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <Button label="Clear" variant="secondary" onPress={resetFilters} style={styles.clear} />
-        <Button label={`Show ${count} providers`} onPress={onApply} style={styles.apply} />
+        <Button label={liveCount.isLoading ? 'Loading…' : `Show ${count} providers`} onPress={onApply} style={styles.apply} />
       </View>
     </BottomSheet>
   );
@@ -95,7 +83,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontFamily: fonts.bold, color: colors.text },
   reset: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.success },
   scroll: { padding: 18, paddingTop: 16 },
-  secTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginBottom: 10 },
+  secTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginBottom: 4 },
+  secHint: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginBottom: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   footer: {
     flexDirection: 'row',

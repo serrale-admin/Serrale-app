@@ -1,61 +1,92 @@
-import { CATS } from '../../data/mock';
+import { useAppStore } from '../../store/appStore';
 import { DIRECTORY } from '../../lib/env';
 import { http } from '../../lib/http';
+import { generateRequestId } from '../../lib/request-policy';
 import type { ServiceRequest } from '../../types';
 import type { CreatedRequest } from '../shared';
-import { useAppStore } from '../../store/appStore';
 
-interface ProviderLeadInput {
+/** Contact-event types the backend records (contactEventSchema). */
+export type ContactEventType = 'profile_view' | 'phone_click' | 'whatsapp_click' | 'copy_phone';
+
+interface ContactEventInput {
   providerId: string;
-  verifyToken?: string;
-  fullName?: string;
-  phone?: string;
+  eventType: ContactEventType;
+  sourceFlow?: string;
+  searchQuery?: string;
+  userArea?: string;
 }
 
-const slugFor = (categoryId: string) => CATS.find((c) => c.id === categoryId)?.id || categoryId;
+/** Backend timing enum. */
+type Timing = 'emergency' | 'today' | 'this_week' | 'flexible';
+
+function timingFor(when: string): Timing {
+  if (when === 'Today') return 'today';
+  if (when === 'This week') return 'this_week';
+  return 'flexible';
+}
 
 /**
- * Submits a customer service request (POST /leads/request). Requires the
- * `verify_token` obtained from the OTP verify step (purpose directory_customer_request).
+ * Submits a customer service request (POST /leads/request).
+ *
+ * Authenticated + idempotent: the request goes out under the customer's Bearer
+ * session (auto-attached by the http layer's token provider — no verify_token in
+ * the body, so the backend takes its session branch) with an `Idempotency-Key`
+ * header. `idempotencyKey` MUST be stable across retries of one logical
+ * submission so an offline/timeout retry-tap replays server-side instead of
+ * creating a duplicate lead. The caller (useCreateRequest) generates one key per
+ * submit action and reuses it on retry.
+ *
+ * Returns the HONEST backend shape `{ ok, duplicate, idempotentReplay? }` — no
+ * synthesized id/status/created_at (contract matrix M-1).
  */
-export async function createServiceRequest(input: ServiceRequest, verifyToken?: string): Promise<CreatedRequest> {
+export async function createServiceRequest(input: ServiceRequest, idempotencyKey?: string): Promise<CreatedRequest> {
   const phone = useAppStore.getState().user?.phone;
-  const created = await http<{ id?: string; status?: string; created_at?: string }>(`${DIRECTORY}/leads/request`, {
+  const key = idempotencyKey || generateRequestId();
+
+  const note =
+    [input.budget ? `Budget: ${input.budget}` : '', input.preferredContact ? `Preferred contact: ${input.preferredContact}` : '']
+      .filter(Boolean)
+      .join(' · ') || undefined;
+
+  const res = await http<{ ok?: boolean; duplicate?: boolean; idempotent_replay?: boolean }>(`${DIRECTORY}/leads/request`, {
     method: 'POST',
-    token: verifyToken,
+    headers: { 'Idempotency-Key': key },
     body: {
-      verify_token: verifyToken,
       phone,
       serviceNeed: input.description,
-      serviceCategory: slugFor(input.categoryId),
+      serviceCategory: input.categoryId,
       location: input.area,
-      timing: input.when === 'Today' ? 'today' : input.when === 'This week' ? 'this_week' : 'flexible',
-      note: [input.budget ? `Budget: ${input.budget}` : '', input.preferredContact ? `Preferred contact: ${input.preferredContact}` : '']
-        .filter(Boolean)
-        .join(' · ') || undefined,
+      timing: timingFor(input.when),
+      note,
     },
   });
+
   return {
-    id: created?.id || 'request',
-    status: created?.status || 'new',
-    createdAt: created?.created_at || new Date().toISOString(),
+    ok: true,
+    duplicate: res?.duplicate ?? false,
+    idempotentReplay: res?.idempotent_replay ?? false,
   };
 }
 
 /**
- * Logs a provider contact lead (POST /leads/provider) when a user taps Call/WhatsApp.
- * Best-effort: callers fire-and-forget so contact is never blocked.
+ * Records a provider contact event (POST /providers/:id/contact-events) when a
+ * user opens a profile or taps Call/WhatsApp. This is the purpose-built public
+ * analytics endpoint (contract matrix M-2/M-6) — it needs NO verify_token.
+ *
+ * Fire-and-forget: this never throws and callers must NOT await it before
+ * opening tel:/wa.me. A failure here can never block a contact action.
  */
-export async function createProviderLead({ providerId, verifyToken, fullName, phone }: ProviderLeadInput): Promise<{ ok: true }> {
-  await http<unknown>(`${DIRECTORY}/leads/provider`, {
+export function logProviderContact({ providerId, eventType, sourceFlow, searchQuery, userArea }: ContactEventInput): Promise<{ recorded: boolean }> {
+  return http<{ recorded?: boolean }>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}/contact-events`, {
     method: 'POST',
-    token: verifyToken,
     body: {
-      verify_token: verifyToken,
-      providerId,
-      fullName,
-      phone,
+      event_type: eventType,
+      source_platform: 'mobile_app',
+      source_flow: sourceFlow,
+      search_query: searchQuery,
+      user_area: userArea,
     },
-  });
-  return { ok: true };
+  })
+    .then((r) => ({ recorded: r?.recorded ?? true }))
+    .catch(() => ({ recorded: false }));
 }

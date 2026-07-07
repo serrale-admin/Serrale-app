@@ -19,11 +19,31 @@ interface Props {
 export default function ProviderCard({ provider: p, variant = 'nearby', style }: Props) {
   const { open, call, whatsapp } = useProviderActions();
   const trusted = p.verified || p.adminReviewed;
+  // Rating chrome renders only when review data actually exists (demo/mock).
+  // Live rows carry no ratings (contract matrix M-3) — show the provider's area
+  // instead, keeping the meta row informative without fabricating stars.
+  const hasRating = p.reviewCount > 0 && p.rating > 0;
+  const a11y = hasRating
+    ? `${p.name}, ${p.service}, rated ${p.rating.toFixed(1)}`
+    : `${p.name}, ${p.service}, ${p.area}`;
 
   const runAction = (event: GestureResponderEvent, action: () => void) => {
     event.stopPropagation();
     action();
   };
+
+  const metaRow = hasRating ? (
+    <View style={styles.ratingRow}>
+      <Icon name="ph-star" size={11} color={colors.green700} weight="fill" />
+      <Text style={styles.ratingValue}>{p.rating.toFixed(1)}</Text>
+      <Text style={styles.reviews}>({p.reviewCount})</Text>
+    </View>
+  ) : (
+    <View style={styles.ratingRow}>
+      <Icon name="ph-map-pin" size={11} color={colors.green700} weight="fill" />
+      <Text style={styles.reviews} numberOfLines={1}>{p.area}</Text>
+    </View>
+  );
 
   if (variant === 'verified') {
     return (
@@ -31,17 +51,13 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
         style={({ pressed }) => [styles.verifiedCard, pressed && styles.pressed, style]}
         onPress={() => open(p.id)}
         accessibilityRole="button"
-        accessibilityLabel={`${p.name}, ${p.service}, rated ${p.rating.toFixed(1)}`}
+        accessibilityLabel={a11y}
       >
         <Avatar name={p.name} size={46} radius={13} fontSize={15} imageUrl={p.imageUrl} />
         <View style={styles.verifiedContent}>
           <Text style={styles.verifiedName} numberOfLines={1}>{p.name}</Text>
           <Text style={styles.verifiedService} numberOfLines={1}>{p.service}</Text>
-          <View style={styles.ratingRow}>
-            <Icon name="ph-star" size={11} color={colors.green700} weight="fill" />
-            <Text style={styles.ratingValue}>{p.rating.toFixed(1)}</Text>
-            <Text style={styles.reviews}>({p.reviewCount})</Text>
-          </View>
+          {metaRow}
         </View>
         {trusted && (
           <View style={styles.verifiedSeal} accessibilityLabel="Verified provider">
@@ -57,7 +73,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
       style={({ pressed }) => [styles.nearbyCard, pressed && styles.pressed, style]}
       onPress={() => open(p.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${p.name}, ${p.service}, rated ${p.rating.toFixed(1)}`}
+      accessibilityLabel={a11y}
     >
       <View style={styles.avatarWrap}>
         <Avatar name={p.name} size={58} radius={29} fontSize={17} imageUrl={p.imageUrl} />
@@ -69,11 +85,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
       </View>
       <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
       <Text style={styles.service} numberOfLines={1}>{p.service}</Text>
-      <View style={styles.ratingRow}>
-        <Icon name="ph-star" size={11} color={colors.green700} weight="fill" />
-        <Text style={styles.ratingValue}>{p.rating.toFixed(1)}</Text>
-        <Text style={styles.reviews}>({p.reviewCount})</Text>
-      </View>
+      {metaRow}
       <View style={styles.actions}>
         <Pressable
           style={({ pressed }) => [styles.callButton, pressed && styles.actionPressed]}

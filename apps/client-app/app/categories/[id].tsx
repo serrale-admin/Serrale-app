@@ -16,9 +16,6 @@ import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
-import type { SortKey } from '../../src/types';
-
-const SORTS: SortKey[] = ['Recommended', 'Rating', 'Nearest', 'Recently added'];
 
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,23 +24,18 @@ export default function CategoryDetailScreen() {
   const area = useAppStore((s) => s.area);
   const filters = useAppStore((s) => s.filters);
   const filterCount = useAppStore((s) => s.activeFilterCount)();
-  const showToast = useAppStore((s) => s.showToast);
 
-  const [sort, setSort] = useState<SortKey>('Recommended');
   const [activeSub, setActiveSub] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
 
   const category = useCategory(id);
   const cat = category.data;
-  const query = useMemo(() => ({ categoryId: id, area, filters, sort }), [id, area, filters, sort]);
+  // No sort control: the backend orders results itself and exposes no sort
+  // param (contract matrix M-4), so the UI does not offer illusory sorting.
+  const query = useMemo(() => ({ categoryId: id, area, filters }), [id, area, filters]);
   const providers = useProviders(query);
   const results = providers.data?.items ?? [];
-
-  const cycleSort = () => {
-    const next = SORTS[(SORTS.indexOf(sort) + 1) % SORTS.length];
-    setSort(next);
-    showToast('Sorted by ' + next, 'ph-sliders-horizontal');
-  };
+  const total = providers.data?.total ?? results.length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -66,15 +58,11 @@ export default function CategoryDetailScreen() {
         ))}
       </ScrollView>
 
-      {/* Sort row */}
+      {/* Result count row */}
       <View style={styles.sortRow}>
         <Text style={styles.resultCount}>
-          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{results.length}</Text> providers
+          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> providers
         </Text>
-        <Pressable style={styles.sortBtn} onPress={cycleSort} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Sort: ${sort}`}>
-          <Icon name="ph-sliders-horizontal" size={14} color={colors.green800} weight="bold" />
-          <Text style={styles.sortText}>{sort}</Text>
-        </Pressable>
       </View>
 
       {providers.isLoading ? (
@@ -116,8 +104,6 @@ const styles = StyleSheet.create({
   subRow: { gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   sortRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   resultCount: { fontSize: 12.5, color: colors.muted, fontFamily: fonts.regular },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sortText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.green800 },
   list: { paddingHorizontal: 16, gap: 10, paddingBottom: 24 },
   emptyCta: { marginTop: 16 },
 });

@@ -1,15 +1,20 @@
-import { CATS, PROV } from '../../data/mock';
+import { CATS } from '../../data/mock';
+import type { SearchSuggestion } from '../shared';
+import { MIN_SUGGEST_LENGTH, SUGGEST_LIMIT } from '../serrale/search';
 import { delay } from './client';
 
-/** Typeahead suggestions from category + provider names (mock for /search/suggest). */
-export function searchSuggest(query: string): Promise<string[]> {
+/**
+ * Typeahead suggestions from the category ontology (mock for /search/suggest).
+ * Returns the same `SearchSuggestion[]` shape as the real client. `signal` is
+ * accepted for parity; the delay resolves regardless (callers ignore stale ones).
+ */
+export function searchSuggest(query: string, _signal?: AbortSignal): Promise<SearchSuggestion[]> {
   const q = query.trim().toLowerCase();
-  if (!q) return delay([]);
-  const out = new Set<string>();
-  for (const c of CATS) if (c.name.toLowerCase().includes(q)) out.add(c.name);
-  for (const p of PROV) {
-    if (p.service.toLowerCase().includes(q)) out.add(p.service);
-    if (p.name.toLowerCase().includes(q)) out.add(p.name);
-  }
-  return delay(Array.from(out).slice(0, 6));
+  if (q.length < MIN_SUGGEST_LENGTH) return delay([]);
+  const out: SearchSuggestion[] = CATS.filter(
+    (c) => c.name.toLowerCase().includes(q) || c.am.includes(query.trim()),
+  )
+    .slice(0, SUGGEST_LIMIT)
+    .map((c) => ({ type: 'category', label: c.name, labelAm: c.am, categorySlug: c.id, providerCount: c.count }));
+  return delay(out);
 }

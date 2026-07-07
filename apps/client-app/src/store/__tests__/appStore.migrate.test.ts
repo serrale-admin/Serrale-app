@@ -47,3 +47,23 @@ describe('appStore migratePersistedState (legacy auth strip, v0 -> v1)', () => {
     expect(migratePersistedState(undefined, 0)).toBeUndefined();
   });
 });
+
+describe('appStore migratePersistedState (area realignment, v1 -> v2)', () => {
+  it('resets areas that left the canonical list to the city-wide default', () => {
+    const oldSentinel = migratePersistedState({ area: 'All Addis Ababa', lang: 'en', saved: {} }, 1) as Record<string, unknown>;
+    expect(oldSentinel.area).toBe('Addis Ababa');
+
+    const droppedSubCity = migratePersistedState({ area: 'Kirkos', lang: 'en', saved: {} }, 1) as Record<string, unknown>;
+    expect(droppedSubCity.area).toBe('Addis Ababa');
+  });
+
+  it('keeps areas that are still canonical', () => {
+    const migrated = migratePersistedState({ area: 'Bole', lang: 'en', saved: {} }, 1) as Record<string, unknown>;
+    expect(migrated.area).toBe('Bole');
+  });
+
+  it('leaves a missing area to the store default', () => {
+    const migrated = migratePersistedState({ lang: 'en', saved: {} }, 1) as Record<string, unknown>;
+    expect(migrated.area).toBeUndefined();
+  });
+});

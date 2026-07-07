@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AREA_ALL, AREAS } from '../data/mock';
 import type { Filters, Lang } from '../types';
 
 /** Minimal placeholder for the authenticated user shape. The concrete type
@@ -32,10 +33,9 @@ interface AppState {
   // session
   loggedIn: boolean;
   user: AuthUser | null;
-  verifyToken: string;
   pendingPhone: string;
   pendingChallengeId: string;
-  login(user: AuthUser, verifyToken?: string): void;
+  login(user: AuthUser): void;
   logout(): void;
   setPendingPhone(phone: string): void;
   setPendingChallengeId(id: string): void;
@@ -54,6 +54,12 @@ interface AppState {
   // discovery filters (shared between Search and Category screens)
   filters: Filters;
   toggleFilter(key: keyof Filters, value: string): void;
+  /**
+   * Single-select area filter: the backend matches exactly one `?area=` value
+   * (ilike), so selecting an area replaces any previous one; selecting the
+   * active area again clears it.
+   */
+  selectAreaFilter(area: string): void;
   setRating(value: string): void;
   toggleQuick(kind: string): void;
   resetFilters(): void;
@@ -71,10 +77,16 @@ const toggleArr = (arr: string[], val: string): string[] =>
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
- * Persistence migration. Older installs persisted plaintext auth
- * (verifyToken / loggedIn / user / userToken) alongside prefs. Strip those on
- * rehydrate so upgraded installs shed the old tokens; auth now lives in
- * SecureStore + in-memory state only. Exported for unit testing.
+ * Persistence migration. Exported for unit testing.
+ *
+ * v0 → v1: older installs persisted plaintext auth (verifyToken / loggedIn /
+ * user / userToken) alongside prefs. Strip those so upgraded installs shed the
+ * old tokens; auth now lives in SecureStore + in-memory state only.
+ *
+ * v1 → v2: the area list was realigned to the web app's 9 canonical locations
+ * (Task 5). A persisted area outside the new list (e.g. the old
+ * "All Addis Ababa" sentinel or a dropped sub-city like "Kirkos") would match
+ * nothing server-side, so it resets to the city-wide default.
  */
 export function migratePersistedState(persistedState: any, _version: number): any {
   if (persistedState) {
@@ -82,6 +94,9 @@ export function migratePersistedState(persistedState: any, _version: number): an
     delete persistedState.loggedIn;
     delete persistedState.user;
     delete persistedState.userToken;
+    if (typeof persistedState.area === 'string' && !AREAS.includes(persistedState.area)) {
+      persistedState.area = AREA_ALL;
+    }
   }
   return persistedState;
 }
@@ -91,16 +106,15 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       loggedIn: false,
       user: null,
-      verifyToken: '',
       pendingPhone: '',
       pendingChallengeId: '',
-      login: (user, verifyToken = '') =>
-        set({ loggedIn: true, user, verifyToken, pendingPhone: '', pendingChallengeId: '' }),
-      logout: () => set({ loggedIn: false, user: null, verifyToken: '', saved: {}, pendingPhone: '', pendingChallengeId: '' }),
+      login: (user) =>
+        set({ loggedIn: true, user, pendingPhone: '', pendingChallengeId: '' }),
+      logout: () => set({ loggedIn: false, user: null, saved: {}, pendingPhone: '', pendingChallengeId: '' }),
       setPendingPhone: (pendingPhone) => set({ pendingPhone }),
       setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
 
-      area: 'Bole',
+      area: AREA_ALL,
       lang: 'en',
       setArea: (area) => set({ area }),
       setLang: (lang) => set({ lang }),
@@ -119,15 +133,19 @@ export const useAppStore = create<AppState>()(
       filters: emptyFilters(),
       toggleFilter: (key, value) =>
         set((s) => ({ filters: { ...s.filters, [key]: toggleArr(s.filters[key] as string[], value) } })),
+      selectAreaFilter: (area) =>
+        set((s) => ({
+          filters: { ...s.filters, areas: s.filters.areas[0] === area ? [] : [area] },
+        })),
       setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
       toggleQuick: (kind) =>
         set((s) => {
           const f = { ...s.filters };
-          if (kind === 'verified') f.trust = toggleArr(f.trust, 'Verified only');
-          else if (kind === 'today') f.avail = toggleArr(f.avail, 'Available today');
-          else if (kind === 'near') f.areas = toggleArr(f.areas, s.area);
-          else if (kind === 'rating4') f.rating = f.rating === '4.0+' ? 'Any' : '4.0+';
-          else if (kind === 'whatsapp') f.contact = toggleArr(f.contact, 'WhatsApp available');
+          // 'near' pins the user's chosen area as the single active area filter
+          // (city-wide AREA_ALL is never pinned — it means "no area filter").
+          if (kind === 'near' && s.area !== AREA_ALL) {
+            f.areas = f.areas[0] === s.area ? [] : [s.area];
+          }
           return { filters: f };
         }),
       resetFilters: () => set({ filters: emptyFilters() }),
@@ -163,7 +181,7 @@ export const useAppStore = create<AppState>()(
         area: state.area,
         lang: state.lang,
       }),
-      version: 1,
+      version: 2,
       migrate: migratePersistedState,
     },
   ),

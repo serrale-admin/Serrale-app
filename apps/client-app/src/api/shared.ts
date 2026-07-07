@@ -21,6 +21,18 @@ export interface CategoryGroup {
   items: Category[];
 }
 
+/** A search-assistance suggestion (adapted from GET /search/suggest). */
+export interface SearchSuggestion {
+  /** Backend classification: category | need | area | provider | fallback_request_help. */
+  type: 'category' | 'need' | 'area' | 'provider' | 'fallback_request_help';
+  label: string;
+  labelAm?: string;
+  /** Present for category/need rows — the ontology slug to open a category with. */
+  categorySlug?: string;
+  reason?: string;
+  providerCount?: number;
+}
+
 /** OTP purposes supported by the backend (only the customer one is used here). */
 export type OtpPurpose =
   | 'directory_customer_request'
@@ -39,8 +51,16 @@ export interface VerifyResult {
   verifyToken: string;
 }
 
+/**
+ * The HONEST result of POST /leads/request. The backend returns
+ * `{ ok, duplicate, customer, session_token? }` — it never returns an `id`,
+ * `status`, or `created_at` (contract matrix M-1), so we do not synthesize them.
+ * `duplicate` is true when the same request was already recorded; on the
+ * authenticated Bearer + Idempotency-Key path a replayed submission additionally
+ * sets `idempotentReplay`.
+ */
 export interface CreatedRequest {
-  id: string;
-  status: string;
-  createdAt: string;
+  ok: true;
+  duplicate: boolean;
+  idempotentReplay?: boolean;
 }

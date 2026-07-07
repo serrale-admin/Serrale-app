@@ -103,13 +103,12 @@ export const shadowSheet = {
   elevation: 12,
 } as const;
 
-/** Per-group gradient endpoints for category medallions. */
+/** Per-group gradient endpoints for category medallions (web-aligned groups). */
 export const groupGradient: Record<string, [string, string]> = {
-  'Home & Repair': ['#0a5d3f', '#13845a'],
-  'Cleaning & Care': ['#0c6b4d', '#1aa073'],
-  'Moving & Delivery': ['#0a5f54', '#16897e'],
-  'Events & Personal': ['#1c6b45', '#43935a'],
-  'Digital & Office': ['#0e5c44', '#34805f'],
+  'Home Services': ['#0a5d3f', '#13845a'],
+  'Repairs & Maintenance': ['#0e5c44', '#34805f'],
+  'Moving & Transport': ['#0a5f54', '#16897e'],
+  'Health & Wellness': ['#1c6b45', '#43935a'],
 };
 
 export function gradFor(group: string): [string, string] {

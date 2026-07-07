@@ -1,23 +1,30 @@
 import type { ServiceRequest } from '../../types';
 import type { CreatedRequest } from '../shared';
+import type { ContactEventType } from '../serrale/requests';
 import { delay } from './client';
 
-interface ProviderLeadInput {
+interface ContactEventInput {
   providerId: string;
-  verifyToken?: string;
-  fullName?: string;
-  phone?: string;
+  eventType: ContactEventType;
+  sourceFlow?: string;
+  searchQuery?: string;
+  userArea?: string;
 }
 
-let counter = 1;
-
-/** Creates a service request (mock for POST /leads/request). `verifyToken` ignored here. */
-export function createServiceRequest(input: ServiceRequest, _verifyToken?: string): Promise<CreatedRequest> {
+/**
+ * Creates a service request (mock for POST /leads/request). Mirrors the real
+ * honest shape `{ ok, duplicate, idempotentReplay }`. Replays the same
+ * idempotency key to simulate the backend's idempotent replay.
+ */
+const seenKeys = new Set<string>();
+export function createServiceRequest(input: ServiceRequest, idempotencyKey?: string): Promise<CreatedRequest> {
   void input;
-  return delay({ id: 'req-' + counter++, status: 'new', createdAt: new Date().toISOString() }, 600);
+  const replay = !!idempotencyKey && seenKeys.has(idempotencyKey);
+  if (idempotencyKey) seenKeys.add(idempotencyKey);
+  return delay({ ok: true, duplicate: replay, idempotentReplay: replay }, 600);
 }
 
-/** Logs a provider contact lead (mock for POST /leads/provider). Best-effort, non-blocking. */
-export function createProviderLead(_input: ProviderLeadInput): Promise<{ ok: true }> {
-  return delay({ ok: true }, 150);
+/** Records a provider contact event (mock for POST /providers/:id/contact-events). */
+export function logProviderContact(_input: ContactEventInput): Promise<{ recorded: boolean }> {
+  return delay({ recorded: true }, 120);
 }

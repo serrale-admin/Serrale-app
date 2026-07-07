@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as api from '../../src/api';
 import Avatar from '../../src/components/Avatar';
 import Badge from '../../src/components/Badge';
 import Button from '../../src/components/Button';
@@ -11,8 +13,6 @@ import { Icon } from '../../src/lib/icons';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
-const PRICE_LABELS = ['Budget', 'Standard', 'Standard', 'Premium'];
-
 export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -21,11 +21,22 @@ export default function ProviderDetailScreen() {
   const saved = useAppStore((s) => !!s.saved[id]);
   const showToast = useAppStore((s) => s.showToast);
 
+  const userArea = useAppStore((s) => s.area);
   const provider = useProvider(id);
   const pv = provider.data;
   const category = useCategory(pv?.categoryId ?? '');
   const work = useProviderWork(id);
   const reviews = useProviderReviews(id);
+
+  // Log a profile_view once the provider loads (once per id). Fire-and-forget —
+  // logProviderContact never throws and is never awaited. (Contract matrix M-6.)
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (pv && viewedRef.current !== pv.id) {
+      viewedRef.current = pv.id;
+      void api.logProviderContact({ providerId: pv.id, eventType: 'profile_view', sourceFlow: 'provider_detail', userArea });
+    }
+  }, [pv, userArea]);
 
   if (provider.isError) {
     return (
@@ -52,15 +63,28 @@ export default function ProviderDetailScreen() {
     );
   }
 
-  const services = (category.data?.subs || []).slice(0, 4).map((name, i) => ({ name, price: PRICE_LABELS[i] || pv.price }));
+  // Common services for this category — presentation metadata (what the trade
+  // covers), never fabricated per-provider price tiers (contract matrix M-3).
+  const services = (category.data?.subs || []).slice(0, 4);
+  // Quick facts: only REAL signals. Admin review is real (public listing implies
+  // it), experience comes off the provider row, availability/past-work render
+  // only when the data actually says so, WhatsApp only when a number exists.
   const facts: { label: string; icon: string }[] = [];
   if (pv.availableToday) facts.push({ label: 'Available today', icon: 'ph-clock' });
   if (pv.adminReviewed) facts.push({ label: 'Admin reviewed', icon: 'ph-seal-check' });
   if (pv.exp) facts.push({ label: pv.exp + ' years experience', icon: 'ph-medal' });
   if (pv.hasPastWork) facts.push({ label: 'Has past work', icon: 'ph-image-square' });
-  facts.push({ label: 'WhatsApp available', icon: 'ph-whatsapp-logo' });
+  if (pv.whatsapp) facts.push({ label: 'WhatsApp available', icon: 'ph-whatsapp-logo' });
 
-  const about = `${pv.description} Trusted by local clients across ${pv.area}, with ${pv.exp} years of hands-on experience.`;
+  // Honest about text: the provider's own bio, plus the experience line only
+  // when experience is actually known. No invented "trusted by clients" claims.
+  const aboutParts = [
+    pv.description,
+    pv.exp ? `${pv.exp} years of hands-on experience, serving ${pv.area}.` : `Serving ${pv.area}.`,
+  ].filter(Boolean);
+  const about = aboutParts.join(' ');
+
+  const hasRating = pv.reviewCount > 0 && pv.rating > 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -89,9 +113,13 @@ export default function ProviderDetailScreen() {
               {pv.verified && <Badge label="Verified" tone="trust" icon="ph-seal-check" />}
             </View>
             <View style={styles.ratingRow}>
-              <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
-              <Text style={styles.ratingText}>{pv.rating.toFixed(1)}</Text>
-              <Text style={styles.metaMuted}>· {pv.reviewCount} reviews ·</Text>
+              {hasRating && (
+                <>
+                  <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
+                  <Text style={styles.ratingText}>{pv.rating.toFixed(1)}</Text>
+                  <Text style={styles.metaMuted}>· {pv.reviewCount} reviews ·</Text>
+                </>
+              )}
               <Icon name="ph-map-pin" size={12} color={colors.muted} />
               <Text style={styles.metaMuted}>{pv.area}</Text>
             </View>
@@ -114,19 +142,20 @@ export default function ProviderDetailScreen() {
           <Text style={styles.about}>{about}</Text>
         </View>
 
-        {/* Services */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Services</Text>
-          <View style={styles.card}>
-            {services.map((sv, i) => (
-              <View key={i} style={[styles.serviceRow, i < services.length - 1 && styles.serviceDivider]}>
-                <Icon name="ph-check-circle" size={17} color={colors.success} />
-                <Text style={styles.serviceName}>{sv.name}</Text>
-                <Badge label={sv.price} tone="gold" />
-              </View>
-            ))}
+        {/* Services (category coverage — no fabricated per-provider prices) */}
+        {services.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Services</Text>
+            <View style={styles.card}>
+              {services.map((name, i) => (
+                <View key={i} style={[styles.serviceRow, i < services.length - 1 && styles.serviceDivider]}>
+                  <Icon name="ph-check-circle" size={17} color={colors.success} />
+                  <Text style={styles.serviceName}>{name}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Recent work */}
         <View style={styles.section}>

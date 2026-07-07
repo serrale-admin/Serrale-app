@@ -107,14 +107,11 @@ export async function doRefresh(): Promise<BasicSessionTokens | null> {
       // Extract details from new access token to update Zustand state
       const claims = decodeJwt(accessToken);
       if (claims && claims.phone) {
-        useAppStore.getState().login(
-          {
-            id: claims.customer_id,
-            phone: claims.phone,
-            name: 'SERRALE user',
-          },
-          ''
-        );
+        useAppStore.getState().login({
+          id: claims.customer_id,
+          phone: claims.phone,
+          name: 'SERRALE user',
+        });
       }
 
       return newTokens;
@@ -150,8 +147,8 @@ export async function handleExchange(phone: string, verifyToken: string): Promis
 
   await secureSession.write(tokens);
 
-  // Update Zustand state. The verify_token was CONSUMED by the exchange above and
-  // must not linger in memory — pass '' so nothing retains the one-time token.
+  // Update Zustand state. The verify_token was CONSUMED by the exchange above;
+  // the store no longer retains any verify token (that field was removed).
   useAppStore.getState().login({
     id: customer.id,
     phone: customer.phone,

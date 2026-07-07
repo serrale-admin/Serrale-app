@@ -1,107 +1,102 @@
 import { CATS } from '../../data/mock';
-import type { Category, PastWork, PriceLevel, Provider, Review } from '../../types';
+import type { Category, Provider } from '../../types';
 import { Page, PAGE_SIZE } from '../shared';
-import type { ApiCategory, ApiListPayload, ApiPastWork, ApiProvider, ApiReview } from './types';
+import type { ApiProvider } from './types';
 
 /**
- * Local presentation metadata (Phosphor icon, group, sub-services, Amharic name)
- * keyed by category slug/id/name. The backend supplies real ids + counts; the app
- * supplies its own iconography/grouping. Unknown categories fall back gracefully.
+ * Local presentation metadata (Phosphor icon, group, sub-services, Amharic name,
+ * default count) keyed by the backend ontology slug. The backend supplies only
+ * counts (GET /categories) and `category_slug` (on providers); the app supplies
+ * its own iconography/grouping/labels. Unknown slugs fall back gracefully.
  */
-const PRESENTATION = new Map<string, { icon: string; group: string; subs: string[]; am: string }>();
+const PRESENTATION = new Map<string, { name: string; am: string; icon: string; group: string; subs: string[] }>();
 for (const c of CATS) {
-  const meta = { icon: c.icon, group: c.group, subs: c.subs, am: c.am };
+  const meta = { name: c.name, am: c.am, icon: c.icon, group: c.group, subs: c.subs };
   PRESENTATION.set(c.id, meta);
   PRESENTATION.set(c.name.toLowerCase(), meta);
 }
-const presFor = (...keys: (string | undefined)[]) => {
-  for (const k of keys) {
-    const hit = k && PRESENTATION.get(k.toLowerCase());
-    if (hit) return hit;
-  }
-  return undefined;
-};
 
-const PAST_WORK_BG = ['#086246', '#064734', '#0b5a40', '#16875F'];
+/** Presentation metadata for a slug, or undefined when the slug is unknown. */
+export function presentationForSlug(slug?: string): { name: string; am: string; icon: string; group: string; subs: string[] } | undefined {
+  return slug ? PRESENTATION.get(slug.toLowerCase()) : undefined;
+}
 
-export function adaptCategory(api: ApiCategory): Category {
-  const pres = presFor(api.slug, api.id, api.name);
+/**
+ * Builds a presentation `Category` for a backend ontology slug + its live count.
+ * Unknown slugs (present in the DB but not in the local ontology snapshot) still
+ * render — a Title-Cased name derived from the slug, a neutral icon, and the
+ * "Services" group — so a backend that adds a slug never breaks the UI.
+ */
+export function adaptCategory(slug: string, count: number): Category {
+  const pres = presentationForSlug(slug);
   return {
-    id: api.slug || api.id,
-    name: api.name,
-    am: pres?.am || api.name,
+    id: slug,
+    name: pres?.name || titleFromSlug(slug),
+    am: pres?.am || pres?.name || titleFromSlug(slug),
     icon: pres?.icon || 'ph-squares-four',
-    count: api.provider_count ?? api.count ?? 0,
-    group: api.group || pres?.group || 'Services',
+    count,
+    group: pres?.group || 'Services',
     subs: pres?.subs || [],
   };
 }
 
-function adaptPrice(value?: string): PriceLevel {
-  const v = (value || '').toLowerCase();
-  if (v.includes('budget') || v.includes('low')) return 'Budget';
-  if (v.includes('premium') || v.includes('high')) return 'Premium';
-  return 'Standard';
+function titleFromSlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
+/**
+ * Adapts the REAL public provider row into the app `Provider`. Fields the
+ * backend does not expose (rating, reviews, verified, availableToday, price,
+ * portfolio) are NOT fabricated (contract matrix M-3):
+ *   - rating/reviewCount default to 0 → the UI hides rating chrome when 0,
+ *   - verified/availableToday/hasPastWork default to false,
+ *   - price defaults to 'Standard' (a neutral label, never shown as a real tier),
+ *   - `adminReviewed` is true because appearing in the public list already means
+ *     the provider passed admin review server-side (that IS a real signal).
+ */
 export function adaptProvider(api: ApiProvider): Provider {
-  const verified = api.verified ?? api.is_verified ?? ['approved', 'verified'].includes((api.verification_status || '').toLowerCase());
-  const experience = typeof api.years_experience === 'number'
-    ? api.years_experience
-    : typeof api.experience_years === 'number'
-      ? api.experience_years
-      : Number.parseInt(String(api.experience || '').replace(/[^0-9]/g, ''), 10) || 0;
+  const experience = Number.parseInt(String(api.experience || '').replace(/[^0-9]/g, ''), 10) || 0;
+  const service = presentationForSlug(api.category_slug || undefined)?.name
+    || (api.category_slug ? titleFromSlug(api.category_slug) : 'Service');
 
   return {
     id: api.id,
-    name: api.full_name || api.business_name || api.name || 'Provider',
-    service: api.service || api.category?.name || api.category_name || api.category_slug || 'Service',
-    categoryId: api.category?.slug || api.category?.id || api.category_slug || api.category_id || '',
-    rating: api.rating ?? 0,
-    reviewCount: api.review_count ?? api.reviews_count ?? 0,
-    area: api.area || api.location_text || api.sub_city || 'Addis Ababa',
-    verified,
-    adminReviewed: api.admin_reviewed ?? verified,
-    availableToday: api.available_today ?? false,
-    hasPastWork: api.has_past_work ?? (api.portfolio?.length ?? 0) > 0,
+    name: api.full_name || 'Provider',
+    service,
+    categoryId: api.category_slug || '',
+    rating: 0,
+    reviewCount: 0,
+    area: api.area || 'Addis Ababa',
+    verified: false,
+    adminReviewed: true,
+    availableToday: false,
+    hasPastWork: false,
     exp: experience,
-    price: adaptPrice(api.price_level || api.price),
-    description: api.description || '',
+    price: 'Standard',
+    description: api.bio || '',
     phone: api.phone || api.whatsapp || '',
     whatsapp: api.whatsapp || api.phone || undefined,
-    imageUrl: api.photo_url || api.image_url || api.avatar_url || undefined,
+    imageUrl: api.photo_url || undefined,
   };
 }
 
-export function adaptPastWork(providerId: string, api: ApiPastWork, i: number): PastWork {
-  return {
-    providerId,
-    title: api.title || api.caption || 'Past work',
-    note: api.note || api.caption || '',
-    category: api.category || '',
-    area: api.area || api.location_text || '',
-    icon: 'ph-image-square',
-    bg: PAST_WORK_BG[i % PAST_WORK_BG.length],
-  };
-}
-
-export function adaptReview(api: ApiReview): Review {
-  return {
-    providerId: '',
-    userName: api.user_name || api.author || 'Customer',
-    area: api.area || '',
-    rating: api.rating ?? 5,
-    text: api.text || api.comment || '',
-  };
-}
-
-/** Normalizes either a bare array or an `{ items, total }` object into a Page<Provider>. */
-export function toProviderPage(payload: ApiProvider[] | ApiListPayload<ApiProvider>, page: number): Page<Provider> {
-  const rows = Array.isArray(payload) ? payload : payload.items || payload.results || payload.data || [];
+/**
+ * Normalizes the `{ providers, total, limit, offset }` list envelope (or a bare
+ * array) into a `Page<Provider>`. `hasMore` is computed from the backend's real
+ * `total`/`offset`/`limit` so it stays correct even though the app's logical
+ * "page" maps to a limit/offset window server-side (contract matrix M-5).
+ */
+export function toProviderPage(payload: ApiProvider[] | import('./types').ApiListPayload<ApiProvider>, page: number): Page<Provider> {
+  const isArray = Array.isArray(payload);
+  const rows = isArray ? payload : payload.providers || payload.items || payload.results || payload.data || [];
   const items = rows.map(adaptProvider);
-  const total = Array.isArray(payload) ? rows.length : payload.total ?? payload.count ?? rows.length;
-  const hasMore = Array.isArray(payload)
-    ? rows.length >= PAGE_SIZE
-    : payload.has_more ?? (page + 1) * PAGE_SIZE < total;
-  return { items, page, pageSize: PAGE_SIZE, total, hasMore };
+  const total = isArray ? rows.length : payload.total ?? payload.count ?? rows.length;
+  const limit = !isArray && typeof payload.limit === 'number' ? payload.limit : PAGE_SIZE;
+  const offset = !isArray && typeof payload.offset === 'number' ? payload.offset : page * PAGE_SIZE;
+  const hasMore = offset + rows.length < total;
+  return { items, page, pageSize: limit, total, hasMore };
 }

@@ -10,7 +10,7 @@ import ProviderCard from '../../src/components/ProviderCard';
 import ProviderMini from '../../src/components/ProviderMini';
 import SafetyCard from '../../src/components/SafetyCard';
 import SectionHeader from '../../src/components/SectionHeader';
-import { CATS, PASTWORK, PROV } from '../../src/data/mock';
+import { AREA_ALL, CATS, PASTWORK, PROV } from '../../src/data/mock';
 import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
 import { useLabels } from '../../src/lib/labels';
@@ -25,8 +25,6 @@ export default function HomeScreen() {
   const area = useAppStore((state) => state.area);
   const lang = useAppStore((state) => state.lang);
   const setArea = useAppStore((state) => state.setArea);
-  const filters = useAppStore((state) => state.filters);
-  const toggleFilter = useAppStore((state) => state.toggleFilter);
   const am = lang === 'am';
 
   const [showFilter, setShowFilter] = useState(false);
@@ -43,7 +41,7 @@ export default function HomeScreen() {
   );
   const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
   const nearbySource = nearby.isLoading
-    ? PROV.filter((provider) => area === 'All Addis Ababa' || provider.area === area)
+    ? PROV.filter((provider) => area === AREA_ALL || provider.area === area)
     : nearby.data ?? [];
   const verifiedSource = verified.isLoading ? PROV.filter((provider) => provider.verified || provider.adminReviewed) : verified.data ?? [];
   const recentWork = recent.isLoading ? PASTWORK : recent.data ?? [];
@@ -51,8 +49,9 @@ export default function HomeScreen() {
   const verifiedProviders = verifiedSource.slice(0, 8);
 
   const onBanner = (index: number) => {
+    // Banner 0 opens the provider list directly — the backend has no "verified"
+    // filter param (contract matrix M-4), so no illusory filter state is set.
     if (index === 0) {
-      if (!filters.trust.includes('Verified only')) toggleFilter('trust', 'Verified only');
       router.push('/providers');
     } else if (index === 1) {
       router.push('/(tabs)/request');

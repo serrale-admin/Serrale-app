@@ -1,5 +1,7 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { breadcrumbForError } from './error-presentation';
 import { HttpError, NetworkError } from './http';
+import { logger } from './logger';
 import { classifyRetry, computeBackoffDelay } from './request-policy';
 
 /**
@@ -30,7 +32,21 @@ function shouldRetryQuery(failureCount: number, error: unknown): boolean {
   return false;
 }
 
+/**
+ * Failed-request breadcrumb seam (release-health, requirement 6). Every failed
+ * query/mutation drops ONE PII-free breadcrumb (failure class + HTTP status) —
+ * the natural, centralized place to observe request failures without dusting
+ * `logger` calls across feature code. A cancellation is not a failure worth a
+ * breadcrumb, so it is skipped.
+ */
+function recordFailure(error: unknown): void {
+  if (error instanceof NetworkError && /cancelled/i.test(error.message)) return;
+  logger.addBreadcrumb(breadcrumbForError(error));
+}
+
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: (error) => recordFailure(error) }),
+  mutationCache: new MutationCache({ onError: (error) => recordFailure(error) }),
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,

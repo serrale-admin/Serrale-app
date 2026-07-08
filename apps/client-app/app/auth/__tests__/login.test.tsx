@@ -8,7 +8,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { HttpError } from '../../../src/lib/http';
+import { ApiBusinessError, HttpError } from '../../../src/lib/http';
+import { labelsFor } from '../../../src/lib/labels';
 import { useAppStore } from '../../../src/store/appStore';
 // jest.mock calls below are hoisted above this import by babel, so the screen
 // still loads with expo-router / the API module already mocked.
@@ -20,6 +21,7 @@ import LoginScreen from '../login';
 const mockReplace = jest.fn();
 const mockRequestOtp = jest.fn();
 let mockRouteParams: Record<string, string | undefined> = {};
+const en = labelsFor('en');
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -45,13 +47,19 @@ jest.mock('../../../src/api', () => {
   };
 });
 
+const clients: QueryClient[] = [];
+const renders: ReturnType<typeof render>[] = [];
+
 function renderLogin() {
-  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return render(
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false, gcTime: 0 } } });
+  clients.push(client);
+  const view = render(
     <QueryClientProvider client={client}>
       <LoginScreen />
     </QueryClientProvider>,
   );
+  renders.push(view);
+  return { ...view, client };
 }
 
 function typeValidPhone() {
@@ -69,6 +77,10 @@ beforeEach(() => {
 afterEach(() => {
   // Drop the store's 2.2s toast timer so it doesn't leak past the test.
   useAppStore.getState().hideToast();
+  // Unsubscribe mutation observers before clearing their QueryClients; clearing
+  // first lets React Query schedule a fresh GC timer during auto-cleanup.
+  renders.splice(0).forEach((view) => view.unmount());
+  clients.splice(0).forEach((client) => client.clear());
 });
 
 describe('LoginScreen send dedup', () => {
@@ -91,6 +103,7 @@ describe('LoginScreen send dedup', () => {
     fireEvent.press(sendBtn);
 
     await waitFor(() => expect(mockRequestOtp).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByLabelText('Sending…')).toBeTruthy());
 
     // The one call carries a normalized phone, the customer purpose, and an
     // idempotency key (one logical send).
@@ -101,6 +114,11 @@ describe('LoginScreen send dedup', () => {
     );
 
     resolveSend({ challengeId: 'c1', expiresAt: new Date().toISOString() });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    // Await React Query's onSettled render, not only the API promise/navigation.
+    // Teardown while the mutation observer is still pending leaves its GC timer
+    // alive and makes Jest hang after otherwise-passing assertions.
+    await waitFor(() => expect(screen.getByText('Send code')).toBeTruthy());
   });
 
   it('does NOT call the API when the phone is invalid (inline validation gates the network)', async () => {
@@ -148,5 +166,18 @@ describe('LoginScreen 429 copy', () => {
     fireEvent.press(screen.getByText('Send code'));
 
     await waitFor(() => expect(screen.getByText(/wait 42 seconds/i)).toBeTruthy());
+  });
+
+  it('never renders or toasts a raw backend business-error message', async () => {
+    mockRequestOtp.mockRejectedValue(
+      new ApiBusinessError('SELECT * FROM users; supabase provider body +251912345678', 'PGRST204'),
+    );
+
+    renderLogin();
+    typeValidPhone();
+    fireEvent.press(screen.getByText('Send code'));
+
+    await waitFor(() => expect(screen.getByText(en.errors.unknownMessage)).toBeTruthy());
+    expect(screen.queryByText(/supabase|SELECT|PGRST204|\+251912345678/i)).toBeNull();
   });
 });

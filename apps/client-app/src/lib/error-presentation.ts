@@ -17,7 +17,7 @@
  * 409 conflict, 429 rate-limited (+wait), 5xx server, malformed/non-JSON,
  * 503 maintenance.
  */
-import { ApiBusinessError, HttpError, NetworkError } from './http';
+import { APP_VERSION, ApiBusinessError, HttpError, MalformedResponseError, NetworkError } from './http';
 import type { Labels } from './labels';
 import { retryInfoFromError } from './otp-retry';
 import type { Breadcrumb } from './crash-reporter';
@@ -77,8 +77,9 @@ function isMaintenance(err: HttpError): boolean {
   return body?.maintenance === true;
 }
 
-/** Classify a NetworkError by inspecting only its (client-generated) message. */
+/** NetworkError carries a transport-generated safe class; message is legacy fallback only. */
 function classifyNetwork(err: NetworkError): FailureKind {
+  if (err.failureKind) return err.failureKind;
   const msg = (err.message || '').toLowerCase();
   if (msg.includes('cancel')) return 'cancelled';
   if (msg.includes('timed out') || msg.includes('timeout')) return 'timeout';
@@ -150,19 +151,22 @@ function classifyHttp(err: HttpError): FailureKind {
  */
 export function resolvePresentation(error: unknown): ErrorPresentation {
   if (error instanceof NetworkError) return presentationFor(classifyNetwork(error));
+  if (error instanceof MalformedResponseError) return presentationFor('malformed');
   if (error instanceof HttpError) return presentationFor(classifyHttp(error));
   if (error instanceof ApiBusinessError) return presentationFor('business');
   return presentationFor('unknown');
 }
 
-/** Substitute a human wait ("45 seconds", "2 minutes") into a template. */
-function humanWait(error: unknown): string | null {
+/** Substitute a localized human wait into the localized message template. */
+function humanWait(error: unknown, labels: Labels): string | null {
   const info = retryInfoFromError(error);
   const seconds = info.seconds;
   if (seconds == null || seconds <= 0) return null;
-  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  if (seconds < 60) {
+    return `${seconds} ${seconds === 1 ? labels.errors.waitSecond : labels.errors.waitSeconds}`;
+  }
   const minutes = Math.ceil(seconds / 60);
-  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return `${minutes} ${minutes === 1 ? labels.errors.waitMinute : labels.errors.waitMinutes}`;
 }
 
 /**
@@ -178,7 +182,7 @@ export function presentError(error: unknown, labels: Labels): ErrorView {
 
   // 429: prefer the specific "wait N" copy when the server told us how long.
   if (p.kind === 'rate-limited') {
-    const wait = humanWait(error);
+    const wait = humanWait(error, labels);
     message = wait ? e.rateLimitedMessageWait.replace('{wait}', wait) : e.rateLimitedMessage;
   }
 
@@ -199,7 +203,15 @@ export function presentError(error: unknown, labels: Labels): ErrorView {
  */
 export function breadcrumbForError(error: unknown): Breadcrumb {
   const kind = resolvePresentation(error).kind;
-  const data: Record<string, unknown> = { kind };
+  const data: Record<string, unknown> = { kind, appVersion: APP_VERSION };
   if (error instanceof HttpError) data.status = error.status;
+  if (
+    error instanceof HttpError ||
+    error instanceof NetworkError ||
+    error instanceof ApiBusinessError ||
+    error instanceof MalformedResponseError
+  ) {
+    if (error.requestId) data.requestId = error.requestId;
+  }
   return { category: 'http', message: `request-failed:${kind}`, data };
 }

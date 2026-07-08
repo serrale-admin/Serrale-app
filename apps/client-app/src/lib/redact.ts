@@ -48,6 +48,16 @@ const SENSITIVE_KEY_PATTERNS: readonly string[] = [
   'apikey',
   'api_key',
   'credential',
+  // Personal-data request bodies. Broad matching is intentional: observability
+  // never needs these values, and over-redaction is safer than leaking a lead.
+  'name',
+  'email',
+  'location',
+  'address',
+  'description',
+  'note',
+  'serviceneed',
+  'service_need',
 ];
 
 /**
@@ -91,12 +101,20 @@ const BEARER_RE = /Bearer\s+[A-Za-z0-9._~+/=-]+/gi;
  */
 const PREFIXED_TOKEN_RE = /\b(?:rt|vt|tok|sess|otp)_[A-Za-z0-9._-]{6,}/gi;
 
+/** Production refresh tokens are unprefixed 32-byte base64url values (43 chars). */
+const OPAQUE_REFRESH_TOKEN_RE = /(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])/g;
+
+/** OTP/PIN/verification codes embedded in otherwise-benign free text. */
+const OTP_TEXT_RE = /\b(?:otp|pin|verification\s+code|one[- ]time\s+(?:code|password))\s*(?:is\s*)?(?:[:=\-]\s*)?\d{4,8}\b/gi;
+
 /** Scrub secrets embedded in a free-text string. Order matters (JWT before generic). */
 function scrubString(input: string): string {
   return input
     .replace(BEARER_RE, REDACTED)
     .replace(JWT_RE, REDACTED)
     .replace(PREFIXED_TOKEN_RE, REDACTED)
+    .replace(OPAQUE_REFRESH_TOKEN_RE, REDACTED)
+    .replace(OTP_TEXT_RE, REDACTED)
     .replace(PHONE_RE, REDACTED);
 }
 

@@ -12,6 +12,8 @@
  */
 import {
   http,
+  MalformedResponseError,
+  NetworkError,
   setTokenProvider,
   setUnauthorizedHandler,
   getNetworkStatus,
@@ -34,6 +36,15 @@ function jsonResponse(status: number, body: unknown, headers: Record<string, str
       get: (name: string) => headers[name.toLowerCase()] ?? headers[name] ?? null,
     },
     text: async () => JSON.stringify(body),
+  } as unknown as Response;
+}
+
+function textResponse(status: number, body: string): Response {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    headers: { get: () => null },
+    text: async () => body,
   } as unknown as Response;
 }
 
@@ -181,6 +192,52 @@ describe('http reliability layer', () => {
     await assertion;
     // initial attempt + (MAX_RETRIES - 1) retries === MAX_RETRIES total attempts
     expect(calls).toBe(MAX_RETRIES);
+  });
+
+  it('distinguishes DNS/TLS/connection failures from offline transport failures', async () => {
+    global.fetch = jest
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new TypeError('getaddrinfo ENOTFOUND api.serrale.com'), { code: 'ENOTFOUND' }))
+      .mockRejectedValueOnce(new TypeError('Network request failed')) as unknown as typeof fetch;
+
+    await expect(http('/dns', { skipAuthInterceptor: true })).rejects.toMatchObject({
+      name: 'NetworkError',
+      failureKind: 'connection',
+    } satisfies Partial<NetworkError>);
+    await expect(http('/offline', { skipAuthInterceptor: true })).rejects.toMatchObject({
+      name: 'NetworkError',
+      failureKind: 'offline',
+    } satisfies Partial<NetworkError>);
+  });
+
+  it('throws a typed malformed-response error for a successful non-JSON body', async () => {
+    global.fetch = jest.fn(async () => textResponse(200, '<html>proxy error</html>')) as unknown as typeof fetch;
+
+    await expect(http('/public-directory/providers', { skipAuthInterceptor: true })).rejects.toBeInstanceOf(
+      MalformedResponseError,
+    );
+  });
+
+  it('throws for an unexpected empty success unless the endpoint explicitly allows it', async () => {
+    global.fetch = jest.fn(async () => textResponse(204, '')) as unknown as typeof fetch;
+
+    await expect(http('/unexpected-empty', { skipAuthInterceptor: true })).rejects.toBeInstanceOf(
+      MalformedResponseError,
+    );
+    await expect(
+      http<void>('/allowed-empty', { skipAuthInterceptor: true, allowEmptyResponse: true }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('propagates the exact X-Request-Id from the failed attempt onto the typed error', async () => {
+    let sentRequestId = '';
+    global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+      sentRequestId = (init?.headers as Record<string, string>)['X-Request-Id'];
+      return jsonResponse(500, { success: false, error: { message: 'internal' } });
+    }) as unknown as typeof fetch;
+
+    await expect(http('/failed', { skipAuthInterceptor: true })).rejects.toMatchObject({ requestId: sentRequestId });
+    expect(sentRequestId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('never retries a write on a network error (single attempt)', async () => {

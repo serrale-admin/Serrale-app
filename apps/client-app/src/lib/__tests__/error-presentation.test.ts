@@ -9,8 +9,8 @@
  * not prose, so leakage is structurally impossible — but we assert it against a
  * maximally-leaky error to prove it.
  */
-import { HttpError, NetworkError, ApiBusinessError } from '../http';
-import { presentError, resolvePresentation } from '../error-presentation';
+import { APP_VERSION, HttpError, MalformedResponseError, NetworkError, ApiBusinessError } from '../http';
+import { breadcrumbForError, presentError, resolvePresentation } from '../error-presentation';
 import { labelsFor } from '../labels';
 
 // labels.ts pulls in the app store (for useLabels), which imports AsyncStorage.
@@ -40,6 +40,13 @@ describe('failure-class matrix', () => {
     titleKey: keyof typeof en.errors;
     retryable: boolean;
   }[] = [
+    {
+      name: 'connection (DNS/TLS reachability)',
+      error: new NetworkError('Connection problem', 'connection'),
+      kind: 'connection',
+      titleKey: 'connectionTitle',
+      retryable: true,
+    },
     {
       name: 'offline (NetworkError, offline copy)',
       error: new NetworkError('Check your internet and try again.'),
@@ -132,8 +139,15 @@ describe('failure-class matrix', () => {
       retryable: true,
     },
     {
-      name: 'malformed / non-JSON (ApiBusinessError with no code) treated as unknown-business',
-      error: new ApiBusinessError('Malformed'),
+      name: 'malformed / non-JSON successful response',
+      error: new MalformedResponseError('Malformed response', 'req-malformed'),
+      kind: 'malformed',
+      titleKey: 'malformedTitle',
+      retryable: true,
+    },
+    {
+      name: 'business envelope (success:false) never surfaces server message',
+      error: new ApiBusinessError('SELECT * FROM users; supabase leak +251912345678', 'PGRST204'),
       kind: 'business',
       titleKey: 'unknownTitle',
       retryable: false,
@@ -161,10 +175,9 @@ describe('failure-class matrix', () => {
 });
 
 describe('malformed / non-JSON transport', () => {
-  it('classifies a NetworkError whose message signals a malformed body as malformed', () => {
-    const p = resolvePresentation(new NetworkError('Malformed response from server'));
-    // Falls back to a safe network class — never leaks the raw body.
-    expect(['offline', 'timeout', 'malformed', 'unknown']).toContain(p.kind);
+  it('classifies the typed malformed response exactly as malformed', () => {
+    const p = resolvePresentation(new MalformedResponseError('Malformed response'));
+    expect(p.kind).toBe('malformed');
   });
 });
 
@@ -217,5 +230,29 @@ describe('429 wait substitution', () => {
     const en2 = labelsFor('en');
     const view = presentError(new HttpError(429, 'Too many', 'RATE_LIMITED'), en2);
     expect(view.message).toBe(en2.errors.rateLimitedMessage);
+  });
+
+  it('uses localized Amharic wait units without English unit fragments', () => {
+    const err = new HttpError(429, 'Too many', 'RATE_LIMITED');
+    err.retryRaw = { body: { retry_after_seconds: 120 }, retryAfter: '120', rateLimitReset: null };
+    const view = presentError(err, labelsFor('am'));
+    expect(view.message).toContain('2 ደቂቃ');
+    expect(view.message).not.toMatch(/seconds?|minutes?/i);
+  });
+});
+
+describe('failed request breadcrumbs', () => {
+  it('includes failure class, status, app version, and the transport request id', () => {
+    const err = new HttpError(503, 'internal details', 'UPSTREAM', undefined, 'req-safe-123');
+    expect(breadcrumbForError(err)).toMatchObject({
+      category: 'http',
+      message: 'request-failed:server',
+      data: {
+        kind: 'server',
+        status: 503,
+        appVersion: APP_VERSION,
+        requestId: 'req-safe-123',
+      },
+    });
   });
 });

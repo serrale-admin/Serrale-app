@@ -12,11 +12,39 @@ import {
   parseRetryAfter,
 } from './request-policy';
 
-/** Network failure (no response — offline, DNS, TLS, timeout). */
+export type NetworkFailureKind = 'offline' | 'connection' | 'timeout' | 'cancelled';
+
+function inferNetworkFailureKind(message: string): NetworkFailureKind {
+  const lower = message.toLowerCase();
+  if (lower.includes('cancel')) return 'cancelled';
+  if (lower.includes('timed out') || lower.includes('timeout')) return 'timeout';
+  if (lower.includes('connection') || lower.includes('dns') || lower.includes('tls')) return 'connection';
+  return 'offline';
+}
+
+/** Network failure (no response), classified without exposing raw system text. */
 export class NetworkError extends Error {
-  constructor(message = 'Connection problem') {
+  public readonly failureKind: NetworkFailureKind;
+
+  constructor(
+    message = 'Connection problem',
+    failureKind?: NetworkFailureKind,
+    public readonly requestId?: string,
+  ) {
     super(message);
     this.name = 'NetworkError';
+    this.failureKind = failureKind ?? inferNetworkFailureKind(message);
+  }
+}
+
+/** A 2xx response whose body violates the declared JSON/empty-body contract. */
+export class MalformedResponseError extends Error {
+  constructor(
+    message = 'Malformed response',
+    public readonly requestId?: string,
+  ) {
+    super(message);
+    this.name = 'MalformedResponseError';
   }
 }
 
@@ -45,6 +73,7 @@ export class HttpError extends Error {
     public code?: string,
     /** Parsed Retry-After delay (ms) when the server sent one (429/503). */
     public retryAfterMs?: number,
+    public readonly requestId?: string,
   ) {
     super(message);
     this.name = 'HttpError';
@@ -56,6 +85,7 @@ export class ApiBusinessError extends Error {
   constructor(
     message: string,
     public code?: string,
+    public readonly requestId?: string,
   ) {
     super(message);
     this.name = 'ApiBusinessError';
@@ -75,6 +105,8 @@ export interface RequestOptions {
   skipAuthInterceptor?: boolean;
   /** Extra request headers (e.g. an Idempotency-Key for OTP sends). */
   headers?: Record<string, string>;
+  /** Explicit contract opt-in for endpoints that legitimately return no body. */
+  allowEmptyResponse?: boolean;
 }
 
 /** The SERRALE API envelope: `{ success, data }` on success, `{ success:false, error }` on failure. */
@@ -107,7 +139,7 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
  * App version from expo-constants. Read once at module load — it never changes at
  * runtime. Falls back to '0.0.0' if the manifest is unavailable (e.g. under Jest).
  */
-const APP_VERSION: string =
+export const APP_VERSION: string =
   (Constants.expoConfig?.version as string | undefined) ??
   ((Constants as any).manifest?.version as string | undefined) ??
   '0.0.0';
@@ -163,9 +195,9 @@ export function setCurrentRoute(route: string | null | undefined) {
   currentRoute = route && route.trim() ? route.trim() : 'unknown';
 }
 
-function metadataHeaders(): Record<string, string> {
+function metadataHeaders(requestId: string): Record<string, string> {
   return {
-    'X-Request-Id': generateRequestId(),
+    'X-Request-Id': requestId,
     'X-Serrale-Source': SOURCE,
     'X-Serrale-Route': APP_SURFACE,
     'X-Serrale-App-Version': APP_VERSION,
@@ -285,7 +317,10 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     // the fetch headers below, AFTER metadataHeaders(), so a per-call header wins
     // a name collision (there are none today) but can never clobber metadata.
     headers: extraHeaders,
+    allowEmptyResponse = false,
   } = opts;
+
+  const requestId = generateRequestId();
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -300,7 +335,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
       method,
       headers: {
         Accept: 'application/json',
-        ...metadataHeaders(),
+        ...metadataHeaders(requestId),
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
         ...(extraHeaders || {}),
@@ -312,24 +347,30 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     // Caller-initiated abort vs. timeout/offline. Only a caller abort is a
     // "cancellation"; a timeout is a network failure that reads may retry.
     const abortedByCaller = !!signal?.aborted;
-    throw new NetworkError(
-      (err as Error)?.name === 'AbortError' && !abortedByCaller
-        ? 'The request timed out. Check your internet and try again.'
-        : abortedByCaller
+    const kind = classifyTransportFailure(err, abortedByCaller);
+    const message =
+      kind === 'timeout'
+        ? 'The request timed out.'
+        : kind === 'cancelled'
           ? 'Request cancelled.'
-          : 'Check your internet and try again.',
-    );
+          : kind === 'connection'
+            ? 'Connection problem.'
+            : 'Device offline.';
+    throw new NetworkError(message, kind, requestId);
   } finally {
     clearTimeout(timer);
     if (signal) signal.removeEventListener('abort', onAbort);
   }
 
   const text = await res.text();
-  let parsed: Envelope<T> | null = null;
-  try {
-    parsed = text ? (JSON.parse(text) as Envelope<T>) : null;
-  } catch {
-    parsed = null;
+  let parsed: unknown = null;
+  let parseFailed = false;
+  if (text) {
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parseFailed = true;
+    }
   }
 
   if (res.status === 401 && !skipAuthInterceptor && unauthorizedHandler) {
@@ -338,12 +379,13 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
   }
 
   if (!res.ok) {
-    const { message, code } = parsed ? errorMessage(parsed) : { message: `Request failed (${res.status})`, code: undefined };
+    const envelope = isEnvelope(parsed) ? parsed : null;
+    const { message, code } = envelope ? errorMessage(envelope) : { message: `Request failed (${res.status})`, code: undefined };
     // T4: parsed Retry-After (ms) feeds the retry POLICY (GET 429/503 backoff via
     // classifyRetry → `outcome.retryAfterMs`). Writes are never retried, so this is
     // only ever consulted for eligible reads.
     const retryAfterMs = parseRetryAfter(readHeader(res, 'Retry-After'));
-    const error = new HttpError(res.status, message, code, retryAfterMs);
+    const error = new HttpError(res.status, message, code, retryAfterMs, requestId);
     // T3: additive 429 enrichment — capture the RAW cooldown signals (error-body
     // fields + Retry-After / RateLimit-Reset headers) so the OTP UI can show a
     // specific wait. This rides on the thrown error and is a SEPARATE consumer of
@@ -353,8 +395,8 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     if (res.status === 429) {
       error.retryRaw = {
         body:
-          parsed && parsed.error && typeof parsed.error === 'object'
-            ? (parsed.error as Record<string, unknown>)
+          envelope && envelope.error && typeof envelope.error === 'object'
+            ? (envelope.error as Record<string, unknown>)
             : undefined,
         retryAfter: readHeader(res, 'Retry-After'),
         rateLimitReset: readHeader(res, 'RateLimit-Reset'),
@@ -362,12 +404,36 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     }
     throw error;
   }
-  if (parsed && parsed.success === false) {
+  if (!text && allowEmptyResponse) return undefined as T;
+  if (parseFailed || !text || parsed === null) {
+    throw new MalformedResponseError('Malformed response', requestId);
+  }
+  if (isEnvelope(parsed) && parsed.success === false) {
     const { message, code } = errorMessage(parsed);
-    throw new ApiBusinessError(message, code);
+    throw new ApiBusinessError(message, code, requestId);
   }
   // Some endpoints may return the payload directly (no envelope) — fall back to that.
-  return parsed && 'data' in parsed ? (parsed.data as T) : ((parsed as unknown) as T);
+  return isEnvelope(parsed) && 'data' in parsed ? (parsed.data as T) : (parsed as T);
+}
+
+function isEnvelope(value: unknown): value is Envelope<unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Convert raw transport diagnostics to a coarse safe class; raw text is never displayed. */
+function classifyTransportFailure(error: unknown, abortedByCaller: boolean): NetworkFailureKind {
+  if (abortedByCaller) return 'cancelled';
+  const candidate = error as { name?: unknown; code?: unknown; message?: unknown } | null;
+  if (candidate?.name === 'AbortError') return 'timeout';
+  const signal = `${String(candidate?.code ?? '')} ${String(candidate?.message ?? '')}`.toLowerCase();
+  if (
+    /enotfound|eai_again|dns|tls|ssl|certificate|cert_|econnrefused|econnreset|connection refused|network connection was lost/.test(
+      signal,
+    )
+  ) {
+    return 'connection';
+  }
+  return 'offline';
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +456,7 @@ function dedupeKey(method: string, path: string, query?: Record<string, QueryVal
 
 function rejectOnAbort(signal: AbortSignal): Promise<never> {
   return new Promise<never>((_resolve, reject) => {
-    const fire = () => reject(new NetworkError('Request cancelled.'));
+    const fire = () => reject(new NetworkError('Request cancelled.', 'cancelled'));
     if (signal.aborted) return fire();
     signal.addEventListener('abort', fire, { once: true });
   });
@@ -461,7 +527,7 @@ async function runWithReliability<T>(path: string, opts: RequestOptions, method:
   // the circuit — that keeps the circuit boundary aligned with the dedupe/read
   // boundary and bounds worst-case attempts at MAX_RETRIES.
   if (!readCircuit.canRequest()) {
-    throw new NetworkError("You're offline or the service is busy. Pull to retry.");
+    throw new NetworkError('Device offline or service busy.', 'offline', generateRequestId());
   }
 
   let attempt = 0;
@@ -503,6 +569,7 @@ function toOutcome(err: unknown, signal?: AbortSignal): AttemptOutcome {
     // failure — never retried, never counted against the circuit.
     return { kind: 'http', status: 200 };
   }
+  if (err instanceof MalformedResponseError) return { kind: 'http', status: 200 };
   // NetworkError (offline/timeout) or anything unexpected → network failure.
   return { kind: 'network' };
 }

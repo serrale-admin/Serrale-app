@@ -25,7 +25,8 @@ const PHONE_INTL = '+251912345678';
 const PHONE_LOCAL = '0912345678';
 const OTP = '482913';
 const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1LTEiLCJwaG9uZSI6IisyNTE5MTIzNDU2NzgifQ.s3cr3tSignatureABCDEF';
-const REFRESH_TOKEN = 'rt_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1908';
+// Production refresh tokens are unprefixed, 32-byte base64url values (43 chars).
+const REFRESH_TOKEN = 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE';
 const VERIFY_TOKEN = 'vt_aabbccddeeff00112233445566778899';
 const BEARER = `Bearer ${ACCESS_TOKEN}`;
 
@@ -52,6 +53,18 @@ describe('redact()', () => {
   it('redacts an Authorization Bearer value inside a string', () => {
     const out = redact(`header Authorization: ${BEARER}`) as string;
     expect(out).not.toContain(ACCESS_TOKEN);
+  });
+
+  it('redacts an OTP embedded in free text', () => {
+    const out = redact(`OTP ${OTP} is valid for five minutes`) as string;
+    expect(out).not.toContain(OTP);
+    expect(out).toContain(REDACTED);
+  });
+
+  it('redacts a real unprefixed 43-character base64url refresh token in free text', () => {
+    const out = redact(`refresh failed for ${REFRESH_TOKEN}`) as string;
+    expect(out).not.toContain(REFRESH_TOKEN);
+    expect(out).toContain(REDACTED);
   });
 
   it('redacts a value by sensitive KEY name regardless of the value shape', () => {
@@ -93,6 +106,23 @@ describe('redact()', () => {
     // A non-sensitive correlation id must survive — over-redaction must not eat
     // the request id we rely on for breadcrumbs.
     expect(JSON.stringify(out)).toContain('req-123');
+  });
+
+  it('redacts personal request-body fields by key at any depth', () => {
+    const out = redact({
+      body: {
+        name: 'Abebe Kebede',
+        fullName: 'Almaz Tesfaye',
+        email: 'abebe@example.com',
+        location: 'Bole, Addis Ababa',
+        address: 'House 4, Example Street',
+        description: 'I need plumbing at my home',
+        note: 'Call after work',
+        serviceNeed: 'Leaking sink in bedroom',
+      },
+    }) as { body: Record<string, unknown> };
+
+    for (const value of Object.values(out.body)) expect(value).toBe(REDACTED);
   });
 
   it('redacts an Error message + stack that leak a token and a phone', () => {

@@ -58,4 +58,22 @@ describe('ErrorBlock', () => {
     expect(screen.queryByText(/SELECT/)).toBeNull();
     expect(screen.queryByText(/\+251912345678/)).toBeNull();
   });
+
+  it('uses an explicit action for session expiry and never wires retry', () => {
+    const onAction = jest.fn();
+    const onRetry = jest.fn();
+    render(
+      <ErrorBlock
+        error={new HttpError(401, 'raw backend session message', 'SESSION_EXPIRED')}
+        onAction={onAction}
+        onRetry={onRetry}
+      />,
+    );
+
+    fireEvent.press(screen.getByText(en.errors.signIn));
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+    expect(screen.queryByText(en.errors.retry)).toBeNull();
+  });
 });

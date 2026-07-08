@@ -10,7 +10,9 @@ import { FieldLabel, SelectField } from '../../src/components/Field';
 import LocationSheet from '../../src/components/LocationSheet';
 import { CATS } from '../../src/data/mock';
 import { useCreateRequest } from '../../src/hooks/queries';
+import { presentError } from '../../src/lib/error-presentation';
 import { Icon } from '../../src/lib/icons';
+import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { defaultRequest, RequestForm, requestSchema } from '../../src/schemas/request';
 import { useAppStore } from '../../src/store/appStore';
@@ -29,6 +31,27 @@ export default function RequestScreen() {
   const am = lang === 'am';
 
   const mutation = useCreateRequest();
+  const labels = useLabels();
+  const errorView = mutation.isError ? presentError(mutation.error, labels) : null;
+  // Display-only localization of the canonical (English) option VALUES that are
+  // sent to the backend — the stored value never changes, only its label.
+  const whenLabel: Record<(typeof WHEN)[number], string> = {
+    Today: labels.request.when.today,
+    'This week': labels.request.when.thisWeek,
+    Flexible: labels.request.when.flexible,
+  };
+  const contactLabel: Record<(typeof CONTACT)[number], string> = {
+    Call: labels.request.contact.call,
+    WhatsApp: labels.request.contact.whatsapp,
+    Both: labels.request.contact.both,
+  };
+  const budgetLabel: Record<string, string> = {
+    'Not sure': labels.request.budget.notSure,
+    'Under 1,000 ETB': labels.request.budget.under1000,
+    '1,000–3,000 ETB': labels.request.budget.between1,
+    '3,000–7,000 ETB': labels.request.budget.between2,
+    '7,000+ ETB': labels.request.budget.over7000,
+  };
   const { handleSubmit, watch, setValue, reset } = useForm<RequestForm>({
     resolver: zodResolver(requestSchema),
     defaultValues: defaultRequest(area),
@@ -52,15 +75,15 @@ export default function RequestScreen() {
           <View style={[styles.bigCircle, { backgroundColor: colors.soft }]}>
             <Icon name="ph-check-circle" size={48} color={colors.success} weight="fill" />
           </View>
-          <Text style={styles.successTitle}>{wasDuplicate ? 'Your request is already in' : 'We received your request'}</Text>
+          <Text style={styles.successTitle}>{wasDuplicate ? labels.request.successDupTitle : labels.request.successTitle}</Text>
           <Text style={styles.successText}>
             {wasDuplicate
-              ? 'We already have this request on file — no need to send it again. SERRALE will keep matching it with providers.'
-              : `SERRALE will help match your request with relevant providers near ${mutation.variables?.area}.`}
+              ? labels.request.successDupText
+              : fill(labels.request.successText, { area: mutation.variables?.area ?? '' })}
           </Text>
-          <Button label="Browse providers" fullWidth onPress={() => router.push('/providers')} style={styles.stackedBtn} />
+          <Button label={labels.common.browseProviders} fullWidth onPress={() => router.push('/providers')} style={styles.stackedBtn} />
           <Button
-            label="Post another request"
+            label={labels.request.postAnother}
             variant="secondary"
             size="md"
             fullWidth
@@ -80,24 +103,24 @@ export default function RequestScreen() {
           <View style={styles.gateIcon}>
             <Icon name="ph-hand-heart" size={40} color={colors.goldText} weight="fill" />
           </View>
-          <Text style={styles.successTitle}>Post a service request</Text>
-          <Text style={styles.successText}>Log in with your phone to tell SERRALE what you need. We'll help you find the right provider.</Text>
+          <Text style={styles.successTitle}>{labels.request.gateTitle}</Text>
+          <Text style={styles.successText}>{labels.request.gateText}</Text>
           <Button
-            label="Log in with phone"
+            label={labels.common.loginWithPhone}
             icon="ph-phone"
             iconWeight="fill"
             fullWidth
-            onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to post a request', next: '/(tabs)/request' } })}
+            onPress={() => router.replace({ pathname: '/auth/login', params: { reason: labels.auth.reasonRequest, next: '/(tabs)/request' } })}
             style={styles.stackedBtn}
           />
-          <Button label="Continue browsing" variant="secondary" size="md" fullWidth onPress={() => router.push('/categories')} style={styles.stackedBtnTight} />
+          <Button label={labels.request.continueBrowsing} variant="secondary" size="md" fullWidth onPress={() => router.push('/categories')} style={styles.stackedBtnTight} />
         </ScrollView>
       </SafeAreaView>
     );
   }
 
   const cat = CATS.find((c) => c.id === values.categoryId);
-  const onInvalid = () => showToast(!values.categoryId ? 'Choose a service' : 'Describe the work briefly', 'ph-warning-circle');
+  const onInvalid = () => showToast(!values.categoryId ? labels.request.chooseService : labels.request.describeWork, 'ph-warning-circle');
   // The idempotency key lives inside useCreateRequest: stable across retry-taps
   // of this submission, refreshed only after a confirmed success.
   const submit = handleSubmit((v) => mutation.mutate(v), onInvalid);
@@ -110,23 +133,23 @@ export default function RequestScreen() {
         keyboardVerticalOffset={8}
       >
       <View style={styles.formHeader}>
-        <Text style={styles.h1}>Post a request</Text>
-        <Text style={styles.subtitle}>Tell us what you need — it only takes a moment.</Text>
+        <Text style={styles.h1}>{labels.request.title}</Text>
+        <Text style={styles.subtitle}>{labels.request.subtitle}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <FieldLabel>What service do you need?</FieldLabel>
+        <FieldLabel>{labels.request.serviceLabel}</FieldLabel>
         <SelectField
           onPress={() => setShowCat(true)}
           icon="ph-magnifying-glass"
           value={cat ? (am ? cat.am : cat.name) : undefined}
-          placeholder="e.g. plumber, cleaner, painter"
+          placeholder={labels.request.servicePlaceholder}
           caret="right"
-          accessibilityLabel="Select a service"
+          accessibilityLabel={labels.a11y.selectService}
         />
 
         <View style={styles.fieldGap}>
-          <FieldLabel>Where do you need it?</FieldLabel>
+          <FieldLabel>{labels.request.areaLabel}</FieldLabel>
         </View>
         <SelectField
           onPress={() => setShowArea(true)}
@@ -136,16 +159,16 @@ export default function RequestScreen() {
           value={values.area}
           placeholder={values.area}
           caret="down"
-          accessibilityLabel="Select an area"
+          accessibilityLabel={labels.a11y.selectArea}
         />
 
         <View style={styles.fieldGap}>
-          <FieldLabel>Describe the work</FieldLabel>
+          <FieldLabel>{labels.request.describeLabel}</FieldLabel>
         </View>
         <TextInput
           value={values.description}
           onChangeText={(t) => setValue('description', t.slice(0, 300))}
-          placeholder="Example: I need help fixing a leaking sink."
+          placeholder={labels.request.descPlaceholder}
           placeholderTextColor={colors.faint}
           multiline
           style={styles.textarea}
@@ -153,32 +176,32 @@ export default function RequestScreen() {
         <Text style={styles.counter}>{values.description.length}/300</Text>
 
         <View style={styles.fieldGapSm}>
-          <FieldLabel>When do you need it?</FieldLabel>
+          <FieldLabel>{labels.request.whenLabel}</FieldLabel>
         </View>
         <View style={styles.rowGap}>
           {WHEN.map((w) => (
             <Pressable key={w} style={[styles.segment, values.when === w && styles.segmentActive]} onPress={() => setValue('when', w)}>
-              <Text style={[styles.segmentText, values.when === w && styles.segmentTextActive]}>{w}</Text>
+              <Text style={[styles.segmentText, values.when === w && styles.segmentTextActive]}>{whenLabel[w]}</Text>
             </Pressable>
           ))}
         </View>
 
         <View style={styles.fieldGap}>
-          <FieldLabel optional>Budget</FieldLabel>
+          <FieldLabel optional>{labels.request.budgetLabel}</FieldLabel>
         </View>
         <View style={styles.wrapRow}>
           {BUDGETS.map((b) => {
             const active = values.budget === b;
             return (
               <Pressable key={b} style={[styles.budget, active && styles.segmentActive]} onPress={() => setValue('budget', active ? '' : b)}>
-                <Text style={[styles.budgetText, active && styles.segmentTextActive]}>{b}</Text>
+                <Text style={[styles.budgetText, active && styles.segmentTextActive]}>{budgetLabel[b] ?? b}</Text>
               </Pressable>
             );
           })}
         </View>
 
         <View style={styles.fieldGap}>
-          <FieldLabel>How should providers contact you?</FieldLabel>
+          <FieldLabel>{labels.request.contactLabel}</FieldLabel>
         </View>
         <View style={styles.contactGroup}>
           {CONTACT.map((c) => {
@@ -186,7 +209,7 @@ export default function RequestScreen() {
             return (
               <Pressable key={c} style={[styles.contactBtn, active && styles.contactActive]} onPress={() => setValue('preferredContact', c)}>
                 <Icon name={CONTACT_ICON[c]} size={15} color={active ? colors.green800 : '#5a7a6c'} weight="fill" />
-                <Text style={[styles.contactText, { color: active ? colors.green800 : '#5a7a6c' }]}>{c}</Text>
+                <Text style={[styles.contactText, { color: active ? colors.green800 : '#5a7a6c' }]}>{contactLabel[c]}</Text>
               </Pressable>
             );
           })}
@@ -199,17 +222,29 @@ export default function RequestScreen() {
           <View style={styles.errorRow}>
             <Icon name="ph-warning-circle" size={16} color={colors.danger} weight="fill" />
             <Text style={styles.errorText} numberOfLines={2}>
-              {(mutation.error as Error)?.message || "Couldn't submit. Check your connection and try again."}
+              {errorView?.message}
             </Text>
           </View>
         )}
         <Button
-          label={mutation.isPending ? 'Submitting…' : mutation.isError ? 'Try again' : 'Submit request'}
+          label={
+            mutation.isPending
+              ? labels.request.submitting
+              : errorView?.kind === 'session-expired'
+                ? errorView.action
+                : mutation.isError
+                  ? labels.errors.retry
+                  : labels.request.submit
+          }
           icon="ph-paper-plane-tilt"
           variant="gold"
           fullWidth
           loading={mutation.isPending}
-          onPress={submit}
+          onPress={
+            errorView?.kind === 'session-expired'
+              ? () => router.replace({ pathname: '/auth/login', params: { next: '/(tabs)/request' } })
+              : submit
+          }
         />
       </View>
       </KeyboardAvoidingView>

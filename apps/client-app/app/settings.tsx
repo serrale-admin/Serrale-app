@@ -6,6 +6,7 @@ import Card from '../src/components/Card';
 import ListRow from '../src/components/ListRow';
 import LocationSheet from '../src/components/LocationSheet';
 import ScreenHeader from '../src/components/ScreenHeader';
+import { useLabels } from '../src/lib/labels';
 import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
@@ -18,6 +19,8 @@ interface SRow {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const labels = useLabels();
+  const t = labels.settings;
   const user = useAppStore((s) => s.user);
   const area = useAppStore((s) => s.area);
   const setArea = useAppStore((s) => s.setArea);
@@ -27,24 +30,24 @@ export default function SettingsScreen() {
 
   const groups: SRow[][] = [
     [
-      { label: 'Account information', value: user ? user.name : 'Guest', onPress: () => showToast('Account info', 'ph-user') },
-      { label: 'Phone number', value: user ? user.phone : 'Not set', onPress: () => showToast('Phone number', 'ph-phone') },
-      { label: 'Default area', value: area, onPress: () => setShowLocation(true) },
+      { label: t.accountInfo, value: user ? user.name : t.guest, onPress: () => showToast(t.accountInfoToast, 'ph-user') },
+      { label: t.phoneNumber, value: user ? user.phone : t.notSet, onPress: () => showToast(t.phoneNumber, 'ph-phone') },
+      { label: t.defaultArea, value: area, onPress: () => setShowLocation(true) },
     ],
     [
-      { label: 'Language', value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
-      { label: 'Notifications', value: 'On', onPress: () => showToast('Notification settings', 'ph-bell') },
-      { label: 'Privacy', onPress: () => showToast('Privacy settings', 'ph-lock') },
+      { label: labels.common.language, value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
+      { label: labels.common.notifications, value: t.on, onPress: () => showToast(t.notificationsToast, 'ph-bell') },
+      { label: t.privacy, onPress: () => showToast(t.privacyToast, 'ph-lock') },
     ],
     [
-      { label: 'Terms & policies', onPress: () => showToast('Terms', 'ph-file-text') },
-      { label: 'Delete account', onPress: () => showToast('Contact support to delete', 'ph-warning'), danger: true },
+      { label: t.terms, onPress: () => showToast(t.termsToast, 'ph-file-text') },
+      { label: t.deleteAccount, onPress: () => showToast(t.deleteToast, 'ph-warning'), danger: true },
     ],
   ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title={labels.common.settings} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {groups.map((rows, gi) => (
           <Card key={gi} variant="group">

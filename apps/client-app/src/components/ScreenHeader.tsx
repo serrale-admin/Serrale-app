@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../lib/icons';
+import { useLabels } from '../lib/labels';
 import { colors, fonts, layout } from '../lib/theme';
 
 interface Props {
@@ -21,11 +22,12 @@ interface Props {
  */
 export default function ScreenHeader({ title, subtitle, right, showBack = true, onBack }: Props) {
   const router = useRouter();
+  const labels = useLabels();
   const back = onBack || (() => router.back());
   return (
     <View style={styles.row}>
       {showBack ? (
-        <Pressable style={styles.backBtn} onPress={back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
+        <Pressable style={styles.backBtn} onPress={back} accessibilityRole="button" accessibilityLabel={labels.common.back} hitSlop={6}>
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
         </Pressable>
       ) : null}

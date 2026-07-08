@@ -3,22 +3,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../src/components/Card';
 import ScreenHeader from '../src/components/ScreenHeader';
 import { Icon } from '../src/lib/icons';
+import { useLabels } from '../src/lib/labels';
 import { colors, fonts } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 import type { Lang } from '../src/types';
 
-const OPTIONS: { label: string; sub: string; flag: string; value: Lang }[] = [
-  { label: 'English', sub: 'Default', flag: 'EN', value: 'en' },
-  { label: 'አማርኛ', sub: 'Amharic', flag: 'አ', value: 'am' },
-];
-
 export default function LanguageScreen() {
   const lang = useAppStore((s) => s.lang);
   const setLang = useAppStore((s) => s.setLang);
+  const labels = useLabels();
+
+  // Language names stay in their own script (English / አማርኛ); the sublabels and
+  // the "selected" affix localize with the current UI language.
+  const OPTIONS: { label: string; sub: string; flag: string; value: Lang }[] = [
+    { label: 'English', sub: labels.language.default, flag: 'EN', value: 'en' },
+    { label: 'አማርኛ', sub: labels.language.amharic, flag: 'አ', value: 'am' },
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Language" />
+      <ScreenHeader title={labels.common.language} />
       <View style={styles.body}>
         {OPTIONS.map((o) => {
           const active = lang === o.value;
@@ -26,7 +30,7 @@ export default function LanguageScreen() {
             <Card
               key={o.value}
               onPress={() => setLang(o.value)}
-              accessibilityLabel={`${o.label}${active ? ', selected' : ''}`}
+              accessibilityLabel={`${o.label}${active ? labels.language.selectedSuffix : ''}`}
               style={[styles.option, active && styles.optionActive]}
             >
               <View style={[styles.flag, { backgroundColor: active ? colors.soft : '#F3F0E6' }]}>

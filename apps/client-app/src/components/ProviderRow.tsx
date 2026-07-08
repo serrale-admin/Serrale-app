@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useProviderActions } from '../hooks/useProviderActions';
 import { Icon } from '../lib/icons';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius, shadowCard } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import type { Provider } from '../types';
@@ -13,10 +14,17 @@ import Avatar from './Avatar';
  */
 export default function ProviderRow({ provider: p }: { provider: Provider }) {
   const { open, save, call, whatsapp } = useProviderActions();
+  const labels = useLabels();
   const saved = useAppStore((s) => !!s.saved[p.id]);
 
   // Real trust signals only: Verified / admin Reviewed / actual past work.
-  const badge = p.verified ? 'Verified' : p.adminReviewed ? 'Reviewed' : p.hasPastWork ? 'Past work' : '';
+  const badge = p.verified
+    ? labels.common.verified
+    : p.adminReviewed
+      ? labels.provider.reviewedBadge
+      : p.hasPastWork
+        ? labels.provider.pastWorkBadge
+        : '';
   // Rating renders only when review data exists (demo/mock). Live rows have no
   // ratings (contract matrix M-3), so the meta row leads with the service.
   const hasRating = p.reviewCount > 0 && p.rating > 0;
@@ -39,7 +47,7 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
             </View>
           )}
           <View style={{ flex: 1 }} />
-          <Pressable hitSlop={8} onPress={() => save(p.id)} accessibilityLabel={`Save ${p.name}`}>
+          <Pressable hitSlop={8} onPress={() => save(p.id)} accessibilityLabel={fill(labels.a11y.saveProvider, { name: p.name })}>
             <Icon
               name="ph-bookmark-simple"
               size={19}
@@ -74,17 +82,17 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
         <View style={styles.actions}>
           <Pressable style={styles.callBtn} onPress={() => call(p)}>
             <Icon name="ph-phone-call" size={13} color="#fff" weight="bold" />
-            <Text style={styles.callText}>Call</Text>
+            <Text style={styles.callText}>{labels.common.call}</Text>
           </Pressable>
           <Pressable style={styles.waBtn} onPress={() => whatsapp(p)}>
             <Icon name="ph-whatsapp-logo" size={13} color={colors.whatsapp} weight="fill" />
-            <Text style={styles.waText}>WhatsApp</Text>
+            <Text style={styles.waText}>{labels.common.whatsapp}</Text>
           </Pressable>
           {showAvail && (
             <View style={styles.availWrap}>
               <View style={[styles.availDot, { backgroundColor: colors.success }]} />
               <Text style={[styles.availText, { color: colors.success }]} numberOfLines={1}>
-                Today
+                {labels.common.today}
               </Text>
             </View>
           )}

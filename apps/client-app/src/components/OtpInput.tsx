@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput, View } from 'react-native';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
  * match the shared design without changing the verification logic.
  */
 export default function OtpInput({ value, onChangeDigit, onKeyPress, setRef, errored }: Props) {
+  const labels = useLabels();
   return (
     <View style={styles.row}>
       {value.map((digit, i) => (
@@ -32,7 +34,7 @@ export default function OtpInput({ value, onChangeDigit, onKeyPress, setRef, err
           inputMode="numeric"
           maxLength={1}
           autoFocus={i === 0}
-          accessibilityLabel={`Digit ${i + 1}`}
+          accessibilityLabel={fill(labels.a11y.digit, { n: i + 1 })}
           style={[styles.box, { borderColor: errored ? colors.danger : digit ? colors.success : colors.borderInput }]}
         />
       ))}

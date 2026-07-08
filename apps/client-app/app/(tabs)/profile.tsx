@@ -7,6 +7,7 @@ import Button from '../../src/components/Button';
 import Card from '../../src/components/Card';
 import ListRow from '../../src/components/ListRow';
 import { Icon } from '../../src/lib/icons';
+import { useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
@@ -22,6 +23,7 @@ interface Row {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const labels = useLabels();
   const loggedIn = useAppStore((s) => s.loggedIn);
   const user = useAppStore((s) => s.user);
   const area = useAppStore((s) => s.area);
@@ -33,9 +35,9 @@ export default function ProfileScreen() {
   };
 
   const becomeProvider: Row = {
-    label: 'Become a service provider',
+    label: labels.profile.becomeProvider,
     icon: 'ph-storefront',
-    onPress: () => showToast('Provider sign-up opening soon', 'ph-storefront'),
+    onPress: () => showToast(labels.profile.becomeProviderToast, 'ph-storefront'),
     tint: colors.goldSoft,
     iconColor: colors.goldText,
   };
@@ -43,26 +45,26 @@ export default function ProfileScreen() {
   const groups: Row[][] = loggedIn
     ? [
         [
-          { label: 'My requests', icon: 'ph-tray', onPress: () => showToast('No active requests yet', 'ph-tray') },
-          { label: 'Saved providers', icon: 'ph-bookmark-simple', onPress: () => router.push('/bookmarks') },
-          { label: 'Notifications', icon: 'ph-bell', onPress: () => showToast('No new notifications', 'ph-bell') },
+          { label: labels.profile.myRequests, icon: 'ph-tray', onPress: () => showToast(labels.profile.noRequests, 'ph-tray') },
+          { label: labels.common.savedProviders, icon: 'ph-bookmark-simple', onPress: () => router.push('/bookmarks') },
+          { label: labels.common.notifications, icon: 'ph-bell', onPress: () => showToast(labels.profile.noNotifications, 'ph-bell') },
         ],
         [
-          { label: 'Language', icon: 'ph-translate', onPress: () => router.push('/language') },
-          { label: 'Help & Support', icon: 'ph-question', onPress: () => router.push('/help') },
-          { label: 'Safety tips', icon: 'ph-shield-check', onPress: () => router.push('/safety') },
+          { label: labels.common.language, icon: 'ph-translate', onPress: () => router.push('/language') },
+          { label: labels.common.helpSupport, icon: 'ph-question', onPress: () => router.push('/help') },
+          { label: labels.common.safetyTips, icon: 'ph-shield-check', onPress: () => router.push('/safety') },
         ],
         [
           becomeProvider,
-          { label: 'Settings', icon: 'ph-gear', onPress: () => router.push('/settings') },
-          { label: 'Log out', icon: 'ph-sign-out', onPress: onLogout, tint: colors.dangerSoft, iconColor: colors.danger, labelColor: colors.danger, chevron: false },
+          { label: labels.common.settings, icon: 'ph-gear', onPress: () => router.push('/settings') },
+          { label: labels.profile.logout, icon: 'ph-sign-out', onPress: onLogout, tint: colors.dangerSoft, iconColor: colors.danger, labelColor: colors.danger, chevron: false },
         ],
       ]
     : [
         [
-          { label: 'Help & Support', icon: 'ph-question', onPress: () => router.push('/help') },
-          { label: 'Language', icon: 'ph-translate', onPress: () => router.push('/language') },
-          { label: 'Safety tips', icon: 'ph-shield-check', onPress: () => router.push('/safety') },
+          { label: labels.common.helpSupport, icon: 'ph-question', onPress: () => router.push('/help') },
+          { label: labels.common.language, icon: 'ph-translate', onPress: () => router.push('/language') },
+          { label: labels.common.safetyTips, icon: 'ph-shield-check', onPress: () => router.push('/safety') },
         ],
         [becomeProvider],
       ];
@@ -70,23 +72,23 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        <Text style={styles.h1}>Profile</Text>
+        <Text style={styles.h1}>{labels.tabs.profile}</Text>
 
         {!loggedIn && (
           <LinearGradient colors={[colors.green800, colors.green700]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.guestCard}>
             <View style={styles.guestAvatar}>
               <Icon name="ph-user" size={30} color="#fff" weight="fill" />
             </View>
-            <Text style={styles.guestTitle}>Welcome to SERRALE</Text>
-            <Text style={styles.guestText}>Continue with phone to save providers and manage requests.</Text>
+            <Text style={styles.guestTitle}>{labels.common.welcomeToSerrale}</Text>
+            <Text style={styles.guestText}>{labels.profile.guestText}</Text>
             <Button
-              label="Log in with phone"
+              label={labels.common.loginWithPhone}
               icon="ph-phone"
               iconWeight="fill"
               variant="gold"
               size="md"
               fullWidth
-              onPress={() => router.replace({ pathname: '/auth/login', params: { reason: 'Log in to manage your profile', next: '/(tabs)/profile' } })}
+              onPress={() => router.replace({ pathname: '/auth/login', params: { reason: labels.auth.reasonProfile, next: '/(tabs)/profile' } })}
               style={styles.guestBtn}
             />
           </LinearGradient>

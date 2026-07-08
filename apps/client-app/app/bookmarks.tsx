@@ -9,11 +9,13 @@ import ProviderRow from '../src/components/ProviderRow';
 import ScreenHeader from '../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../src/components/Skeleton';
 import * as api from '../src/api';
+import { useLabels } from '../src/lib/labels';
 import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 export default function BookmarksScreen() {
   const router = useRouter();
+  const labels = useLabels();
   const saved = useAppStore((s) => s.saved);
   const savedIds = Object.keys(saved);
   const providerQueries = useQueries({
@@ -32,7 +34,7 @@ export default function BookmarksScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Saved providers" />
+      <ScreenHeader title={labels.common.savedProviders} />
       {isLoading ? (
         <View style={styles.list}>
           <SkeletonProviderList count={4} />
@@ -40,9 +42,9 @@ export default function BookmarksScreen() {
       ) : isError ? (
         <View style={styles.emptyWrap}>
           <ErrorBlock
-            title="Couldn't load saved providers"
-            text="Please check your connection and try again."
+            error={providerQueries.find((q) => q.isError)?.error}
             onRetry={() => providerQueries.forEach((q) => q.refetch())}
+            onAction={() => router.replace({ pathname: '/auth/login', params: { next: '/bookmarks' } })}
           />
         </View>
       ) : list.length > 0 ? (
@@ -56,10 +58,10 @@ export default function BookmarksScreen() {
             icon="ph-bookmark-simple"
             circle={colors.goldSoft}
             iconColor={colors.goldText}
-            title="No saved providers yet"
-            text="Tap the bookmark icon on any provider to save them here."
+            title={labels.bookmarks.emptyTitle}
+            text={labels.bookmarks.emptyText}
           >
-            <Button label="Browse providers" onPress={() => router.push('/providers')} style={styles.cta} />
+            <Button label={labels.common.browseProviders} onPress={() => router.push('/providers')} style={styles.cta} />
           </EmptyState>
         </View>
       )}

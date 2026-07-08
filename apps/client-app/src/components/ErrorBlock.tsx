@@ -20,6 +20,9 @@ interface Props {
   /** When provided, renders a Try again button that calls this. */
   onRetry?(): void;
   retryLabel?: string;
+  /** Semantic mapped action (for example sign-in after session expiry). */
+  onAction?(): void;
+  actionLabel?: string;
 }
 
 /**
@@ -30,13 +33,18 @@ interface Props {
  * 429 / maintenance / …) — the mapper guarantees nothing internal is ever shown.
  * The legacy `title`/`text` props remain for callers that want fixed copy.
  */
-export default function ErrorBlock({ error, title, text, onRetry, retryLabel }: Props) {
+export default function ErrorBlock({ error, title, text, onRetry, retryLabel, onAction, actionLabel }: Props) {
   const labels = useLabels();
   const view = error !== undefined ? presentError(error, labels) : null;
 
-  const resolvedTitle = title ?? view?.title ?? 'Something went wrong';
-  const resolvedText = text ?? view?.message ?? 'Please check your connection and try again.';
-  const resolvedRetryLabel = retryLabel ?? view?.action ?? labels.errors.retry;
+  const resolvedTitle = title ?? view?.title ?? labels.errors.unknownTitle;
+  const resolvedText = text ?? view?.message ?? labels.errors.offlineMessage;
+  const resolvedActionLabel = actionLabel ?? retryLabel ?? view?.action ?? labels.errors.retry;
+  // Session expiry has one semantic recovery: sign in. Never fall back to the
+  // legacy retry callback for it. Other mapped non-retryable states render no
+  // button until their screen supplies a dedicated semantic treatment.
+  const actionHandler =
+    view?.kind === 'session-expired' ? onAction : view && !view.retryable ? undefined : onRetry;
 
   return (
     <View style={styles.wrap} accessibilityRole="alert">
@@ -45,8 +53,8 @@ export default function ErrorBlock({ error, title, text, onRetry, retryLabel }: 
       </View>
       <Text style={styles.title}>{resolvedTitle}</Text>
       <Text style={styles.text}>{resolvedText}</Text>
-      {onRetry ? (
-        <Button label={resolvedRetryLabel} icon="ph-arrow-right" variant="secondary" size="sm" onPress={onRetry} style={styles.retry} />
+      {actionHandler ? (
+        <Button label={resolvedActionLabel} icon="ph-arrow-right" variant="secondary" size="sm" onPress={actionHandler} style={styles.retry} />
       ) : null}
     </View>
   );

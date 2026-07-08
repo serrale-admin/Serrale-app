@@ -1,6 +1,7 @@
 import { forwardRef, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 import { Icon, IconWeight } from '../lib/icons';
+import { useLabels } from '../lib/labels';
 import { colors, fonts, layout, radius } from '../lib/theme';
 
 /** Label above a control, with optional "(optional)" affix and error line. */
@@ -32,6 +33,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   { icon, onClear, errored, containerStyle, style, value, ...rest },
   ref,
 ) {
+  const labels = useLabels();
   return (
     <View style={[styles.field, errored && styles.fieldErrored, containerStyle]}>
       {icon ? <Icon name={icon} size={18} color={colors.muted} /> : null}
@@ -43,7 +45,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         {...rest}
       />
       {onClear && !!value ? (
-        <Pressable onPress={onClear} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear">
+        <Pressable onPress={onClear} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.common.clear}>
           <Icon name="ph-x-circle" size={18} color="#bcc6bf" weight="fill" />
         </Pressable>
       ) : null}

@@ -14,12 +14,14 @@ import { SkeletonProviderList } from '../../src/components/Skeleton';
 import { useCategory, useProviders } from '../../src/hooks/queries';
 import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
+import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const labels = useLabels();
   const am = useAppStore((s) => s.lang) === 'am';
   const area = useAppStore((s) => s.area);
   const filters = useAppStore((s) => s.filters);
@@ -41,11 +43,13 @@ export default function CategoryDetailScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader
         title={cat ? (am ? cat.am : cat.name) : ''}
-        subtitle={cat ? `${fmt(cat.count)} providers near ${area}` : `Providers near ${area}`}
+        subtitle={cat
+          ? fill(labels.categoryDetail.providersNear, { count: fmt(cat.count), area })
+          : fill(labels.categoryDetail.providersNearNoCount, { area })}
         right={
-          <Pressable style={styles.filterBtn} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel="Filters">
+          <Pressable style={styles.filterBtn} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel={labels.common.filters}>
             <Icon name="ph-sliders-horizontal" size={15} color={colors.green800} weight="bold" />
-            <Text style={styles.filterBtnText}>Filter</Text>
+            <Text style={styles.filterBtnText}>{labels.common.filter}</Text>
             {filterCount > 0 && <Badge label={filterCount} tone="count" />}
           </Pressable>
         }
@@ -61,7 +65,7 @@ export default function CategoryDetailScreen() {
       {/* Result count row */}
       <View style={styles.sortRow}>
         <Text style={styles.resultCount}>
-          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> providers
+          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> {labels.providersWord}
         </Text>
       </View>
 
@@ -71,9 +75,9 @@ export default function CategoryDetailScreen() {
         </View>
       ) : providers.isError ? (
         <ErrorBlock
-          title="Couldn't load providers"
-          text="Please check your connection and try again."
+          error={providers.error}
           onRetry={() => providers.refetch()}
+          onAction={() => router.replace({ pathname: '/auth/login', params: { next: `/categories/${id}` } })}
         />
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -82,10 +86,10 @@ export default function CategoryDetailScreen() {
             <EmptyState
               icon="ph-magnifying-glass"
               circle={colors.soft}
-              title="No providers found"
-              text="Try another area or request help and we will look for a provider."
+              title={labels.providersList.emptyTitle}
+              text={labels.providersList.emptyText}
             >
-              <Button label="Request service" variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} style={styles.emptyCta} />
+              <Button label={labels.categories.requestService} variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} style={styles.emptyCta} />
             </EmptyState>
           )}
           <View style={{ height: 20 }} />

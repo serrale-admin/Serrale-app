@@ -15,6 +15,7 @@
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.2.3",
     "@expo-google-fonts/inter": "^0.2.3",
+    "@expo-google-fonts/noto-sans-ethiopic": "^0.4.2",
     "@hookform/resolvers": "^3.9.1",
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-native-community/netinfo": "^11.4.1",
@@ -62,6 +63,9 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
     ]

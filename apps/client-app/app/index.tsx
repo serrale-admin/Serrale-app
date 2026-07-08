@@ -3,11 +3,13 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useLabels } from '../src/lib/labels';
 import { fonts } from '../src/lib/theme';
 
 /** Branded splash that briefly loads, then enters the app. */
 export default function Splash() {
   const router = useRouter();
+  const labels = useLabels();
 
   useEffect(() => {
     const t = setTimeout(() => router.replace('/(tabs)/home'), 1700);
@@ -20,11 +22,11 @@ export default function Splash() {
         <StatusBar style="light" />
         <View style={styles.center}>
           <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.tagline}>Trusted local services</Text>
+          <Text style={styles.tagline}>{labels.splash.tagline}</Text>
         </View>
         <View style={styles.loader}>
           <ActivityIndicator color="#F6B93B" />
-          <Text style={styles.loaderText}>Preparing your area…</Text>
+          <Text style={styles.loaderText}>{labels.splash.preparing}</Text>
         </View>
       </LinearGradient>
     </Pressable>

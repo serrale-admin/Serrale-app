@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { CATS } from '../data/mock';
 import { Icon } from '../lib/icons';
+import { useLabels } from '../lib/labels';
 import { useAppStore } from '../store/appStore';
 import { colors, fonts, radius } from '../lib/theme';
 import BottomSheet from './BottomSheet';
@@ -15,12 +16,13 @@ interface Props {
 /** Searchable service picker used by the Request form. */
 export default function CategorySheet({ visible, onClose, onSelect }: Props) {
   const { height } = useWindowDimensions();
+  const labels = useLabels();
   const am = useAppStore((s) => s.lang) === 'am';
 
   return (
     <BottomSheet visible={visible} onClose={onClose} contentStyle={{ height: height * 0.8 }}>
       <View style={styles.header}>
-        <Text style={styles.title}>What service do you need?</Text>
+        <Text style={styles.title}>{labels.request.serviceLabel}</Text>
         <Pressable style={styles.close} onPress={onClose} hitSlop={8}>
           <Icon name="ph-x" size={15} color={colors.muted} weight="bold" />
         </Pressable>

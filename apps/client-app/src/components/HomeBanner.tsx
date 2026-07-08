@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Icon } from '../lib/icons';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, layout, radius } from '../lib/theme';
 
 interface Slide {
@@ -21,31 +22,25 @@ interface Slide {
   bg: [string, string];
 }
 
-const SLIDES: Slide[] = [
-  {
-    title: 'Verified, admin-reviewed pros',
-    sub: 'Trusted local providers near you',
-    cta: 'Explore',
-    bg: ['#004C39', '#00614A'],
-  },
-  {
-    title: "Need a provider? We'll help",
-    sub: 'Post a request in under a minute',
-    cta: 'Request',
-    bg: ['#004936', '#00634B'],
-  },
-  {
-    title: 'Call or WhatsApp directly',
-    sub: 'Reach local providers instantly',
-    cta: 'Browse',
-    bg: ['#004A3A', '#006652'],
-  },
-];
-
 const artwork = require('../../assets/home-trust-banner.png');
+
+/** Fixed per-slide gradient backgrounds (localized copy is layered on at render). */
+const SLIDE_BGS: [string, string][] = [
+  ['#004C39', '#00614A'],
+  ['#004936', '#00634B'],
+  ['#004A3A', '#006652'],
+];
+const SLIDE_COUNT = SLIDE_BGS.length;
 
 /** Reference-based Home carousel with native copy over dedicated decorative artwork. */
 export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
+  const labels = useLabels();
+  const b = labels.banner;
+  const SLIDES: Slide[] = [
+    { title: b.slide1Title, sub: b.slide1Sub, cta: labels.explore, bg: SLIDE_BGS[0] },
+    { title: b.slide2Title, sub: b.slide2Sub, cta: b.slide2Cta, bg: SLIDE_BGS[1] },
+    { title: b.slide3Title, sub: b.slide3Sub, cta: b.slide3Cta, bg: SLIDE_BGS[2] },
+  ];
   const { width } = useWindowDimensions();
   const slideW = Math.min(width, layout.contentMaxWidth) - layout.gutter * 2;
   const ref = useRef<ScrollView>(null);
@@ -53,7 +48,7 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const next = (index + 1) % SLIDES.length;
+      const next = (index + 1) % SLIDE_COUNT;
       ref.current?.scrollTo({ x: next * slideW, animated: true });
       setIndex(next);
     }, 5000);
@@ -113,7 +108,7 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
             hitSlop={8}
             accessibilityRole="tab"
             accessibilityState={{ selected: index === slideIndex }}
-            accessibilityLabel={`Banner ${slideIndex + 1}`}
+            accessibilityLabel={fill(labels.a11y.banner, { n: slideIndex + 1 })}
             style={[
               styles.dot,
               {

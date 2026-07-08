@@ -10,6 +10,7 @@ import ErrorBlock from '../../src/components/ErrorBlock';
 import { useProviderActions } from '../../src/hooks/useProviderActions';
 import { useCategory, useProvider, useProviderReviews, useProviderWork } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
+import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
@@ -17,6 +18,7 @@ export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const labels = useLabels();
   const { save, call, whatsapp } = useProviderActions();
   const saved = useAppStore((s) => !!s.saved[id]);
   const showToast = useAppStore((s) => s.showToast);
@@ -42,14 +44,14 @@ export default function ProviderDetailScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topBar}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
+          <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={labels.common.back} hitSlop={6}>
             <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
           </Pressable>
         </View>
         <ErrorBlock
-          title="Couldn't load this provider"
-          text="Please check your connection and try again."
+          error={provider.error}
           onRetry={() => provider.refetch()}
+          onAction={() => router.replace({ pathname: '/auth/login', params: { next: `/provider/${id}` } })}
         />
       </SafeAreaView>
     );
@@ -58,7 +60,7 @@ export default function ProviderDetailScreen() {
   if (provider.isLoading || !pv) {
     return (
       <SafeAreaView style={[styles.safe, styles.center]} edges={['top']}>
-        <ActivityIndicator color={colors.green800} accessibilityLabel="Loading provider" />
+        <ActivityIndicator color={colors.green800} accessibilityLabel={labels.a11y.loadingProvider} />
       </SafeAreaView>
     );
   }
@@ -70,17 +72,19 @@ export default function ProviderDetailScreen() {
   // it), experience comes off the provider row, availability/past-work render
   // only when the data actually says so, WhatsApp only when a number exists.
   const facts: { label: string; icon: string }[] = [];
-  if (pv.availableToday) facts.push({ label: 'Available today', icon: 'ph-clock' });
-  if (pv.adminReviewed) facts.push({ label: 'Admin reviewed', icon: 'ph-seal-check' });
-  if (pv.exp) facts.push({ label: pv.exp + ' years experience', icon: 'ph-medal' });
-  if (pv.hasPastWork) facts.push({ label: 'Has past work', icon: 'ph-image-square' });
-  if (pv.whatsapp) facts.push({ label: 'WhatsApp available', icon: 'ph-whatsapp-logo' });
+  if (pv.availableToday) facts.push({ label: labels.provider.availableToday, icon: 'ph-clock' });
+  if (pv.adminReviewed) facts.push({ label: labels.adminReviewed, icon: 'ph-seal-check' });
+  if (pv.exp) facts.push({ label: fill(labels.provider.yearsExperience, { n: pv.exp }), icon: 'ph-medal' });
+  if (pv.hasPastWork) facts.push({ label: labels.provider.hasPastWork, icon: 'ph-image-square' });
+  if (pv.whatsapp) facts.push({ label: labels.provider.whatsappAvailable, icon: 'ph-whatsapp-logo' });
 
   // Honest about text: the provider's own bio, plus the experience line only
   // when experience is actually known. No invented "trusted by clients" claims.
   const aboutParts = [
     pv.description,
-    pv.exp ? `${pv.exp} years of hands-on experience, serving ${pv.area}.` : `Serving ${pv.area}.`,
+    pv.exp
+      ? fill(labels.provider.aboutExp, { n: pv.exp, area: pv.area })
+      : fill(labels.provider.aboutServing, { area: pv.area }),
   ].filter(Boolean);
   const about = aboutParts.join(' ');
 
@@ -90,14 +94,14 @@ export default function ProviderDetailScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
+        <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={labels.common.back} hitSlop={6}>
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable style={styles.iconBtn} onPress={() => showToast('Profile link copied', 'ph-link')} accessibilityRole="button" accessibilityLabel="Share">
+        <Pressable style={styles.iconBtn} onPress={() => showToast(labels.provider.linkCopied, 'ph-link')} accessibilityRole="button" accessibilityLabel={labels.common.share}>
           <Icon name="ph-share-network" size={19} color={colors.text} />
         </Pressable>
-        <Pressable style={styles.iconBtn} onPress={() => save(pv.id)} accessibilityRole="button" accessibilityLabel={saved ? 'Saved' : 'Save'}>
+        <Pressable style={styles.iconBtn} onPress={() => save(pv.id)} accessibilityRole="button" accessibilityLabel={saved ? labels.common.saved : labels.common.save}>
           <Icon name="ph-bookmark-simple" size={21} color={saved ? colors.gold : colors.text} weight={saved ? 'fill' : 'regular'} />
         </Pressable>
       </View>
@@ -110,14 +114,14 @@ export default function ProviderDetailScreen() {
             <Text style={styles.name}>{pv.name}</Text>
             <View style={styles.heroMeta}>
               <Text style={styles.service}>{pv.service}</Text>
-              {pv.verified && <Badge label="Verified" tone="trust" icon="ph-seal-check" />}
+              {pv.verified && <Badge label={labels.common.verified} tone="trust" icon="ph-seal-check" />}
             </View>
             <View style={styles.ratingRow}>
               {hasRating && (
                 <>
                   <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
                   <Text style={styles.ratingText}>{pv.rating.toFixed(1)}</Text>
-                  <Text style={styles.metaMuted}>· {pv.reviewCount} reviews ·</Text>
+                  <Text style={styles.metaMuted}>{fill(labels.provider.reviewsMeta, { n: pv.reviewCount })}</Text>
                 </>
               )}
               <Icon name="ph-map-pin" size={12} color={colors.muted} />
@@ -138,14 +142,14 @@ export default function ProviderDetailScreen() {
 
         {/* About */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>{labels.provider.about}</Text>
           <Text style={styles.about}>{about}</Text>
         </View>
 
         {/* Services (category coverage — no fabricated per-provider prices) */}
         {services.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Services</Text>
+            <Text style={styles.sectionTitle}>{labels.provider.services}</Text>
             <View style={styles.card}>
               {services.map((name, i) => (
                 <View key={i} style={[styles.serviceRow, i < services.length - 1 && styles.serviceDivider]}>
@@ -159,7 +163,7 @@ export default function ProviderDetailScreen() {
 
         {/* Recent work */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent work</Text>
+          <Text style={styles.sectionTitle}>{labels.pastWorkTitle}</Text>
           {work.data && work.data.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11 }}>
               {work.data.map((w, i) => (
@@ -175,17 +179,17 @@ export default function ProviderDetailScreen() {
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.noData}>No past work added yet.</Text>
+            <Text style={styles.noData}>{labels.provider.noPastWork}</Text>
           )}
         </View>
 
         {/* Reviews */}
         <View style={styles.section}>
           <View style={styles.reviewHead}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
+            <Text style={styles.sectionTitle}>{labels.provider.reviews}</Text>
             {reviews.data && reviews.data.length > 0 && (
-              <Pressable onPress={() => showToast('Showing all reviews', 'ph-chats')} hitSlop={8} accessibilityRole="button" accessibilityLabel="View all reviews">
-                <Text style={styles.viewAll}>View all</Text>
+              <Pressable onPress={() => showToast(labels.provider.showingReviews, 'ph-chats')} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.a11y.viewAllReviews}>
+                <Text style={styles.viewAll}>{labels.viewAll}</Text>
               </Pressable>
             )}
           </View>
@@ -206,7 +210,7 @@ export default function ProviderDetailScreen() {
               </View>
             ))
           ) : (
-            <Text style={styles.noData}>No reviews yet.</Text>
+            <Text style={styles.noData}>{labels.provider.noReviews}</Text>
           )}
         </View>
 
@@ -214,11 +218,11 @@ export default function ProviderDetailScreen() {
         <View style={styles.safetyCard}>
           <Icon name="ph-shield-check" size={22} color={colors.goldText} weight="fill" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.safetyTitle}>Stay safe</Text>
-            <Text style={styles.safetyText}>Agree on price, time, and work scope clearly before starting work.</Text>
-            <Pressable style={styles.reportBtn} onPress={() => showToast('Report sent to SERRALE', 'ph-flag')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Report provider">
+            <Text style={styles.safetyTitle}>{labels.provider.staySafe}</Text>
+            <Text style={styles.safetyText}>{labels.provider.safetyText}</Text>
+            <Pressable style={styles.reportBtn} onPress={() => showToast(labels.provider.reportSent, 'ph-flag')} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.provider.reportProvider}>
               <Icon name="ph-flag" size={13} color={colors.danger} />
-              <Text style={styles.reportText}>Report provider</Text>
+              <Text style={styles.reportText}>{labels.provider.reportProvider}</Text>
             </Pressable>
           </View>
         </View>
@@ -227,8 +231,8 @@ export default function ProviderDetailScreen() {
 
       {/* Sticky Call / WhatsApp bar */}
       <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
-        <Button label="Call" icon="ph-phone-call" iconWeight="fill" onPress={() => call(pv)} style={styles.stickyBtn} />
-        <Button label="WhatsApp" variant="whatsapp" icon="ph-whatsapp-logo" iconWeight="fill" onPress={() => whatsapp(pv)} style={styles.stickyBtn} />
+        <Button label={labels.common.call} icon="ph-phone-call" iconWeight="fill" onPress={() => call(pv)} style={styles.stickyBtn} />
+        <Button label={labels.common.whatsapp} variant="whatsapp" icon="ph-whatsapp-logo" iconWeight="fill" onPress={() => whatsapp(pv)} style={styles.stickyBtn} />
       </View>
     </SafeAreaView>
   );

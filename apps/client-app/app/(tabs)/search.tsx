@@ -10,7 +10,7 @@ import PromoBanner from '../../src/components/PromoBanner';
 import { CATS } from '../../src/data/mock';
 import { useCategories } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
-import { useLabels } from '../../src/lib/labels';
+import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 import type { Category } from '../../src/types';
@@ -118,7 +118,7 @@ export default function CategoriesScreen() {
               </Pressable>
             )}
           </View>
-          <Pressable style={styles.filterBtn} onPress={() => inputRef.current?.focus()} accessibilityLabel="Filter categories">
+          <Pressable style={styles.filterBtn} onPress={() => inputRef.current?.focus()} accessibilityLabel={labels.a11y.filterCategories}>
             <Icon name="ph-sliders-horizontal" size={19} color={colors.green800} weight="bold" />
           </Pressable>
         </View>
@@ -190,7 +190,7 @@ export default function CategoriesScreen() {
             </View>
           ))}
           {list.length === 0 && (
-            <Text style={styles.empty}>No categories match “{query}”.</Text>
+            <Text style={styles.empty}>{fill(labels.search.noMatch, { q: query })}</Text>
           )}
         </View>
       </ScrollView>

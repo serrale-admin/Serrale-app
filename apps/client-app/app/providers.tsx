@@ -18,6 +18,7 @@ import { useProviders } from '../src/hooks/queries';
 import { useSearchSuggest } from '../src/hooks/useSearchSuggest';
 import { AREA_ALL } from '../src/data/mock';
 import { Icon } from '../src/lib/icons';
+import { fill, useLabels } from '../src/lib/labels';
 import { colors, fonts, radius } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
@@ -32,6 +33,7 @@ import { useAppStore } from '../src/store/appStore';
  */
 export default function ProvidersScreen() {
   const router = useRouter();
+  const labels = useLabels();
   const params = useLocalSearchParams<{ q?: string; categoryId?: string }>();
   const area = useAppStore((s) => s.area);
   const setArea = useAppStore((s) => s.setArea);
@@ -55,7 +57,9 @@ export default function ProvidersScreen() {
   const providers = useProviders(query);
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? 0;
-  const suffix = submitted ? ` for "${submitted}"` : ` near ${area}`;
+  const suffix = submitted
+    ? fill(labels.providersList.suffixFor, { q: submitted })
+    : fill(labels.providersList.suffixNear, { area });
 
   // Suggestions show while the input differs from the committed query.
   const assist = useSearchSuggest(search);
@@ -79,9 +83,9 @@ export default function ProvidersScreen() {
   };
 
   const suggestionA11y = (s: SearchSuggestion): string => {
-    const count = typeof s.providerCount === 'number' ? `, ${s.providerCount} providers` : '';
-    if (s.type === 'fallback_request_help') return `${s.label}. Opens the service request form`;
-    return `Search suggestion: ${s.label}${count}`;
+    const count = typeof s.providerCount === 'number' ? fill(labels.providersList.suggestCount, { n: s.providerCount }) : '';
+    if (s.type === 'fallback_request_help') return fill(labels.providersList.suggestOpensRequest, { label: s.label });
+    return fill(labels.providersList.suggestSearch, { label: s.label, count });
   };
 
   const nearOn = filters.areas[0] === area;
@@ -91,7 +95,7 @@ export default function ProvidersScreen() {
       {/* Search field with back */}
       <View style={styles.headerWrap}>
         <View style={styles.searchRow}>
-          <Pressable style={styles.back} onPress={() => router.back()} hitSlop={8} accessibilityLabel="Back">
+          <Pressable style={styles.back} onPress={() => router.back()} hitSlop={8} accessibilityLabel={labels.common.back}>
             <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
           </Pressable>
           <TextField
@@ -100,11 +104,11 @@ export default function ProvidersScreen() {
             onChangeText={setSearch}
             onClear={() => commit('')}
             onSubmitEditing={() => commit(search.trim())}
-            placeholder="Search plumber, painter, nanny…"
+            placeholder={labels.searchPlaceholder}
             autoFocus={!search}
             returnKeyType="search"
             containerStyle={styles.field}
-            accessibilityLabel="Search providers"
+            accessibilityLabel={labels.a11y.searchProviders}
           />
         </View>
         <View style={styles.filterRow}>
@@ -113,9 +117,9 @@ export default function ProvidersScreen() {
             <Text style={styles.softChipText}>{area}</Text>
             <Icon name="ph-caret-down" size={10} color={colors.muted} weight="bold" />
           </Pressable>
-          <Pressable style={styles.softChip} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel="Filters">
+          <Pressable style={styles.softChip} onPress={() => setShowFilter(true)} accessibilityRole="button" accessibilityLabel={labels.common.filters}>
             <Icon name="ph-sliders-horizontal" size={14} color={colors.green800} weight="bold" />
-            <Text style={[styles.softChipText, { color: colors.green800 }]}>Filter</Text>
+            <Text style={[styles.softChipText, { color: colors.green800 }]}>{labels.common.filter}</Text>
             {filterCount > 0 && <Badge label={filterCount} tone="count" />}
           </Pressable>
         </View>
@@ -123,11 +127,11 @@ export default function ProvidersScreen() {
 
       {/* Search assistance */}
       {assistOpen && (assist.loading || assist.suggestions.length > 0) && (
-        <View style={styles.assistCard} accessibilityLabel="Search suggestions">
+        <View style={styles.assistCard} accessibilityLabel={labels.a11y.searchSuggestions}>
           {assist.loading && assist.suggestions.length === 0 && (
             <View style={styles.assistLoading}>
-              <ActivityIndicator size="small" color={colors.green800} accessibilityLabel="Loading suggestions" />
-              <Text style={styles.assistLoadingText}>Searching…</Text>
+              <ActivityIndicator size="small" color={colors.green800} accessibilityLabel={labels.a11y.loadingSuggestions} />
+              <Text style={styles.assistLoadingText}>{labels.providersList.searching}</Text>
             </View>
           )}
           {assist.suggestions.map((s, i) => (
@@ -159,11 +163,11 @@ export default function ProvidersScreen() {
       {/* Count + quick chips */}
       <View style={styles.countWrap}>
         <Text style={styles.count}>
-          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> providers{suffix}
+          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> {labels.providersWord}{suffix}
         </Text>
         {area !== AREA_ALL && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
-            <Chip label={`Near me (${area})`} iconName="ph-map-pin" active={nearOn} height={30} onPress={() => toggleQuick('near')} />
+            <Chip label={fill(labels.providersList.nearMe, { area })} iconName="ph-map-pin" active={nearOn} height={30} onPress={() => toggleQuick('near')} />
           </ScrollView>
         )}
       </View>
@@ -175,9 +179,9 @@ export default function ProvidersScreen() {
         </View>
       ) : providers.isError ? (
         <ErrorBlock
-          title="Couldn't load providers"
-          text="Please check your connection and try again."
+          error={providers.error}
           onRetry={() => providers.refetch()}
+          onAction={() => router.replace({ pathname: '/auth/login', params: { next: '/providers' } })}
         />
       ) : (
         <ScrollView contentContainerStyle={styles.results} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -186,12 +190,12 @@ export default function ProvidersScreen() {
             <EmptyState
               icon="ph-magnifying-glass"
               circle={colors.soft}
-              title="No providers found yet"
-              text="Try another area or request help and we will look for a provider."
+              title={labels.providersList.emptyTitleYet}
+              text={labels.providersList.emptyText}
             >
               <View style={styles.emptyActions}>
-                <Button label="Change filters" variant="secondary" size="sm" onPress={() => setShowFilter(true)} />
-                <Button label="Request service" variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} />
+                <Button label={labels.providersList.changeFilters} variant="secondary" size="sm" onPress={() => setShowFilter(true)} />
+                <Button label={labels.categories.requestService} variant="gold" size="sm" onPress={() => router.push('/(tabs)/request')} />
               </View>
             </EmptyState>
           )}

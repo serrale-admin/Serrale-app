@@ -1,6 +1,7 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
 import { Icon } from '../lib/icons';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import { useContactStore } from '../store/contactStore';
@@ -11,6 +12,8 @@ const waDigits = (phone: string) => phone.replace(/[^0-9]/g, '');
 /** Global Call / WhatsApp confirmation sheets, driven by the contact store. */
 export default function ContactSheets() {
   const { mode, provider, close } = useContactStore();
+  const labels = useLabels();
+  const t = labels.contact;
   const showToast = useAppStore((s) => s.showToast);
   const userArea = useAppStore((s) => s.area);
 
@@ -27,21 +30,21 @@ export default function ContactSheets() {
     logContact('phone_click');
     Linking.openURL(`tel:${provider.phone}`).catch(() => {});
     close();
-    showToast(`Calling ${provider.name}…`, 'ph-phone-call');
+    showToast(fill(t.calling, { name: provider.name }), 'ph-phone-call');
   };
 
   const onWhatsapp = () => {
     if (!provider) return;
     logContact('whatsapp_click');
-    const msg = `Hello, I found your service on SERRALE. I need help with ${provider.service.toLowerCase()}. Are you available?`;
+    const msg = fill(t.waMessage, { service: provider.service.toLowerCase() });
     const url = `whatsapp://send?phone=${waDigits(provider.phone)}&text=${encodeURIComponent(msg)}`;
     Linking.openURL(url).catch(() => {});
     close();
-    showToast('Opening WhatsApp…', 'ph-whatsapp-logo');
+    showToast(t.openingWhatsapp, 'ph-whatsapp-logo');
   };
 
   const waMessage = provider
-    ? `Hello, I found your service on SERRALE. I need help with ${provider.service.toLowerCase()}. Are you available?`
+    ? fill(t.waMessage, { service: provider.service.toLowerCase() })
     : '';
 
   return (
@@ -52,16 +55,16 @@ export default function ContactSheets() {
             <Icon name="ph-phone-call" size={24} color="#fff" weight="fill" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Call {provider?.name}?</Text>
+            <Text style={styles.title}>{fill(t.callTitle, { name: provider?.name ?? '' })}</Text>
             <Text style={styles.sub}>{provider?.phone}</Text>
           </View>
         </View>
         <Pressable style={[styles.primary, { backgroundColor: colors.green800 }]} onPress={onCall}>
           <Icon name="ph-phone-call" size={18} color="#fff" weight="fill" />
-          <Text style={styles.primaryText}>Call now</Text>
+          <Text style={styles.primaryText}>{t.callNow}</Text>
         </Pressable>
         <Pressable style={styles.cancel} onPress={close}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.cancelText}>{labels.common.cancel}</Text>
         </Pressable>
       </BottomSheet>
 
@@ -71,8 +74,8 @@ export default function ContactSheets() {
             <Icon name="ph-whatsapp-logo" size={26} color={colors.whatsapp} weight="fill" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Message {provider?.name}</Text>
-            <Text style={styles.sub}>on WhatsApp</Text>
+            <Text style={styles.title}>{fill(t.messageTitle, { name: provider?.name ?? '' })}</Text>
+            <Text style={styles.sub}>{t.onWhatsapp}</Text>
           </View>
         </View>
         <View style={styles.quote}>
@@ -80,10 +83,10 @@ export default function ContactSheets() {
         </View>
         <Pressable style={[styles.primary, { backgroundColor: colors.whatsapp }]} onPress={onWhatsapp}>
           <Icon name="ph-whatsapp-logo" size={19} color="#fff" weight="fill" />
-          <Text style={styles.primaryText}>Open WhatsApp</Text>
+          <Text style={styles.primaryText}>{t.openWhatsapp}</Text>
         </Pressable>
         <Pressable style={styles.cancel} onPress={close}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.cancelText}>{labels.common.cancel}</Text>
         </Pressable>
       </BottomSheet>
     </>

@@ -4,25 +4,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../src/components/Card';
 import ListRow from '../src/components/ListRow';
 import ScreenHeader from '../src/components/ScreenHeader';
+import { useLabels } from '../src/lib/labels';
 import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
 
 export default function HelpScreen() {
   const router = useRouter();
+  const labels = useLabels();
+  const t = labels.help;
   const showToast = useAppStore((s) => s.showToast);
 
   const rows = [
-    { label: 'Call SERRALE support', sub: '+251 11 000 0000', icon: 'ph-phone-call', onPress: () => showToast('Calling SERRALE support…', 'ph-phone-call') },
-    { label: 'WhatsApp support', sub: 'Chat with our team', icon: 'ph-whatsapp-logo', onPress: () => showToast('Opening WhatsApp…', 'ph-whatsapp-logo') },
-    { label: 'Frequently asked questions', sub: 'Common questions', icon: 'ph-question', onPress: () => showToast('Opening FAQ…', 'ph-question') },
-    { label: 'Safety tips', sub: 'Stay safe with SERRALE', icon: 'ph-shield-check', onPress: () => router.push('/safety') },
-    { label: 'Report an issue', sub: 'Tell us what went wrong', icon: 'ph-flag', onPress: () => showToast('Report form opening…', 'ph-flag') },
-    { label: 'Telegram community', sub: 'Join the community', icon: 'ph-telegram-logo', onPress: () => showToast('Opening Telegram…', 'ph-telegram-logo') },
+    { label: t.callSupport, sub: '+251 11 000 0000', icon: 'ph-phone-call', onPress: () => showToast(t.callingSupport, 'ph-phone-call') },
+    { label: t.whatsappSupport, sub: t.chatWithTeam, icon: 'ph-whatsapp-logo', onPress: () => showToast(labels.contact.openingWhatsapp, 'ph-whatsapp-logo') },
+    { label: t.faq, sub: t.commonQuestions, icon: 'ph-question', onPress: () => showToast(t.openingFaq, 'ph-question') },
+    { label: labels.common.safetyTips, sub: labels.safetyTitle, icon: 'ph-shield-check', onPress: () => router.push('/safety') },
+    { label: t.reportIssue, sub: t.reportIssueSub, icon: 'ph-flag', onPress: () => showToast(t.openingReport, 'ph-flag') },
+    { label: t.telegram, sub: t.joinCommunity, icon: 'ph-telegram-logo', onPress: () => showToast(t.openingTelegram, 'ph-telegram-logo') },
   ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Help & Support" />
+      <ScreenHeader title={labels.common.helpSupport} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <Card variant="group">
           {rows.map((r, i) => (

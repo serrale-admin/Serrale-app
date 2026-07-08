@@ -6,11 +6,13 @@ import Medallion from '../../src/components/Medallion';
 import { useCategoryGroups } from '../../src/hooks/queries';
 import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
+import { useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
 export default function CategoriesScreen() {
   const router = useRouter();
+  const labels = useLabels();
   const am = useAppStore((s) => s.lang) === 'am';
   const [query, setQuery] = useState('');
   const groups = useCategoryGroups(query);
@@ -18,16 +20,16 @@ export default function CategoriesScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={6} accessibilityLabel="Back">
+        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={6} accessibilityLabel={labels.common.back}>
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
         </Pressable>
-        <Text style={styles.h1}>Categories</Text>
+        <Text style={styles.h1}>{labels.categories.title}</Text>
         <View style={styles.searchField}>
           <Icon name="ph-magnifying-glass" size={18} color={colors.muted} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search services"
+            placeholder={labels.categoriesIndex.searchServices}
             placeholderTextColor={colors.faint}
             style={styles.input}
           />
@@ -52,7 +54,7 @@ export default function CategoriesScreen() {
                     </Text>
                     <View style={styles.cardMeta}>
                       <Icon name="ph-users-three" size={12} color={colors.success} weight="fill" />
-                      <Text style={styles.cardCount}>{fmt(c.count)} providers</Text>
+                      <Text style={styles.cardCount}>{fmt(c.count)} {labels.providersWord}</Text>
                     </View>
                   </View>
                 </Pressable>

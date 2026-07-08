@@ -59,6 +59,21 @@ export const fonts = {
   bold: 'Inter_700Bold',
 } as const;
 
+/**
+ * Ethiopic-capable font families (Noto Sans Ethiopic) loaded alongside Inter in
+ * `app/_layout.tsx`. Inter carries NO Ethiopic (Ge'ez) glyphs, so bundling this
+ * family guarantees Amharic renders consistently — most critically on the web
+ * export and any device whose OS lacks a system Ethiopic font. Weight names
+ * mirror `fonts` so `ethiopicFonts[weight]` is a drop-in swap for Amharic text.
+ */
+export const ethiopicFonts = {
+  heading: 'NotoSansEthiopic_700Bold',
+  regular: 'NotoSansEthiopic_400Regular',
+  medium: 'NotoSansEthiopic_500Medium',
+  semibold: 'NotoSansEthiopic_600SemiBold',
+  bold: 'NotoSansEthiopic_700Bold',
+} as const;
+
 export const radius = {
   sm: 6,
   md: 9,

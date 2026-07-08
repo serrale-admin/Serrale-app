@@ -13,7 +13,7 @@ import SectionHeader from '../../src/components/SectionHeader';
 import { AREA_ALL, CATS, PASTWORK, PROV } from '../../src/data/mock';
 import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
-import { useLabels } from '../../src/lib/labels';
+import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, layout, radius } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
@@ -80,7 +80,7 @@ export default function HomeScreen() {
               onPress={() => setShowLocation(true)}
               hitSlop={4}
               accessibilityRole="button"
-              accessibilityLabel={`Location, ${area}`}
+              accessibilityLabel={fill(labels.a11y.location, { area })}
             >
               <Icon name="ph-map-pin" size={15} color={colors.green700} weight="fill" />
               <Text style={styles.locationText} numberOfLines={1}>
@@ -93,7 +93,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/bookmarks')}
               hitSlop={2}
               accessibilityRole="button"
-              accessibilityLabel="Saved providers"
+              accessibilityLabel={labels.common.savedProviders}
             >
               <Icon name="ph-bookmark-simple" size={21} color={colors.green900} />
             </Pressable>
@@ -118,7 +118,7 @@ export default function HomeScreen() {
                 }}
                 hitSlop={2}
                 accessibilityRole="button"
-                accessibilityLabel="Filters"
+                accessibilityLabel={labels.common.filters}
               >
                 <Icon name="ph-sliders-horizontal" size={19} color={colors.green800} weight="bold" />
               </Pressable>
@@ -161,7 +161,7 @@ export default function HomeScreen() {
             {!nearby.isLoading && nearbyProviders.length === 0 && (
               <Pressable style={styles.inlineEmpty} onPress={() => router.push('/providers')}>
                 <Icon name="ph-map-pin" size={18} color={colors.green700} weight="fill" />
-                <Text style={styles.inlineEmptyText}>Browse providers near {area}</Text>
+                <Text style={styles.inlineEmptyText}>{fill(labels.home.browseNear, { area })}</Text>
                 <Icon name="ph-caret-right" size={12} color={colors.green800} weight="bold" />
               </Pressable>
             )}

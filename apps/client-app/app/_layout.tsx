@@ -4,6 +4,12 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import {
+  NotoSansEthiopic_400Regular,
+  NotoSansEthiopic_500Medium,
+  NotoSansEthiopic_600SemiBold,
+  NotoSansEthiopic_700Bold,
+} from '@expo-google-fonts/noto-sans-ethiopic';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import Constants from 'expo-constants';
@@ -12,6 +18,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { segmentsToRouteTemplate, setCurrentRoute } from '../src/lib/http';
+import { applyAmharicFontPatch } from '../src/lib/amharic-font';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -33,6 +40,10 @@ const APP_VERSION =
 // real crash provider is wired at T12; safe to call now.
 getCrashReporter().setRelease(APP_VERSION);
 
+// Route all Amharic text through the bundled Ethiopic font (no-op while lang=en).
+// Installed here so it lives only in the real app + web export, never the tests.
+applyAmharicFontPatch();
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
@@ -41,6 +52,11 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // Ethiopic (Ge'ez) coverage for Amharic — Inter has none. See theme.ethiopicFonts.
+    NotoSansEthiopic_400Regular,
+    NotoSansEthiopic_500Medium,
+    NotoSansEthiopic_600SemiBold,
+    NotoSansEthiopic_700Bold,
   });
 
   // Unresolved file-path segments (e.g. ['provider', '[id]']) — NOT the

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AREAS } from '../data/mock';
 import { Icon } from '../lib/icons';
+import { useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
 import BottomSheet from './BottomSheet';
 
@@ -13,10 +14,11 @@ interface Props {
 
 /** Area picker bottom sheet (used for global location and request area). */
 export default function LocationSheet({ visible, onClose, value, onSelect }: Props) {
+  const labels = useLabels();
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <View style={styles.header}>
-        <Text style={styles.title}>Choose area</Text>
+        <Text style={styles.title}>{labels.location.title}</Text>
         <Pressable style={styles.close} onPress={onClose} hitSlop={8}>
           <Icon name="ph-x" size={15} color={colors.muted} weight="bold" />
         </Pressable>

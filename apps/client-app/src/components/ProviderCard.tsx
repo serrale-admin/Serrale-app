@@ -2,6 +2,7 @@ import type { GestureResponderEvent } from 'react-native';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useProviderActions } from '../hooks/useProviderActions';
 import { Icon } from '../lib/icons';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
 import type { Provider } from '../types';
 import Avatar from './Avatar';
@@ -18,14 +19,15 @@ interface Props {
 /** Compact provider cards based on the supplied Serrale app references. */
 export default function ProviderCard({ provider: p, variant = 'nearby', style }: Props) {
   const { open, call, whatsapp } = useProviderActions();
+  const labels = useLabels();
   const trusted = p.verified || p.adminReviewed;
   // Rating chrome renders only when review data actually exists (demo/mock).
   // Live rows carry no ratings (contract matrix M-3) — show the provider's area
   // instead, keeping the meta row informative without fabricating stars.
   const hasRating = p.reviewCount > 0 && p.rating > 0;
   const a11y = hasRating
-    ? `${p.name}, ${p.service}, rated ${p.rating.toFixed(1)}`
-    : `${p.name}, ${p.service}, ${p.area}`;
+    ? fill(labels.provider.a11yRated, { name: p.name, service: p.service, rating: p.rating.toFixed(1) })
+    : fill(labels.provider.a11yArea, { name: p.name, service: p.service, area: p.area });
 
   const runAction = (event: GestureResponderEvent, action: () => void) => {
     event.stopPropagation();
@@ -60,7 +62,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
           {metaRow}
         </View>
         {trusted && (
-          <View style={styles.verifiedSeal} accessibilityLabel="Verified provider">
+          <View style={styles.verifiedSeal} accessibilityLabel={labels.a11y.verifiedProvider}>
             <Icon name="ph-shield-check" size={12} color="#fff" weight="fill" />
           </View>
         )}
@@ -78,7 +80,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
       <View style={styles.avatarWrap}>
         <Avatar name={p.name} size={58} radius={29} fontSize={17} imageUrl={p.imageUrl} />
         {trusted && (
-          <View style={styles.seal} accessibilityLabel="Verified provider">
+          <View style={styles.seal} accessibilityLabel={labels.a11y.verifiedProvider}>
             <Icon name="ph-seal-check" size={13} color="#fff" weight="fill" />
           </View>
         )}
@@ -90,14 +92,14 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
         <Pressable
           style={({ pressed }) => [styles.callButton, pressed && styles.actionPressed]}
           onPress={(event) => runAction(event, () => call(p))}
-          accessibilityLabel={`Call ${p.name}`}
+          accessibilityLabel={fill(labels.a11y.callProvider, { name: p.name })}
         >
           <Icon name="ph-phone-call" size={16} color={colors.green800} weight="fill" />
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.whatsappButton, pressed && styles.actionPressed]}
           onPress={(event) => runAction(event, () => whatsapp(p))}
-          accessibilityLabel={`WhatsApp ${p.name}`}
+          accessibilityLabel={fill(labels.a11y.whatsappProvider, { name: p.name })}
         >
           <Icon name="ph-whatsapp-logo" size={17} color="#fff" weight="fill" />
         </Pressable>

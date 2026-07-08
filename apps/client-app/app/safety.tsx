@@ -3,19 +3,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../src/components/Card';
 import ScreenHeader from '../src/components/ScreenHeader';
 import { Icon } from '../src/lib/icons';
+import { useLabels } from '../src/lib/labels';
 import { colors, fonts } from '../src/lib/theme';
 
-const TIPS = [
-  { title: 'Agree on terms first', text: 'Agree on price, time, and work scope clearly before any work begins.', icon: 'ph-handshake' },
-  { title: 'Prefer trust signals', text: 'Choose verified and admin-reviewed providers with visible past work.', icon: 'ph-seal-check' },
-  { title: 'Meet safely', text: 'Confirm the location and keep initial contact within SERRALE.', icon: 'ph-map-pin' },
-  { title: 'Keep records', text: 'Save the provider profile and the details you agreed on.', icon: 'ph-note' },
-];
-
 export default function SafetyScreen() {
+  const labels = useLabels();
+  const t = labels.safety;
+  const TIPS = [
+    { title: t.tip1Title, text: t.tip1Text, icon: 'ph-handshake' },
+    { title: t.tip2Title, text: t.tip2Text, icon: 'ph-seal-check' },
+    { title: t.tip3Title, text: t.tip3Text, icon: 'ph-map-pin' },
+    { title: t.tip4Title, text: t.tip4Text, icon: 'ph-note' },
+  ];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Safety tips" />
+      <ScreenHeader title={labels.common.safetyTips} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {TIPS.map((t, i) => (
           <Card key={i} style={styles.card}>

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { AREA_ALL, AREAS } from '../data/mock';
 import { useProviders } from '../hooks/queries';
+import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 import type { ProviderQuery } from '../types';
@@ -28,6 +29,7 @@ const AREA_OPTIONS = AREAS.filter((a) => a !== AREA_ALL);
  */
 export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Props) {
   const { height } = useWindowDimensions();
+  const labels = useLabels();
   const filters = useAppStore((s) => s.filters);
   const selectAreaFilter = useAppStore((s) => s.selectAreaFilter);
   const resetFilters = useAppStore((s) => s.resetFilters);
@@ -42,17 +44,17 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
           <View style={styles.handle} />
         </View>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Filters</Text>
+          <Text style={styles.title}>{labels.common.filters}</Text>
           <Pressable onPress={resetFilters} hitSlop={8}>
-            <Text style={styles.reset}>Reset</Text>
+            <Text style={styles.reset}>{labels.common.reset}</Text>
           </Pressable>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={{ marginBottom: 20 }}>
-          <Text style={styles.secTitle}>Location</Text>
-          <Text style={styles.secHint}>Pick one area, or none for all of Addis Ababa.</Text>
+          <Text style={styles.secTitle}>{labels.filter.location}</Text>
+          <Text style={styles.secHint}>{labels.filter.locationHint}</Text>
           <View style={styles.chips}>
             {AREA_OPTIONS.map((o) => (
               <Chip
@@ -68,8 +70,8 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Clear" variant="secondary" onPress={resetFilters} style={styles.clear} />
-        <Button label={liveCount.isLoading ? 'Loading…' : `Show ${count} providers`} onPress={onApply} style={styles.apply} />
+        <Button label={labels.common.clear} variant="secondary" onPress={resetFilters} style={styles.clear} />
+        <Button label={liveCount.isLoading ? labels.common.loading : fill(labels.filter.showCount, { count })} onPress={onApply} style={styles.apply} />
       </View>
     </BottomSheet>
   );

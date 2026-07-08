@@ -4,12 +4,13 @@ import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
 import Button from '../../src/components/Button';
 import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
-import { formatRetryMessage, newIdempotencyKey, retryInfoFromError } from '../../src/lib/otp-retry';
+import { presentError } from '../../src/lib/error-presentation';
+import { useLabels } from '../../src/lib/labels';
+import { newIdempotencyKey } from '../../src/lib/otp-retry';
 import { normalizeEthiopianPhone } from '../../src/lib/phone';
 import { colors, fonts, radius } from '../../src/lib/theme';
 import { PhoneForm, phoneSchema } from '../../src/schemas/auth';
@@ -22,6 +23,7 @@ export default function LoginScreen() {
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
   const showToast = useAppStore((s) => s.showToast);
   const requestOtp = useRequestOtp();
+  const labels = useLabels();
   // Synchronous in-flight guard. `requestOtp.isPending` flips on the NEXT render,
   // so within one synchronous burst of taps it is still false — a ref flipped
   // immediately is what actually collapses N rapid taps into a single send.
@@ -33,7 +35,9 @@ export default function LoginScreen() {
     mode: 'onSubmit',
   });
   const phone = watch('phone');
-  const error = formState.errors.phone?.message;
+  // The zod schema carries the canonical English validation contract; the screen
+  // renders the localized copy for the one phone-shape error it can produce.
+  const phoneError = formState.errors.phone ? labels.auth.invalidPhone : undefined;
 
   const onSend = handleSubmit((v) => {
     // One logical send per user action: ignore duplicate taps while a send is
@@ -52,17 +56,7 @@ export default function LoginScreen() {
           router.replace({ pathname: '/auth/verify', params: { next: params.next } });
         },
         onError: (e) => {
-          const message =
-            e instanceof NetworkError
-              ? "Couldn't reach SERRALE. Check your internet and try again."
-              : e instanceof HttpError && e.status === 429
-                ? formatRetryMessage(retryInfoFromError(e))
-                : e instanceof ApiBusinessError
-                  ? e.message
-                  : e instanceof Error
-                    ? e.message
-                    : 'Could not send code. Please try again.';
-          showToast(message, 'ph-warning-circle');
+          showToast(presentError(e, labels).message, 'ph-warning-circle');
         },
         onSettled: () => {
           sending.current = false;
@@ -83,9 +77,9 @@ export default function LoginScreen() {
         <View style={styles.iconBox}>
           <Icon name="ph-phone" size={26} color="#fff" weight="fill" />
         </View>
-        <Text style={styles.h1}>Log in with phone</Text>
+        <Text style={styles.h1}>{labels.common.loginWithPhone}</Text>
         <Text style={styles.subtitle}>
-          {params.reason ? params.reason + '. ' : ''}Use your Ethiopian phone number to continue. We'll send a verification code by SMS.
+          {params.reason ? params.reason + '. ' : ''}{labels.auth.loginSubtitle}
         </Text>
 
         <View style={styles.inputRow}>
@@ -102,24 +96,20 @@ export default function LoginScreen() {
             inputMode="numeric"
             placeholder="9 12 345 678"
             placeholderTextColor={colors.faint}
-            style={[styles.input, { borderColor: error ? colors.danger : colors.borderField }]}
+            style={[styles.input, { borderColor: phoneError ? colors.danger : colors.borderField }]}
           />
         </View>
-        {!!error && (
+        {!!phoneError && (
           <View style={styles.errorRow}>
             <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorText}>{phoneError}</Text>
           </View>
         )}
-        {requestOtp.error instanceof Error && !error && (
+        {requestOtp.error && !phoneError && (
           <View style={styles.errorRow}>
             <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
             <Text style={styles.errorText}>
-              {requestOtp.error instanceof NetworkError
-                ? "Couldn't reach SERRALE. Check your internet and try again."
-                : requestOtp.error instanceof HttpError && requestOtp.error.status === 429
-                  ? formatRetryMessage(retryInfoFromError(requestOtp.error))
-                  : requestOtp.error.message}
+              {presentError(requestOtp.error, labels).message}
             </Text>
           </View>
         )}
@@ -127,13 +117,13 @@ export default function LoginScreen() {
 
       <View style={styles.footer}>
         <Button
-          label={requestOtp.isPending ? 'Sending…' : 'Send code'}
+          label={requestOtp.isPending ? labels.auth.sending : labels.auth.sendCode}
           loading={requestOtp.isPending}
           fullWidth
           onPress={onSend}
         />
         <Pressable style={styles.guest} onPress={() => router.replace('/(tabs)/home')} accessibilityRole="button">
-          <Text style={styles.guestText}>Continue as guest</Text>
+          <Text style={styles.guestText}>{labels.auth.continueAsGuest}</Text>
         </Pressable>
       </View>
       </KeyboardAvoidingView>

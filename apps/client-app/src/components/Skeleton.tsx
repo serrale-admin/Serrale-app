@@ -1,4 +1,5 @@
 import { DimensionValue, StyleSheet, View, ViewStyle } from 'react-native';
+import { useLabels } from '../lib/labels';
 import { colors, radius, shadowCard } from '../lib/theme';
 
 interface SkeletonProps {
@@ -29,8 +30,9 @@ export function SkeletonProviderRow() {
 
 /** A vertical stack of provider placeholders for list loading states. */
 export function SkeletonProviderList({ count = 5 }: { count?: number }) {
+  const labels = useLabels();
   return (
-    <View style={styles.list} accessibilityLabel="Loading providers" accessibilityRole="progressbar">
+    <View style={styles.list} accessibilityLabel={labels.a11y.loadingProviders} accessibilityRole="progressbar">
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonProviderRow key={i} />
       ))}

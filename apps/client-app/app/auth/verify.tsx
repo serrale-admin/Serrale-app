@@ -2,14 +2,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ApiBusinessError, HttpError, NetworkError } from '../../src/api';
+import { HttpError } from '../../src/api';
 import Button from '../../src/components/Button';
 import OtpInput from '../../src/components/OtpInput';
 import ScreenHeader from '../../src/components/ScreenHeader';
 import { useRequestOtp, useVerifyOtp } from '../../src/hooks/queries';
 import { USE_MOCK } from '../../src/lib/env';
+import { presentError } from '../../src/lib/error-presentation';
 import { Icon } from '../../src/lib/icons';
-import { DEFAULT_RESEND_COOLDOWN_SECONDS, formatRetryMessage, newIdempotencyKey, retryInfoFromError } from '../../src/lib/otp-retry';
+import { fill, useLabels } from '../../src/lib/labels';
+import { DEFAULT_RESEND_COOLDOWN_SECONDS, newIdempotencyKey, retryInfoFromError } from '../../src/lib/otp-retry';
 import { displayEthiopianPhone } from '../../src/lib/phone';
 import { safeNextRoute } from '../../src/lib/safe-route';
 import { colors, fonts } from '../../src/lib/theme';
@@ -30,6 +32,7 @@ export default function VerifyScreen() {
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
   const requestOtp = useRequestOtp();
   const verifyMutation = useVerifyOtp();
+  const labels = useLabels();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -57,20 +60,20 @@ export default function VerifyScreen() {
 
   useEffect(() => {
     if (!challengeId || !phone) {
-      showToast('Enter your phone again to receive a code', 'ph-warning-circle');
+      showToast(labels.verify.reenterPhone, 'ph-warning-circle');
       router.replace({ pathname: '/auth/login', params: { next: params.next } });
       return;
     }
     const t = setInterval(() => setResend((r) => (r <= 1 ? 0 : r - 1)), 1000);
     return () => clearInterval(t);
-  }, [challengeId, phone, params.next, router, showToast]);
+  }, [challengeId, phone, params.next, router, showToast, labels.verify.reenterPhone]);
 
   // Readable local (national) form, e.g. "0912 345 678" — what Ethiopians dial.
   const phoneDisplay = phone ? displayEthiopianPhone(phone) : '09XX XXX XXX';
 
   const submit = (code: string[]) => {
     if (code.some((d) => d === '')) {
-      setError('Enter the 6-digit code.');
+      setError(labels.verify.enterCode);
       return;
     }
     // One verify per submission — block duplicate taps and the auto-submit
@@ -87,7 +90,7 @@ export default function VerifyScreen() {
           try {
             const { handleExchange } = require('../../src/lib/session-manager');
             await handleExchange(phone, result.verifyToken);
-            showToast('Welcome to SERRALE', 'ph-hand-waving');
+            showToast(labels.common.welcomeToSerrale, 'ph-hand-waving');
             // Validate `next` to an internal route only — never navigate to an
             // arbitrary/external URL smuggled through the login→verify chain.
             router.replace(safeNextRoute(params.next) as never);
@@ -99,11 +102,11 @@ export default function VerifyScreen() {
             const code = e instanceof HttpError ? e.code : undefined;
             if (code === 'SESSION_STORE_UNAVAILABLE' || (e instanceof HttpError && e.status === 503)) {
               setOtp(['', '', '', '', '', '']);
-              setError('Temporary server session issue. Please try again in a moment.');
+              setError(labels.verify.tempSession);
               setTimeout(() => inputs.current[0]?.focus(), 50);
               return;
             }
-            goReRequest('Your verification expired. Please request a new code.');
+            goReRequest(labels.verify.expiredReRequest);
           }
         },
         onError: (e) => {
@@ -111,21 +114,17 @@ export default function VerifyScreen() {
           // A dead challenge (expired / already used / too many attempts) cannot
           // be retyped — route back to request a fresh code.
           if (code && DEAD_CHALLENGE_CODES.has(code)) {
-            goReRequest('That code expired. Please request a new one.');
+            goReRequest(labels.verify.codeExpired);
             return;
           }
           // Everything else stays on-screen. Generic, security-safe copy: never
           // reveal whether the phone is registered or why the code failed.
           const message =
-            e instanceof NetworkError
-              ? "Couldn't reach SERRALE. Check your internet and try again."
-              : e instanceof HttpError && e.status === 429
-                ? formatRetryMessage(retryInfoFromError(e))
-                : e instanceof HttpError && (e.status === 401 || e.status === 400)
-                  ? 'That code is incorrect. Please check the SMS and try again.'
-                  : e instanceof ApiBusinessError
-                    ? 'That code is incorrect. Please check the SMS and try again.'
-                    : 'That code is incorrect. Please check the SMS and try again.';
+            e instanceof HttpError && e.status === 429
+              ? presentError(e, labels).message
+              : e instanceof HttpError && (e.status === 401 || e.status === 400)
+                  ? labels.verify.incorrectCode
+                  : presentError(e, labels).message;
           setOtp(['', '', '', '', '', '']);
           setError(message);
           setTimeout(() => inputs.current[0]?.focus(), 50);
@@ -174,7 +173,7 @@ export default function VerifyScreen() {
         onSuccess: (challenge: { challengeId: string }) => {
           setPendingChallengeId(challenge.challengeId);
           setResend(DEFAULT_RESEND_COOLDOWN_SECONDS);
-          showToast('Code resent', 'ph-paper-plane-tilt');
+          showToast(labels.verify.codeResent, 'ph-paper-plane-tilt');
           setTimeout(() => inputs.current[0]?.focus(), 50);
         },
         onError: (e) => {
@@ -183,16 +182,10 @@ export default function VerifyScreen() {
             // countdown from the server's retry seconds and show a specific wait.
             const info = retryInfoFromError(e);
             if (info.seconds != null) startResendCooldown(info.seconds);
-            setError(formatRetryMessage(info));
+            setError(presentError(e, labels).message);
             return;
           }
-          const message =
-            e instanceof NetworkError
-              ? "Couldn't reach SERRALE. Check your internet and try again."
-              : e instanceof Error
-                ? e.message
-                : 'Could not resend code. Please try again.';
-          setError(message);
+          setError(presentError(e, labels).message);
         },
       },
     );
@@ -207,9 +200,11 @@ export default function VerifyScreen() {
         keyboardVerticalOffset={8}
       >
       <View style={styles.body}>
-        <Text style={styles.h1}>Enter verification code</Text>
+        <Text style={styles.h1}>{labels.verify.title}</Text>
         <Text style={styles.subtitle}>
-          We sent a 6-digit code to <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{phoneDisplay}</Text>.
+          {labels.verify.sentToPrefix}
+          <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{phoneDisplay}</Text>
+          {labels.verify.sentToSuffix}
         </Text>
 
         <View style={styles.otpWrap}>
@@ -231,25 +226,29 @@ export default function VerifyScreen() {
         <View style={styles.resendRow}>
           <Pressable onPress={resendCode} disabled={resend > 0 || requestOtp.isPending} hitSlop={8}>
             <Text style={styles.resendText}>
-              {requestOtp.isPending ? 'Sending…' : resend > 0 ? `Resend code in ${resend}s` : 'Resend code'}
+              {requestOtp.isPending
+                ? labels.auth.sending
+                : resend > 0
+                  ? fill(labels.verify.resendIn, { seconds: resend })
+                  : labels.verify.resend}
             </Text>
           </Pressable>
           <Pressable onPress={() => router.replace({ pathname: '/auth/login', params: { next: params.next } })} hitSlop={8}>
-            <Text style={styles.changeText}>Change number</Text>
+            <Text style={styles.changeText}>{labels.verify.changeNumber}</Text>
           </Pressable>
         </View>
 
         {USE_MOCK && (
           <Pressable style={styles.demo} onPress={fillDemo}>
             <Icon name="ph-magic-wand" size={14} color={colors.muted} />
-            <Text style={styles.demoText}>Demo: auto-fill code</Text>
+            <Text style={styles.demoText}>{labels.verify.demoAutofill}</Text>
           </Pressable>
         )}
       </View>
 
       <View style={styles.footer}>
         <Button
-          label={verifyMutation.isPending ? 'Verifying…' : 'Verify'}
+          label={verifyMutation.isPending ? labels.verify.verifying : labels.verify.verify}
           loading={verifyMutation.isPending}
           fullWidth
           onPress={() => submit(otp)}

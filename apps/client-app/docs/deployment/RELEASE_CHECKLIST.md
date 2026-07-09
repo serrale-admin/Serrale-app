@@ -4,6 +4,22 @@ Production readiness for the Basic mobile client (`apps/client-app`). This docum
 owns the observability / error-handling launch gates introduced in Task 8 and the
 **open blocker** for a real crash-reporting provider.
 
+> **Master gate:** the consolidated Go/No-Go and every BLOCKED external gate live in
+> [DEPLOYMENT_READINESS_REPORT.md](./DEPLOYMENT_READINESS_REPORT.md) (T12); raw command
+> evidence is in [TEST_EVIDENCE.md](./TEST_EVIDENCE.md).
+
+---
+
+## Release configuration (Task 12)
+
+| Item | Decision / value | File |
+| --- | --- | --- |
+| `android.versionCode` / `ios.buildNumber` | Set to `1` / `"1"` for the first release (Play/App Store reject uploads without them; Play rejects duplicate `versionCode`). Bump per store upload. | `app.json` |
+| Production env guard | `assertProductionEnv()` fails a release build/startup when the resolved API config is unsafe — mock mode on, non-HTTPS, `localhost`/`127.0.0.1`/`0.0.0.0`/`[::1]`/`*.local`, or a relative/static-host URL. Invoked at module load only when `!__DEV__`. Unit-tested (`env.test.ts`). | `src/lib/env.ts` |
+| Mock toggle | `EXPO_PUBLIC_USE_MOCK` is an **explicit** opt-in: mock is on only for the exact string `'true'`. Any other value (incl. typos) stays live. | `src/lib/env.ts` |
+| **OTA / EAS Update** | **No OTA at launch (deliberate).** `expo-updates` is a dependency but **no** `updates`/`runtimeVersion` block is configured, so OTA is inert — this is a pure store-binary release. When OTA is introduced, add `runtimeVersion` + `updates.url` (do not ship a half-configured `updates` block). | `app.json` |
+| EAS profiles | `development` / `preview` (apk) / `production` (app-bundle) distinct; no committed secrets. | `eas.json` |
+
 ---
 
 ## Error handling & observability (Task 8)

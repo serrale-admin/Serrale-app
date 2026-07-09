@@ -18,10 +18,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "et.serrale.basic"
+      "bundleIdentifier": "et.serrale.basic",
+      "buildNumber": "1"
     },
     "android": {
       "package": "et.serrale.basic",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-square.png",
         "backgroundColor": "#075539"

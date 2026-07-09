@@ -12,6 +12,78 @@ action) and gives a qualified Go/No-Go. It deliberately does **not** claim unqua
 - **Environment:** macOS (Darwin 24.3, arm64), Node v22.20.0 — headless (no emulator,
   no simulator, no EAS/Apple credentials)
 
+## Corrected scope addendum (2026-07-09)
+
+This addendum corrects scope to match the shared-system policy in
+`/Users/terusew/Projects/serrale/AGENTS.md`:
+
+- **SERRALE Basic is core** and launch readiness is evaluated only on Basic mobile + `/api/public-directory/*`.
+- **SERRALE Plus is legacy maintenance-only**; escrow/contracts/payments findings are maintenance issues unless they actively break shared backend runtime for Basic endpoints.
+- No second backend, no mobile Supabase client, no Plus auth/session/profile helpers in Basic mobile.
+
+### Section A — SERRALE Basic Mobile Launch Readiness
+
+#### A1) Fresh required command checks
+
+From `apps/client-app` (fresh run):
+
+- `npm run typecheck` -> pass
+- `npm run lint` -> pass
+- `npx expo export --platform web` -> pass (`Exported: dist`)
+
+From `/Users/terusew/Projects/serrale/backend` (fresh run):
+
+- `npm run build` -> pass
+- `npm run lint` -> **fails** (`eslint: command not found` in current environment)
+- `npm test` -> pass (34/34 suites, 223/223 tests)
+
+So backend lint evidence is currently **BLOCKED by local toolchain** (missing eslint binary), not by code failures.
+
+#### A2) Basic-only API/data handling status
+
+Basic launch criteria to evaluate:
+
+- categories / providers / provider detail / search / suggest
+- OTP request + OTP verify
+- customer session exchange/refresh (if enabled)
+- lead submission
+- call/WhatsApp non-blocking contact behavior
+- production API URL + mock-off defaults
+- source header `X-Serrale-Source: mobile_app`
+
+Current code-level status in this repo:
+
+- `EXPO_PUBLIC_API_BASE_URL` default is `https://api.serrale.com/api` in `src/lib/env.ts`.
+- Mock mode is explicit opt-in only (`EXPO_PUBLIC_USE_MOCK === 'true'`).
+- Production guard exists (`assertProductionEnv`) and rejects localhost/non-https/relative/mock on release.
+- HTTP metadata includes `X-Serrale-Source: mobile_app` in `src/lib/http.ts`.
+- API facade uses Basic namespace calls under `/public-directory/*`.
+
+Shared Supabase security findings still relevant to Basic launch hardening:
+
+- RLS/policy hygiene gaps exist on sensitive Basic/shared tables (including
+  `otp_challenges`, `auth_sessions`, `auth_identities`, `auth_audit_logs`,
+  `directory_provider_contact_events`, `directory_search_events`).
+- These are valid production hardening issues and should be fixed with
+  backend/service-role-only access patterns (no direct anon/authenticated client access).
+
+### Section B — Legacy Plus Maintenance Issues
+
+Escrow findings are **not Basic product blockers by default**:
+
+- missing `escrow_holds.auto_release_eligible_at`
+- missing `escrow_transfer_queue.transfer_ref`
+- enum mismatch for `release_blocked`
+
+These belong to legacy Plus maintenance. They become Basic blockers only if they degrade
+shared backend health/runtime enough to impact `/api/public-directory/*`.
+
+Security-definer exposure in `public` schema remains a **shared security issue**:
+
+- Revoke unsafe `anon`/`authenticated` execute grants on `SECURITY DEFINER` functions.
+- Keep only least-privilege grants required.
+- Confirm Basic mobile endpoints continue to operate through backend service role.
+
 ## Companion documents (all co-located in `apps/client-app/docs/deployment/`)
 
 | Doc | Owns |

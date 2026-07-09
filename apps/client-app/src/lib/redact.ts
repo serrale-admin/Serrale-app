@@ -88,6 +88,15 @@ function isSensitiveKey(key: string): boolean {
  */
 const PHONE_RE = /(?<![0-9])(?:\+?251|0)?9\d{8}(?![0-9])/g;
 
+/**
+ * The SPACED display forms produced by `lib/phone.ts` — e.g. `0912 345 678`
+ * (national) and `912 345 678` (mask). The compact {@link PHONE_RE} misses these
+ * because separators break its contiguous-digit match. The group separators are
+ * REQUIRED here (a space or dash between the 3-3-3 groups), so this only matches a
+ * grouped phone, never an unrelated digit run the compact form already covers.
+ */
+const PHONE_SPACED_RE = /(?<![0-9])(?:\+?251[ -]?|0)?9\d{2}[ -]\d{3}[ -]\d{3}(?![0-9])/g;
+
 /** A JWT: three base64url segments separated by dots. */
 const JWT_RE = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g;
 
@@ -115,6 +124,7 @@ function scrubString(input: string): string {
     .replace(PREFIXED_TOKEN_RE, REDACTED)
     .replace(OPAQUE_REFRESH_TOKEN_RE, REDACTED)
     .replace(OTP_TEXT_RE, REDACTED)
+    .replace(PHONE_SPACED_RE, REDACTED)
     .replace(PHONE_RE, REDACTED);
 }
 

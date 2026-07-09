@@ -102,4 +102,16 @@ describe('ContactSheets — contact is never blocked by logging (M-2/M-6)', () =
 
     expect(Linking.openURL).toHaveBeenCalledWith('tel:+251911234567');
   });
+
+  it('sanitizes a messy backend phone into a +/digits-only tel: intent (T9)', () => {
+    // A backend value carrying spaces, parens, and DTMF/pause control chars must
+    // never reach the dialer intent raw — only a leading + and digits survive.
+    mockLog.mockResolvedValue({ recorded: true });
+    useContactStore.getState().openCall({ ...PROVIDER, phone: '+251 (911) 234-567#,;' });
+    render(<ContactSheets />);
+
+    fireEvent.press(screen.getByText('Call now'));
+
+    expect(Linking.openURL).toHaveBeenCalledWith('tel:+251911234567');
+  });
 });

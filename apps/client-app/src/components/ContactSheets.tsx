@@ -9,6 +9,18 @@ import BottomSheet from './BottomSheet';
 
 const waDigits = (phone: string) => phone.replace(/[^0-9]/g, '');
 
+/**
+ * Dialer-safe number for a `tel:` intent. Keeps only a leading `+` and digits,
+ * dropping every other character a backend-supplied value might carry (spaces,
+ * parens, and defensively any `#`/`,`/`;` DTMF/pause control characters). The
+ * intent is never built from an unvalidated raw string.
+ */
+const telNumber = (phone: string) => {
+  const cleaned = phone.replace(/[^0-9+]/g, '');
+  const plus = cleaned.startsWith('+') ? '+' : '';
+  return plus + cleaned.replace(/\+/g, '');
+};
+
 /** Global Call / WhatsApp confirmation sheets, driven by the contact store. */
 export default function ContactSheets() {
   const { mode, provider, close } = useContactStore();
@@ -28,7 +40,7 @@ export default function ContactSheets() {
   const onCall = () => {
     if (!provider) return;
     logContact('phone_click');
-    Linking.openURL(`tel:${provider.phone}`).catch(() => {});
+    Linking.openURL(`tel:${telNumber(provider.phone)}`).catch(() => {});
     close();
     showToast(fill(t.calling, { name: provider.name }), 'ph-phone-call');
   };

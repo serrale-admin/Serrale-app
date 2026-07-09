@@ -151,4 +151,38 @@ describe('redact()', () => {
     const out = redact('id 251912345678 ok') as string;
     expect(out).not.toContain('251912345678');
   });
+
+  // --- T9 adversarial additions ---------------------------------------------
+
+  it('redacts the SPACED national display form (0912 345 678) in free text', () => {
+    const out = redact('SMS sent to 0912 345 678 ok') as string;
+    expect(out).not.toContain('0912 345 678');
+    expect(out).toContain(REDACTED);
+  });
+
+  it('redacts the spaced mask form (912 345 678) and dash / intl variants', () => {
+    expect(redact('caller 912 345 678') as string).not.toContain('912 345 678');
+    expect(redact('dialing 0912-345-678 now') as string).not.toContain('0912-345-678');
+    expect(redact('intl +251 912 345 678') as string).not.toContain('912 345 678');
+  });
+
+  it('redacts a spaced phone nested deep inside a free-text field', () => {
+    const out = redact({ level1: { trail: 'resend to 0912 345 678 failed' } });
+    expect(JSON.stringify(out)).not.toContain('0912 345 678');
+  });
+
+  it('redacts a JWT that rides under an oddly-named (non-sensitive) key via value scrub', () => {
+    // `blob` is NOT in the sensitive-key list, so only value-based scrubbing can
+    // catch the token — proving the free-text layer is a real second line.
+    const out = redact({ blob: `payload=${ACCESS_TOKEN} trailing` }) as { blob: string };
+    expect(out.blob).not.toContain(ACCESS_TOKEN);
+    expect(out.blob).toContain(REDACTED);
+  });
+
+  it('does not over-redact an ordinary 9-digit id that is not phone-shaped', () => {
+    // A bare 9-digit run that is not a leading-9 mobile and is not grouped must
+    // survive — over-redaction must not eat unrelated identifiers.
+    const out = redact('order 123456789 shipped') as string;
+    expect(out).toContain('123456789');
+  });
 });

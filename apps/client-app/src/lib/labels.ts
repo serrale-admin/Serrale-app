@@ -31,6 +31,16 @@ export interface Labels {
   categories: {
     title: string;
     searchPlaceholder: string;
+    allServices: string;
+    repairsMaintenance: string;
+    movingTransport: string;
+    healthWellness: string;
+    filterTitle: string;
+    serviceGroups: string;
+    sortBy: string;
+    mostProviders: string;
+    alphabetical: string;
+    showCategories: string; // {count}
     popular: string;
     homeServices: string;
     adminReviewed: string;
@@ -48,6 +58,7 @@ export interface Labels {
   };
   /** Reusable single words / short phrases shared across many screens. */
   common: {
+    optional: string;
     back: string;
     cancel: string;
     clear: string;
@@ -94,12 +105,72 @@ export interface Labels {
   };
   auth: {
     loginSubtitle: string;
+    loginBannerBadge: string;
+    loginBannerTitle: string;
+    loginBannerSub: string;
     reasonProfile: string;
     reasonRequest: string;
     invalidPhone: string;
     sending: string;
     sendCode: string;
     continueAsGuest: string;
+    orDivider: string;
+    createProfileLink: string;
+    customerNotFound: string;
+    customerRegisterLink: string;
+    providerLoginLink: string;
+  };
+  authChooser: {
+    loginTitle: string;
+    loginDesc: string;
+    hireBadge: string;
+    hireTitle: string;
+    hireDesc: string;
+    hireCta: string;
+    providerBadge: string;
+    providerTitle: string;
+    providerDesc: string;
+    providerCta: string;
+    providerPhoneDetected: string;
+    providerPhoneDetectedNamed: string;
+    accountDetectedProvider: string;
+    accountDetectedProviderNamed: string;
+    accountDetectedCustomer: string;
+  };
+  clientProfile: {
+    title: string;
+    subtitle: string;
+    save: string;
+    saving: string;
+    saved: string;
+    profileType: string;
+    individual: string;
+    company: string;
+    fullName: string;
+    fullNamePlaceholder: string;
+    contactName: string;
+    companyName: string;
+    phone: string;
+    area: string;
+    selectArea: string;
+    idNumber: string;
+    idNumberPlaceholder: string;
+    idPhoto: string;
+    licenseNumber: string;
+    licenseNumberPlaceholder: string;
+    licensePhoto: string;
+    docPlaceholder: string;
+    privateDocsHint: string;
+    incomplete: string;
+    basicSectionYou: string;
+    basicSectionArea: string;
+    basicAreaHint: string;
+    providerPrimaryHint: string;
+    providerLoginTitle: string;
+    providerLoginSub: string;
+    providerLoginSuccess: string;
+    providerNotFound: string;
+    providerRegisterLink: string;
   };
   verify: {
     title: string;
@@ -112,6 +183,8 @@ export interface Labels {
     codeExpired: string;
     incorrectCode: string;
     codeResent: string;
+    /** Shown when backend delivery=review_code (Play review; no SMS). */
+    reviewCodeHint: string;
     resend: string;
     resendIn: string; // {seconds}
     changeNumber: string;
@@ -138,11 +211,17 @@ export interface Labels {
     successText: string; // {area}
     successDupTitle: string;
     successDupText: string;
+    successBody: string;
     postAnother: string;
     gateTitle: string;
     gateText: string;
     continueBrowsing: string;
-    when: { today: string; thisWeek: string; flexible: string };
+    sectionDetails: string;
+    sectionTiming: string;
+    sectionContact: string;
+    submitHint: string;
+    heroBadge: string;
+    when: { emergency: string; today: string; thisWeek: string; flexible: string };
     contact: { call: string; whatsapp: string; both: string };
     budget: {
       notSure: string;
@@ -210,6 +289,7 @@ export interface Labels {
     phoneNumber: string;
     notSet: string;
     defaultArea: string;
+    defaultAreaHint: string;
     notificationsToast: string;
     on: string;
     privacy: string;
@@ -218,6 +298,8 @@ export interface Labels {
     termsToast: string;
     deleteAccount: string;
     deleteToast: string;
+    editProfile: string;
+    phoneReadOnly: string;
   };
   language: {
     default: string;
@@ -250,6 +332,9 @@ export interface Labels {
     tip4Text: string;
   };
   profile: {
+    switchToProvider: string;
+    switchToProviderSub: string;
+    switchToProviderRelogin: string;
     becomeProvider: string;
     becomeProviderToast: string;
     myRequests: string;
@@ -257,6 +342,72 @@ export interface Labels {
     noNotifications: string;
     logout: string;
     guestText: string;
+    completeProfileTitle: string;
+    completeProfileBody: string;
+    completeProfileCta: string;
+    roleProvider: string;
+    roleCustomer: string;
+    editProfile: string;
+    viewPublicProfile: string;
+    manageListing: string;
+    sectionAccount: string;
+    sectionAppSettings: string;
+    appSettingsSub: string;
+    sectionPreferences: string;
+    sectionSupport: string;
+    quickRequest: string;
+    quickSaved: string;
+    listingCategory: string;
+    listingArea: string;
+    listingBio: string;
+    editTitle: string;
+    editSubtitleCustomer: string;
+    editSubtitleProvider: string;
+    saved: string;
+    phoneLocked: string;
+  };
+  providerJoin: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    sectionContact: string;
+    sectionService: string;
+    sectionAbout: string;
+    fullName: string;
+    phone: string;
+    whatsapp: string;
+    serviceCategory: string;
+    selectCategory: string;
+    area: string;
+    selectArea: string;
+    experience: string;
+    experienceExample: string;
+    photoTitle: string;
+    photoDesc: string;
+    selectedCategory: string; // {category}
+    termsPrefix: string;
+    termsLink: string;
+    termsSuffix: string;
+    termsRequired: string;
+    submit: string;
+    submitHint: string;
+    requiredFields: string;
+    categoryRequired: string;
+    sendingOtp: string;
+    otpSentTitle: string;
+    otpSentBody: string; // {phone}
+    verifyAndRegister: string;
+    verifyingOtp: string;
+    registering: string;
+    editDetails: string;
+    trustAside: string;
+    haveAccount: string;
+    loginLink: string;
+    alreadyRegistered: string;
+    successTitle: string;
+    successText: string;
+    goToAccount: string;
+    backToProfile: string;
   };
   contact: {
     calling: string; // {name}
@@ -350,6 +501,26 @@ export interface Labels {
     unknownTitle: string;
     unknownMessage: string;
   };
+  /** Backend `error.code` strings mapped to user-safe copy (mirrors Basic web `err.*`). */
+  apiErrors: {
+    INVALID_PHONE: string;
+    INVALID_WHATSAPP: string;
+    OTP_REQUEST_FAILED: string;
+    OTP_COOLDOWN: string;
+    OTP_PHONE_RATE_LIMITED: string;
+    OTP_DAILY_LIMIT: string;
+    OTP_INCORRECT: string;
+    OTP_MAX_ATTEMPTS: string;
+    OTP_EXPIRED: string;
+    OTP_NOT_FOUND: string;
+    OTP_INVALID_STATUS: string;
+    VALIDATION_ERROR: string;
+    REGISTER_FAILED: string;
+    PHONE_ALREADY_REGISTERED: string;
+    CUSTOMER_NOT_FOUND: string;
+    PROVIDER_NOT_FOUND: string;
+    generic: string;
+  };
   /** Global crash-recovery (error boundary) screen. */
   recovery: {
     title: string;
@@ -385,8 +556,18 @@ export function labelsFor(lang: Lang): Labels {
     categories: {
       title: am ? 'ምድቦች' : 'Categories',
       searchPlaceholder: am ? 'ምድቦች ፈልግ…' : 'Search categories…',
+      allServices: am ? 'ሁሉም አገልግሎቶች' : 'All services',
+      repairsMaintenance: am ? 'ጥገና እና እንክብካቤ' : 'Repairs & Maintenance',
+      movingTransport: am ? 'ማንቀሳቀስ እና ትራንስፖርት' : 'Moving & Transport',
+      healthWellness: am ? 'ጤና እና ዌልነስ' : 'Health & Wellness',
+      filterTitle: am ? 'አገልግሎቶችን አጣራ' : 'Filter services',
+      serviceGroups: am ? 'የአገልግሎት ቡድኖች' : 'Service groups',
+      sortBy: am ? 'ደርድር' : 'Sort by',
+      mostProviders: am ? 'ብዙ ባለሙያዎች' : 'Most providers',
+      alphabetical: am ? 'በፊደል ቅደም ተከተል' : 'Alphabetical',
+      showCategories: am ? '{count} ምድቦችን አሳይ' : 'Show {count} categories',
       popular: am ? 'ታዋቂ' : 'Popular',
-      homeServices: am ? 'የቤት አገልግሎት' : 'Home services',
+      homeServices: am ? 'የቤት አገልግሎቶች' : 'Home Services',
       adminReviewed: am ? 'የተረጋገጠ' : 'Admin reviewed',
       topRated: am ? 'ከፍተኛ ደረጃ' : 'Top rated',
       fastReliable: am ? 'ፈጣን እና አስተማማኝ' : 'FAST & RELIABLE',
@@ -407,6 +588,7 @@ export function labelsFor(lang: Lang): Labels {
       explore: am ? 'ክፈት' : 'Explore',
     },
     common: {
+      optional: am ? 'አማራጭ' : 'optional',
       back: am ? 'ተመለስ' : 'Back',
       cancel: am ? 'ይቅር' : 'Cancel',
       clear: am ? 'አጽዳ' : 'Clear',
@@ -454,6 +636,11 @@ export function labelsFor(lang: Lang): Labels {
       loginSubtitle: am
         ? 'ለመቀጠል የኢትዮጵያ ስልክ ቁጥርዎን ይጠቀሙ። የማረጋገጫ ኮድ በኤስኤምኤስ እንልካለን።'
         : "Use your Ethiopian phone number to continue. We'll send a verification code by SMS.",
+      loginBannerBadge: am ? 'ፈጣን እና አስተማማኝ' : 'FAST & RELIABLE',
+      loginBannerTitle: am ? 'ታመኑ ባለሙያዎችን ያግኙ' : 'Find trusted local help',
+      loginBannerSub: am
+        ? 'ባለሙያዎችን ይፈልጉ፣ ይደውሉ ወይም አገልግሎት ይጠይቁ።'
+        : 'Browse providers, call, or request service near you.',
       reasonProfile: am ? 'መገለጫዎን ለማስተዳደር ይግቡ' : 'Log in to manage your profile',
       reasonRequest: am ? 'ጥያቄ ለመለጠፍ ይግቡ' : 'Log in to post a request',
       invalidPhone: am
@@ -462,6 +649,89 @@ export function labelsFor(lang: Lang): Labels {
       sending: am ? 'በመላክ ላይ…' : 'Sending…',
       sendCode: am ? 'ኮድ ላክ' : 'Send code',
       continueAsGuest: am ? 'እንደ እንግዳ ቀጥል' : 'Continue as guest',
+      orDivider: am ? 'ወይም' : 'or',
+      createProfileLink: am ? 'አዲስ መገለጫ ይፍጠሩ' : 'Create a new profile',
+      customerNotFound: am
+        ? 'በዚህ ስልክ ቁጥር የደንበኛ መለያ የለም። መጀመሪያ መገለጫ ይፍጠሩ።'
+        : 'No customer account for this phone. Create a profile first.',
+      customerRegisterLink: am ? 'የደንበኛ መገለጫ ይፍጠሩ' : 'Create a customer profile',
+      providerLoginLink: am ? 'እንደ ባለሙያ ይግቡ' : 'Log in as a provider',
+    },
+    authChooser: {
+      loginTitle: am ? 'ወደ SERRALE ይቀጥሉ' : 'Continue to SERRALE',
+      loginDesc: am
+        ? 'እርዳታ ለመጠየት ወይም አገልግሎት ለመስጠት ይምረጡ።'
+        : 'Choose whether you need help or you offer services.',
+      hireBadge: am ? 'ደንበኛ' : 'Customer',
+      hireTitle: am ? 'እርዳታ እፈልጋለሁ' : 'I need help',
+      hireDesc: am
+        ? 'ባለሙያ ይፈልጉ፣ ይደውሉ ወይም የአገልግሎት ጥያቄ ይላኩ።'
+        : 'Find providers, call them, or post a service request.',
+      hireCta: am ? 'የደንበኛ መግቢያ' : 'Customer login',
+      providerBadge: am ? 'ባለሙያ' : 'Provider',
+      providerTitle: am ? 'አገልግሎት እሰጣለሁ' : 'I offer services',
+      providerDesc: am
+        ? 'የእርስዎን የባለሙያ መዝገብ ያስተዳድሩ እና ደንበኞችን ይቀበሉ።'
+        : 'Manage your listing and connect with customers.',
+      providerCta: am ? 'የባለሙያ መግቢያ' : 'Provider login',
+      providerPhoneDetected: am
+        ? 'ይህ ስልክ እንደ ባለሙያ ተመዝግቧል። የባለሙያ መግቢያ ኮድ በመላክ ላይ…'
+        : 'This phone is registered as a provider. Sending provider login code…',
+      providerPhoneDetectedNamed: am
+        ? 'እንኳን በደህና ተመለሱ {name}! የባለሙያ መግቢያ ኮድ በመላክ ላይ…'
+        : 'Welcome back, {name}! Sending your provider login code…',
+      accountDetectedProvider: am
+        ? 'የባለሙያ መለያ ተገኝቷል። የባለሙያ መግቢያ ኮድ በመላክ ላይ…'
+        : 'Provider account found. Sending provider login code…',
+      accountDetectedProviderNamed: am
+        ? 'እንኳን በደህና ተመለሱ {name}! የባለሙያ መግቢያ ኮድ በመላክ ላይ…'
+        : 'Welcome back, {name}! Sending provider login code…',
+      accountDetectedCustomer: am
+        ? 'የደንበኛ መለያ ተገኝቷል። የመግቢያ ኮድ በመላክ ላይ…'
+        : 'Customer account found. Sending login code…',
+    },
+    clientProfile: {
+      title: am ? 'መገለጫዎን ያጠናቁ' : 'Complete your profile',
+      subtitle: am
+        ? 'ስምዎን እና አካባቢዎን ይምረጡ — ለጥያቄዎች እና ለእውቂያ ብቻ ያስፈልጋል።'
+        : 'Add your name and pick your area — just enough for requests and contact.',
+      save: am ? 'መገለጫ አስቀምጥ' : 'Save profile',
+      saving: am ? 'በመቀመጥ ላይ…' : 'Saving…',
+      saved: am ? 'መገለጫ ተቀምጧል' : 'Profile saved',
+      profileType: am ? 'የመገለጫ አይነት' : 'Profile type',
+      individual: am ? 'ግለሰብ' : 'Individual',
+      company: am ? 'ኩባንያ' : 'Company',
+      fullName: am ? 'ሙሉ ስም' : 'Full name',
+      fullNamePlaceholder: am ? 'እንደ መሰል ገብርኤል' : 'e.g. Abebe Kebede',
+      contactName: am ? 'የእውቂያ ስም' : 'Contact name',
+      companyName: am ? 'የኩባንያ ስም' : 'Company name',
+      phone: am ? 'ስልክ' : 'Phone',
+      area: am ? 'አካባቢ' : 'Area',
+      selectArea: am ? 'አካባቢ ይምረጡ' : 'Select area',
+      idNumber: am ? 'መታወቂያ ቁጥር' : 'ID number',
+      idNumberPlaceholder: am ? 'የመታወቂያ ቁጥር' : 'National ID number',
+      idPhoto: am ? 'መታወቂያ ፎቶ / ማጣቀሻ' : 'ID photo / reference',
+      licenseNumber: am ? 'የንግድ ፈቃድ ቁጥር' : 'Business license number',
+      licenseNumberPlaceholder: am ? 'የፈቃድ ቁጥር' : 'License number',
+      licensePhoto: am ? 'ፈቃድ ፎቶ / ማጣቀሻ' : 'License photo / reference',
+      docPlaceholder: am ? 'URL ወይም ማጣቀሻ (አማራጭ)' : 'URL or reference (optional)',
+      privateDocsHint: am
+        ? 'መታወቂያ እና ፈቃድ ሰነዶች በግል ይቆያሉ — በድረ-ገጽ ላይ ብቻ ይታያሉ።'
+        : 'ID and license details stay private — visible to SERRALE ops only.',
+      incomplete: am ? 'ስምዎን እና አካባቢዎን ይምረጡ።' : 'Enter your name and pick an area.',
+      basicSectionYou: am ? 'ስለ እርስዎ' : 'About you',
+      basicSectionArea: am ? 'አካባቢ' : 'Your area',
+      basicAreaHint: am ? 'በየት እንደሚገኙ ይምረጡ — ባለሙያዎች አቅራቢያዎን ይመለከታሉ።' : 'Where you usually need help — providers see your general area.',
+      providerPrimaryHint: am
+        ? 'ይህ ስልክ እንደ ባለሙያ ተመዝግቧል። የባለሙያ መለያዎን ከመገለጫ ይመልከቱ።'
+        : 'This phone is registered as a provider. Manage your listing from Profile.',
+      providerLoginTitle: am ? 'የባለሙያ መግቢያ' : 'Provider account',
+      providerLoginSub: am
+        ? 'የተመዘገቡ ባለሙያ መለያዎን በስልክዎ ይግቡ።'
+        : 'Sign in to your registered provider account with your phone.',
+      providerLoginSuccess: am ? 'እንኳን በደህና መጡ!' : 'Welcome back!',
+      providerNotFound: am ? 'በዚህ ስልክ ባለሙያ መለያ የለም። መጀመሪያ ይመዝገቡ።' : 'No provider account for this phone. Register first.',
+      providerRegisterLink: am ? 'እንደ ባለሙያ ይመዝገቡ' : 'Register as a provider',
     },
     verify: {
       title: am ? 'የማረጋገጫ ኮድ ያስገቡ' : 'Enter verification code',
@@ -482,6 +752,9 @@ export function labelsFor(lang: Lang): Labels {
         ? 'ያ ኮድ ትክክል አይደለም። እባክዎ ኤስኤምኤሱን አረጋግጠው እንደገና ይሞክሩ።'
         : 'That code is incorrect. Please check the SMS and try again.',
       codeResent: am ? 'ኮድ እንደገና ተልኳል' : 'Code resent',
+      reviewCodeHint: am
+        ? 'ለዚህ የግምገማ መለያ ኤስኤምኤስ አይላክም። በፕሌይ ኮንሶል ማስታወሻዎች ውስጥ ያለውን የግምገማ ኮድ ያስገቡ።'
+        : 'No SMS for this Play review number. Enter the fixed 6-digit review code from Play Console notes — do not wait for a text.',
       resend: am ? 'ኮድ እንደገና ላክ' : 'Resend code',
       resendIn: am ? 'ኮድ እንደገና ላክ በ{seconds}ሰ' : 'Resend code in {seconds}s',
       changeNumber: am ? 'ቁጥር ቀይር' : 'Change number',
@@ -490,39 +763,48 @@ export function labelsFor(lang: Lang): Labels {
       verify: am ? 'አረጋግጥ' : 'Verify',
     },
     request: {
-      title: am ? 'ጥያቄ ለጥፍ' : 'Post a request',
+      title: am ? 'ምን አገልግሎት እንደሚፈልጉ ይንገሩን' : 'Tell us what service you need',
       subtitle: am
-        ? 'የሚፈልጉትን ይንገሩን — ጥቂት ጊዜ ብቻ ይወስዳል።'
-        : 'Tell us what you need — it only takes a moment.',
-      serviceLabel: am ? 'ምን አገልግሎት ይፈልጋሉ?' : 'What service do you need?',
-      servicePlaceholder: am ? 'ለምሳሌ ቧንቧ ሰራተኛ፣ አጽጂ፣ ቀለም ቀቢ' : 'e.g. plumber, cleaner, painter',
-      areaLabel: am ? 'የት ይፈልጉታል?' : 'Where do you need it?',
-      describeLabel: am ? 'ስራውን ይግለጹ' : 'Describe the work',
-      descPlaceholder: am
-        ? 'ለምሳሌ፡ የሚያፈስ ማጠቢያ ገንዳ ማስተካከል እፈልጋለሁ።'
-        : 'Example: I need help fixing a leaking sink.',
-      whenLabel: am ? 'መቼ ይፈልጉታል?' : 'When do you need it?',
+        ? 'የሚፈልጉትን ይንገሩን — ባለሙያዎች በአካባቢዎ ሊያገኙዎት ይችላሉ።'
+        : 'Tell us what you need — providers in your area can reach you.',
+      serviceLabel: am ? 'አገልግሎት' : 'Service',
+      servicePlaceholder: am ? 'አገልግሎት ይምረጡ' : 'Choose service',
+      areaLabel: am ? 'አካባቢ' : 'Area',
+      describeLabel: am ? 'ምን ያስፈልግዎታል?' : 'What do you need?',
+      descPlaceholder: am ? 'ችግኙን በአጭር ይግለጹ።' : 'Describe the issue briefly.',
+      whenLabel: am ? 'መቼ?' : 'When?',
       budgetLabel: am ? 'በጀት' : 'Budget',
-      contactLabel: am ? 'ባለሙያዎች እንዴት ያግኙዎት?' : 'How should providers contact you?',
-      submit: am ? 'ጥያቄ አስገባ' : 'Submit request',
-      submitting: am ? 'በማስገባት ላይ…' : 'Submitting…',
+      contactLabel: am ? 'እንዴት ይገናኙ?' : 'Contact via',
+      submit: am ? 'ጥያቄ ላክ' : 'Send request',
+      submitting: am ? 'በመላክ ላይ…' : 'Sending…',
       chooseService: am ? 'አገልግሎት ይምረጡ' : 'Choose a service',
       describeWork: am ? 'ስራውን በአጭሩ ይግለጹ' : 'Describe the work briefly',
-      successTitle: am ? 'ጥያቄዎ ደርሶናል' : 'We received your request',
+      successTitle: am ? 'ጥያቄዎ በምርመራ ላይ ነው' : 'Under review',
       successText: am
-        ? 'ሰራሌ ጥያቄዎን በ{area} አካባቢ ካሉ ተስማሚ ባለሙያዎች ጋር ለማገናኘት ይረዳል።'
+        ? 'ሰራሌ ጥያቄዎን በ{area} ከተስማሚ ባለሙያዎች ጋር ለማገናኘት ይረዳል።'
         : 'SERRALE will help match your request with relevant providers near {area}.',
-      successDupTitle: am ? 'ጥያቄዎ አስቀድሞ ገብቷል' : 'Your request is already in',
+      successDupTitle: am ? 'ጥያቄዎ አስቀድሞ በምርመራ ላይ ነው' : 'Already under review',
       successDupText: am
-        ? 'ይህን ጥያቄ አስቀድመን ይዘናል — እንደገና መላክ አያስፈልግም። ሰራሌ ከባለሙያዎች ጋር ማገናኘቱን ይቀጥላል።'
-        : 'We already have this request on file — no need to send it again. SERRALE will keep matching it with providers.',
-      postAnother: am ? 'ሌላ ጥያቄ ለጥፍ' : 'Post another request',
-      gateTitle: am ? 'የአገልግሎት ጥያቄ ለጥፍ' : 'Post a service request',
+        ? 'ይህን ጥያቄ አስቀድመው ልከዋል — ሰራሌ ባለሙያዎችን መጠቆም ይቀጥላል።'
+        : 'You already sent this request. SERRALE will keep suggesting providers.',
+      successBody: am
+        ? 'ቡድናችን ጥያቄዎን እያገናኘ ነው። ተስማሚ ባለሙያዎች በስልክ ወይም WhatsApp ሊያግኙዎት ይችላሉ።'
+        : 'Our team is reviewing your request. Matching providers may contact you by phone or WhatsApp.',
+      postAnother: am ? 'ሌላ ጥያቄ' : 'Post another',
+      gateTitle: am ? 'እርዳታ ይጠይቁ' : 'Request help',
       gateText: am
-        ? 'ለሰራሌ የሚፈልጉትን ለመንገር በስልክዎ ይግቡ። ትክክለኛውን ባለሙያ እንዲያገኙ እንረዳዎታለን።'
-        : "Log in with your phone to tell SERRALE what you need. We'll help you find the right provider.",
+        ? 'በስልክዎ ይግቡ እና የሚፈልጉትን ይንገሩን — ትክክለኛውን ባለሙያ እንረዳዎታለን።'
+        : 'Log in with your phone to tell us what you need. We will help you find the right provider.',
       continueBrowsing: am ? 'ማሰስ ቀጥል' : 'Continue browsing',
+      sectionDetails: am ? 'ዝርዝር' : 'Details',
+      sectionTiming: am ? 'ጊዜ እና በጀት' : 'Timing & budget',
+      sectionContact: am ? 'እውቂያ' : 'Contact',
+      submitHint: am
+        ? 'በአካባቢዎ ባለሙያዎች በስልክ ወይም WhatsApp ሊያግኙዎት ይችላሉ።'
+        : 'Providers in your area may contact you by phone or WhatsApp.',
+      heroBadge: am ? 'እርዳታ ይጠይቁ' : 'Request help',
       when: {
+        emergency: am ? 'አስቸኳይ' : 'Urgent',
         today: am ? 'ዛሬ' : 'Today',
         thisWeek: am ? 'በዚህ ሳምንት' : 'This week',
         flexible: am ? 'ተለዋዋጭ' : 'Flexible',
@@ -607,7 +889,8 @@ export function labelsFor(lang: Lang): Labels {
       accountInfoToast: am ? 'የመለያ መረጃ' : 'Account info',
       phoneNumber: am ? 'ስልክ ቁጥር' : 'Phone number',
       notSet: am ? 'አልተዘጋጀም' : 'Not set',
-      defaultArea: am ? 'ነባሪ አካባቢ' : 'Default area',
+      defaultArea: am ? 'የማሰስ አካባቢ' : 'Browse area',
+      defaultAreaHint: am ? 'ባለሙያዎችን ለማሰስ ተጠቀም' : 'Used when browsing providers',
       notificationsToast: am ? 'የማሳወቂያ ቅንብሮች' : 'Notification settings',
       on: am ? 'በርቷል' : 'On',
       privacy: am ? 'ግላዊነት' : 'Privacy',
@@ -616,6 +899,8 @@ export function labelsFor(lang: Lang): Labels {
       termsToast: am ? 'ውሎች' : 'Terms',
       deleteAccount: am ? 'መለያ ሰርዝ' : 'Delete account',
       deleteToast: am ? 'ለመሰረዝ ድጋፍን ያግኙ' : 'Contact support to delete',
+      editProfile: am ? 'መገለጫ አርትዕ' : 'Edit profile',
+      phoneReadOnly: am ? 'በ OTP የተረጋገጠ' : 'Verified by OTP',
     },
     language: {
       default: am ? 'ነባሪ' : 'Default',
@@ -656,6 +941,13 @@ export function labelsFor(lang: Lang): Labels {
         : 'Save the provider profile and the details you agreed on.',
     },
     profile: {
+      switchToProvider: am ? 'የባለሙያ መለያ ይጠቀሙ' : 'Switch to provider account',
+      switchToProviderSub: am
+        ? 'የ listing መገለጫዎን ለማስተዳደር ይቀይሩ።'
+        : 'Manage your provider listing.',
+      switchToProviderRelogin: am
+        ? 'የባለሙያ መዳረሻ ለማደስ እንደገና በስልክ ይግቡ።'
+        : 'Log out and sign in again with your phone to refresh provider access.',
       becomeProvider: am ? 'የአገልግሎት ባለሙያ ይሁኑ' : 'Become a service provider',
       becomeProviderToast: am ? 'የባለሙያ ምዝገባ በቅርቡ ይከፈታል' : 'Provider sign-up opening soon',
       myRequests: am ? 'የእኔ ጥያቄዎች' : 'My requests',
@@ -665,6 +957,94 @@ export function labelsFor(lang: Lang): Labels {
       guestText: am
         ? 'ባለሙያዎችን ለማስቀመጥ እና ጥያቄዎችን ለማስተዳደር በስልክ ይቀጥሉ።'
         : 'Continue with phone to save providers and manage requests.',
+      completeProfileTitle: am ? 'መገለጫዎን ያጠናቁ' : 'Complete your profile',
+      completeProfileBody: am
+        ? 'ስምዎን እና ቦታዎን ከዚህ መስክ ያክሉ — ጥያቄዎችን ለመለጠፍ ያስፈልጋል።'
+        : 'Add your name and area here — required before posting requests.',
+      completeProfileCta: am ? 'መገለጫ ለምን ያስፈልጋል?' : 'Why complete my profile?',
+      roleProvider: am ? 'ባለሙያ' : 'Provider',
+      roleCustomer: am ? 'ደንበኛ' : 'Customer',
+      editProfile: am ? 'መገለጫ አርትዕ' : 'Edit profile',
+      viewPublicProfile: am ? 'የህዝብ መገለጫ' : 'View public profile',
+      manageListing: am ? 'የእርስዎ ዝርዝር' : 'Your listing',
+      sectionAccount: am ? 'መለያ' : 'Account',
+      sectionAppSettings: am ? 'የመተግበሪያ ቅንብሮች' : 'App settings',
+      appSettingsSub: am ? 'አካባቢ፣ ግላዊነት እና ፖሊሲ' : 'Browse area, privacy & policies',
+      sectionPreferences: am ? 'ምርጫዎች' : 'Preferences',
+      sectionSupport: am ? 'ድጋፍ' : 'Support',
+      quickRequest: am ? 'ጥያቄ' : 'Request',
+      quickSaved: am ? 'ተቀመጡ' : 'Saved',
+      listingCategory: am ? 'አገልግሎት' : 'Service',
+      listingArea: am ? 'አካባቢ' : 'Area',
+      listingBio: am ? 'ስለ ስራዎ' : 'About your work',
+      editTitle: am ? 'መገለጫ አርትዕ' : 'Edit profile',
+      editSubtitleCustomer: am
+        ? 'ስምዎን እና አካባቢዎን ያዘምኑ — ጥያቄዎች እና እውቂያ ይህን ይጠቀማል።'
+        : 'Update your name and area — used for requests and contact.',
+      editSubtitleProvider: am
+        ? 'የእርስዎን የባለሙያ listing ዝርዝሮችን ያዘምኑ።'
+        : 'Update your provider listing details.',
+      saved: am ? 'መገለጫ ተቀምጧል' : 'Profile saved',
+      phoneLocked: am ? 'ስልክ በ OTP ተረጋግጧል — ለመቀየር ድጋፍን ያግኙ።' : 'Phone verified by OTP — contact support to change.',
+    },
+    providerJoin: {
+      eyebrow: am ? 'ተመዝገብ' : 'Get listed',
+      title: am ? 'በሰራሌ እንደ ባለሙያ ይቀላቀሉ' : 'Join SERRALE as a provider',
+      subtitle: am
+        ? 'ጥቂት መሰረታዊ መረጃ ያጋሩ እና ስልክዎን ያረጋግጡ። ፎቶ እና ሌሎቹ አማራጭ ናቸው።'
+        : 'Share a few basic details and verify your phone. Photos and the rest are optional.',
+      sectionContact: am ? 'የእርስዎ መረጃ' : 'Your details',
+      sectionService: am ? 'የአገልግሎትዎ' : 'Your service',
+      sectionAbout: am ? 'ስለ ስራዎ' : 'About your work',
+      fullName: am ? 'ሙሉ ስም' : 'Full name',
+      phone: am ? 'ስልክ ቁጥር' : 'Phone number',
+      whatsapp: am ? 'የዋትስአፕ ቁጥር' : 'WhatsApp number',
+      serviceCategory: am ? 'የአገልግሎት ዘርፍ' : 'Service category',
+      selectCategory: am ? 'ዘርፍ ይምረጡ' : 'Select a category',
+      area: am ? 'አካባቢ' : 'Area',
+      selectArea: am ? 'አካባቢ ይምረጡ' : 'Select an area',
+      experience: am ? 'ልምድ' : 'Experience',
+      experienceExample: am ? 'ለምሳሌ፡ 5 ዓመት' : 'Example: 5 years',
+      photoTitle: am ? 'የስራ ፎቶ መጫን (አማራጭ፣ በቅርብ ይመጣል)' : 'Work photo upload (optional, coming soon)',
+      photoDesc: am ? 'ፎቶዎች በኋላ በስርዓቱ በኩል ይገናኛሉ።' : 'Photos will be connected later through a backend endpoint.',
+      selectedCategory: am ? 'የተመረጠ፡ {category}' : 'Selected: {category}',
+      termsPrefix: am ? 'እኔ ' : 'I agree to the ',
+      termsLink: am ? 'ውሎች እና ፖሊሲዎች' : 'Terms & Conditions',
+      termsSuffix: am ? 'ን እקבላለሁ።' : '.',
+      termsRequired: am
+        ? 'ለመቀጠል ውሎች እና ፖሊሲዎችን መቀበል አለብዎት።'
+        : 'Accept the Terms & Conditions to continue.',
+      submit: am ? 'ምዝገባ ላክ' : 'Submit provider interest',
+      submitHint: am
+        ? 'ካስገቡ በኋላ ስልክዎን ለማረጋገጥ የማረጋገጫ ኮድ በኤስኤምኤስ እንልካለን።'
+        : "We'll text a verification code to confirm your phone after you submit.",
+      requiredFields: am
+        ? 'መጀመሪያ ሙሉ ስም፣ ስልክ ቁጥር እና የአገልግሎት ዘርፍ ያስገቡ።'
+        : 'Enter your full name, phone number, and service category first.',
+      categoryRequired: am ? 'የአገልግሎት ዘርፍዎን ይምረጡ።' : 'Choose your service category.',
+      sendingOtp: am ? 'የማረጋገጫ ኮድ በመላክ ላይ…' : 'Sending verification code…',
+      otpSentTitle: am ? 'ስልክዎን ያረጋግጡ' : 'Verify your phone',
+      otpSentBody: am
+        ? 'ወደ {phone} በኤስኤምኤስ የላክነውን ኮድ ያስገቡ።'
+        : 'Enter the code we sent by SMS to {phone}.',
+      verifyAndRegister: am ? 'አረጋግጥ እና መለያ ፍጠር' : 'Verify & create account',
+      verifyingOtp: am ? 'ኮድ በማረጋገጥ ላይ…' : 'Verifying code…',
+      registering: am ? 'የማውጫ መለያዎን በመፍጠር ላይ…' : 'Creating your directory account…',
+      editDetails: am ? 'ዝርዝሮችን አስተካክል' : 'Edit details',
+      trustAside: am
+        ? 'በአቅራቢያዎ ያሉ ደንበኞች ይገኙዎት።'
+        : 'Get found by customers near you.',
+      haveAccount: am ? 'አስቀድመው ተመዝግበዋል?' : 'Already registered?',
+      loginLink: am ? 'ይግቡ' : 'Log in',
+      alreadyRegistered: am
+        ? 'ይህ ስልክ ቁጥር አስቀድሞ ተመዝግቧል። እባክዎ ይግቡ።'
+        : 'This phone number is already registered. Please login.',
+      successTitle: am ? 'የባለሙያ መለያዎ ዝግጁ ነው።' : 'Your provider account is ready.',
+      successText: am
+        ? 'አሁን በማውጫው ውስጥ ተዘርዝረዋል። ከመለያዎ ፎቶ እና ብሔራዊ መታወቂያ ያክሉ።'
+        : 'You are now listed in the directory. Add a photo and your national ID from your account.',
+      goToAccount: am ? 'ወደ መለያዬ ሂድ' : 'Go to my account',
+      backToProfile: am ? 'ወደ መገለጫ ተመለስ' : 'Back to profile',
     },
     contact: {
       calling: am ? '{name}ን በመደወል ላይ…' : 'Calling {name}…',
@@ -769,6 +1149,57 @@ export function labelsFor(lang: Lang): Labels {
       unknownMessage: am
         ? 'እባክዎ እንደገና ይሞክሩ።'
         : 'Please try again.',
+    },
+    apiErrors: {
+      INVALID_PHONE: am
+        ? 'ይህ ስልክ ቁጥር ትክክል አይደለም። እንደ 09XX XXX XXX ያለ ቁጥር ይጠቀሙ።'
+        : 'That phone number is not valid. Use a number like 09XX XXX XXX.',
+      INVALID_WHATSAPP: am
+        ? 'ይህ የዋትሳፕ ቁጥር ትክክል አይደለም። እንደ 09XX XXX XXX ያለ ቁጥር ይጠቀሙ።'
+        : 'That WhatsApp number is not valid. Use a number like 09XX XXX XXX.',
+      OTP_REQUEST_FAILED: am
+        ? 'አሁን የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ ቆይተው ይሞክሩ።'
+        : 'Could not send the verification code right now. Please try again shortly.',
+      OTP_COOLDOWN: am
+        ? 'ሌላ ኮድ ከመጠየቅዎ በፊት ትንሽ ይጠብቁ።'
+        : 'Please wait a moment before requesting another code.',
+      OTP_PHONE_RATE_LIMITED: am
+        ? 'ለዚህ ቁጥር በጣም ብዙ የኮድ ጥያቄዎች። ከጥቂት ደቂቃ በኋላ ይሞክሩ።'
+        : 'Too many code requests for this number. Try again in a few minutes.',
+      OTP_DAILY_LIMIT: am
+        ? 'የዛሬውን የኮድ ገደብ ጨርሰዋል። እባክዎ ነገ ይሞክሩ።'
+        : "You've reached today's limit for codes. Please try again tomorrow.",
+      OTP_INCORRECT: am
+        ? 'ኮዱ ትክክል አይደለም። ኤስኤምኤሱን አረጋግጠው ደግመው ይሞክሩ።'
+        : 'That code is incorrect. Check the SMS and try again.',
+      OTP_MAX_ATTEMPTS: am
+        ? 'በጣም ብዙ ሙከራዎች። አዲስ ኮድ ይጠይቁ እና ደግመው ይሞክሩ።'
+        : 'Too many attempts. Request a new code and try again.',
+      OTP_EXPIRED: am
+        ? 'ኮዱ ጊዜው አልፏል። አዲስ ኮድ ይጠይቁ።'
+        : 'That code has expired. Please request a new one.',
+      OTP_NOT_FOUND: am
+        ? 'የማረጋገጫ ጥያቄ አልተገኘም። አዲስ ኮድ ይጠይቁ።'
+        : 'Verification request not found. Please request a new code.',
+      OTP_INVALID_STATUS: am
+        ? 'ይህ የማረጋገጫ ጥያቄ ተጠቅሟል። አዲስ ኮድ ይጠይቁ።'
+        : 'This verification request is no longer valid. Please request a new code.',
+      VALIDATION_ERROR: am
+        ? 'ያስገቡት መረጃ ትክክል አይመስልም። አረጋግጠው እንደገና ይሞክሩ።'
+        : "Some details don't look right. Please review and try again.",
+      REGISTER_FAILED: am
+        ? 'መለያ መፍጠር አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
+        : 'Could not create your account. Please try again.',
+      PHONE_ALREADY_REGISTERED: am
+        ? 'ይህ ስልክ ቁጥር አስቀድሞ ተመዝግቧል። እባክዎ ይግቡ።'
+        : 'This phone number is already registered. Please login.',
+      CUSTOMER_NOT_FOUND: am
+        ? 'በዚህ ስልክ ቁጥር የደንበኛ መለያ የለም። መጀመሪያ መገለጫ ይፍጠሩ።'
+        : 'No customer account for this phone. Create a profile first.',
+      PROVIDER_NOT_FOUND: am
+        ? 'በዚህ ስልክ ባለሙያ መለያ የለም። መጀመሪያ ይመዝገቡ።'
+        : 'No provider account for this phone. Register first.',
+      generic: am ? 'እባክዎ እንደገና ይሞክሩ።' : 'Please try again.',
     },
     recovery: {
       title: am ? 'የሆነ ችግር ተፈጥሯል' : 'Something went wrong',

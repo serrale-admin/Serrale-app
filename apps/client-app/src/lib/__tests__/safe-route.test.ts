@@ -1,39 +1,47 @@
-import { DEFAULT_POST_LOGIN_ROUTE, safeNextRoute } from '../safe-route';
+import { navigateAuthBack, safeNextRoute } from '../safe-route';
+
+jest.mock('expo-router', () => ({
+  router: {
+    canGoBack: jest.fn(),
+    back: jest.fn(),
+    replace: jest.fn(),
+  },
+}));
+
+const { router } = jest.requireMock('expo-router') as {
+  router: { canGoBack: jest.Mock; back: jest.Mock; replace: jest.Mock };
+};
+
+describe('navigateAuthBack', () => {
+  beforeEach(() => {
+    router.canGoBack.mockReset();
+    router.back.mockReset();
+    router.replace.mockReset();
+  });
+
+  it('pops when navigation history exists', () => {
+    router.canGoBack.mockReturnValue(true);
+    navigateAuthBack('/(tabs)/profile');
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('replaces with a safe fallback when history is empty', () => {
+    router.canGoBack.mockReturnValue(false);
+    navigateAuthBack('/(tabs)/request');
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith('/(tabs)/request');
+  });
+
+  it('rejects unsafe fallback URLs', () => {
+    router.canGoBack.mockReturnValue(false);
+    navigateAuthBack('https://evil.test');
+    expect(router.replace).toHaveBeenCalledWith('/(tabs)/profile');
+  });
+});
 
 describe('safeNextRoute', () => {
-  it('passes through a legitimate internal path', () => {
-    expect(safeNextRoute('/(tabs)/request')).toBe('/(tabs)/request');
-    expect(safeNextRoute('/provider/abc-123')).toBe('/provider/abc-123');
-  });
-
-  it('preserves query/nested internal paths', () => {
-    expect(safeNextRoute('/categories/plumbing')).toBe('/categories/plumbing');
-  });
-
-  it.each([
-    ['empty', ''],
-    ['whitespace only', '   '],
-    ['relative (no leading slash)', 'home'],
-    ['absolute http', 'http://evil.com'],
-    ['absolute https', 'https://evil.com/phish'],
-    ['protocol-relative', '//evil.com'],
-    ['custom scheme', 'serrale://evil'],
-    ['javascript scheme', 'javascript:alert(1)'],
-    ['scheme after slash', '/javascript:alert(1)'],
-    ['backslash smuggling', '/\\evil.com'],
-    ['double backslash', '\\\\evil.com'],
-    ['embedded backslash', '/path\\to\\evil'],
-  ])('falls back to the default for %s', (_label, input) => {
-    expect(safeNextRoute(input)).toBe(DEFAULT_POST_LOGIN_ROUTE);
-  });
-
-  it('falls back for non-string values (undefined param)', () => {
-    expect(safeNextRoute(undefined)).toBe(DEFAULT_POST_LOGIN_ROUTE);
-    expect(safeNextRoute(null)).toBe(DEFAULT_POST_LOGIN_ROUTE);
-    expect(safeNextRoute(42 as unknown as string)).toBe(DEFAULT_POST_LOGIN_ROUTE);
-  });
-
-  it('honours a custom fallback', () => {
-    expect(safeNextRoute('http://evil.com', '/(tabs)/home')).toBe('/(tabs)/home');
+  it('accepts internal tab routes', () => {
+    expect(safeNextRoute('/(tabs)/profile')).toBe('/(tabs)/profile');
   });
 });

@@ -1,9 +1,45 @@
 import { DIRECTORY } from '../../lib/env';
-import { http } from '../../lib/http';
+import { HttpError, http } from '../../lib/http';
+import { parseOtpDelivery } from '../../lib/otp-delivery';
 import { normalizeEthiopianPhone, PHONE_INVALID_MESSAGE } from '../../lib/phone';
 import type { OtpChallenge, OtpPurpose, VerifyResult } from '../shared';
-import type { ApiOtpChallenge, ApiOtpVerify, ApiSessionExchange, ApiSessionRefresh } from './types';
+import type {
+  ApiCustomerProfile,
+  ApiOtpChallenge,
+  ApiOtpVerify,
+  ApiProviderSessionResult,
+  ApiSessionExchange,
+  ApiSessionRefresh,
+} from './types';
 import type { VerifyArgs } from '../mock/auth';
+
+export interface PhoneAccountHintResponse {
+  account: NonNullable<ApiOtpChallenge['account']>;
+  resolved_role: 'customer' | 'provider';
+}
+
+/** POST /accounts/hint — DB lookup before OTP; no SMS sent. */
+export async function fetchPhoneAccountHint(
+  phone: string,
+  preferredRole: 'customer' | 'provider' = 'customer',
+): Promise<PhoneAccountHintResponse | null> {
+  const normalized = normalizeEthiopianPhone(phone);
+  if (!normalized) return Promise.reject(new Error(PHONE_INVALID_MESSAGE));
+  try {
+    const data = await http<PhoneAccountHintResponse>(`${DIRECTORY}/accounts/hint`, {
+      method: 'POST',
+      body: { phone: normalized, preferred_role: preferredRole },
+      skipAuthInterceptor: true,
+    });
+    if (!data?.account) return null;
+    return data;
+  } catch (e) {
+    if (e instanceof HttpError && (e.status === 404 || e.code === 'NOT_FOUND')) {
+      return null;
+    }
+    throw e;
+  }
+}
 
 /**
  * POST /otp/request — sends an OTP via the backend (AfroMessage) and returns a challenge.
@@ -26,7 +62,13 @@ export async function requestOtp(
     headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     skipAuthInterceptor: true, // Pre-auth: never trigger a session refresh from OTP calls.
   });
-  return { challengeId: data.challenge_id, expiresAt: data.expires_at, reused: data.reused };
+  return {
+    challengeId: data.challenge_id,
+    expiresAt: data.expires_at,
+    reused: data.reused,
+    delivery: parseOtpDelivery(data.delivery) ?? undefined,
+    account: data.account,
+  };
 }
 
 /** POST /otp/verify — verifies the code and returns a one-time verify_token. */
@@ -76,5 +118,83 @@ export async function logoutSession(refreshToken: string): Promise<{ ok: boolean
     // Best-effort logout: ignore network failures or session-expired 401s during logout
     return { ok: true };
   }
+}
+
+export interface FetchCustomerMeOptions {
+  skipAuthInterceptor?: boolean;
+}
+
+/** GET /customers/me — current customer hiring profile (requires Bearer access token). */
+export async function fetchCustomerMe(options: FetchCustomerMeOptions = {}): Promise<ApiCustomerProfile> {
+  const data = await http<{ customer: ApiCustomerProfile }>(`${DIRECTORY}/customers/me`, {
+    skipAuthInterceptor: options.skipAuthInterceptor,
+  });
+  if (!data?.customer) {
+    return Promise.reject(new Error('Customer profile unavailable.'));
+  }
+  return data.customer;
+}
+
+export interface CustomerProfilePayload {
+  client_type: 'individual' | 'company';
+  display_name: string;
+  company_name?: string | null;
+  area_slug?: string | null;
+  id_number?: string | null;
+  id_document_url?: string | null;
+  business_license_number?: string | null;
+  business_license_url?: string | null;
+}
+
+/** PATCH /customers/me — update hiring profile (Bearer session required). */
+export async function updateCustomerProfile(payload: CustomerProfilePayload): Promise<ApiCustomerProfile> {
+  const data = await http<{ customer: ApiCustomerProfile }>(`${DIRECTORY}/customers/me`, {
+    method: 'PATCH',
+    body: payload,
+  });
+  if (!data?.customer) {
+    return Promise.reject(new Error('Could not save your profile.'));
+  }
+  return data.customer;
+}
+
+/** POST /providers/login — provider OTP login after directory_provider_login verify. */
+export async function loginProvider(verifyToken: string, phone: string): Promise<ApiProviderSessionResult> {
+  const normalized = normalizeEthiopianPhone(phone) || phone;
+  return await http<ApiProviderSessionResult>(`${DIRECTORY}/providers/login`, {
+    method: 'POST',
+    body: { verify_token: verifyToken, phone: normalized },
+    skipAuthInterceptor: true,
+  });
+}
+
+export interface RegisterProviderPayload {
+  verifyToken: string;
+  phone: string;
+  fullName: string;
+  categorySlug: string;
+  area?: string;
+  whatsappNumber?: string;
+  experience?: string;
+  description?: string;
+}
+
+/** POST /providers/register — registers a Basic provider after provider_join OTP verification. */
+export async function registerProvider(payload: RegisterProviderPayload): Promise<ApiProviderSessionResult> {
+  const normalized = normalizeEthiopianPhone(payload.phone) || payload.phone;
+  return await http<ApiProviderSessionResult>(`${DIRECTORY}/providers/register`, {
+    method: 'POST',
+    body: {
+      verify_token: payload.verifyToken,
+      phone: normalized,
+      fullName: payload.fullName.trim(),
+      categorySlug: payload.categorySlug,
+      area: payload.area || undefined,
+      whatsappNumber: payload.whatsappNumber || undefined,
+      experience: payload.experience || undefined,
+      description: payload.description || undefined,
+    },
+    skipAuthInterceptor: true,
+  });
 }
 

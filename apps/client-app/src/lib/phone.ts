@@ -17,6 +17,18 @@
 /** The single reason string shown inline when a number cannot be normalized. */
 export const PHONE_INVALID_MESSAGE = 'Enter a valid Ethiopian phone number (e.g. 0912 345 678).';
 
+/** Convert Ethiopic / Arabic-Indic numerals to ASCII before digit extraction. */
+export function toAsciiDigits(raw: string): string {
+  return raw
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u1369-\u1371]/g, (d) => String(d.charCodeAt(0) - 0x1368));
+}
+
+/** Strip to local mobile digits while typing (max 10 ASCII digits). */
+export function sanitizePhoneInput(raw: string): string {
+  return toAsciiDigits(raw).replace(/[^0-9]/g, '').slice(0, 10);
+}
+
 /**
  * Normalizes Ethiopian phone input to `+2519XXXXXXXX`. Returns null if invalid.
  *
@@ -26,7 +38,7 @@ export const PHONE_INVALID_MESSAGE = 'Enter a valid Ethiopian phone number (e.g.
  */
 export function normalizeEthiopianPhone(raw: string): string | null {
   if (typeof raw !== 'string') return null;
-  const digits = raw.replace(/[^0-9]/g, '');
+  const digits = toAsciiDigits(raw).replace(/[^0-9]/g, '');
   let local = digits;
   if (local.startsWith('251')) local = local.slice(3);
   if (local.startsWith('0')) local = local.slice(1);

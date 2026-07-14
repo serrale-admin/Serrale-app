@@ -19,8 +19,28 @@
  */
 import { APP_VERSION, ApiBusinessError, HttpError, MalformedResponseError, NetworkError } from './http';
 import type { Labels } from './labels';
+import { PHONE_INVALID_MESSAGE } from './phone';
 import { retryInfoFromError } from './otp-retry';
 import type { Breadcrumb } from './crash-reporter';
+
+type ApiErrorCode = keyof Labels['apiErrors'];
+
+function extractApiCode(error: unknown): string | undefined {
+  if (error instanceof HttpError || error instanceof ApiBusinessError) return error.code;
+  return undefined;
+}
+
+/** Map backend codes and client phone validation to localized user copy. */
+export function apiErrorMessage(error: unknown, labels: Labels): string | null {
+  if (error instanceof Error && error.message === PHONE_INVALID_MESSAGE) {
+    return labels.auth.invalidPhone;
+  }
+  const code = extractApiCode(error);
+  if (code && code in labels.apiErrors) {
+    return labels.apiErrors[code as ApiErrorCode];
+  }
+  return null;
+}
 
 /** Coarse failure class — drives icon/tone choices and analytics/breadcrumbs. */
 export type FailureKind =
@@ -177,18 +197,31 @@ function humanWait(error: unknown, labels: Labels): string | null {
 export function presentError(error: unknown, labels: Labels): ErrorView {
   const p = resolvePresentation(error);
   const e = labels.errors;
+  const mapped = apiErrorMessage(error, labels);
 
-  let message = e[p.messageKey];
+  let message = mapped ?? e[p.messageKey];
 
-  // 429: prefer the specific "wait N" copy when the server told us how long.
+  // 429: prefer the specific "wait N" copy when the server told us how long,
+  // even when a mapped apiErrors code (e.g. OTP_COOLDOWN) would otherwise win.
   if (p.kind === 'rate-limited') {
     const wait = humanWait(error, labels);
-    message = wait ? e.rateLimitedMessageWait.replace('{wait}', wait) : e.rateLimitedMessage;
+    if (wait) {
+      message = e.rateLimitedMessageWait.replace('{wait}', wait);
+    } else if (!mapped) {
+      message = e.rateLimitedMessage;
+    }
   }
+
+  const title =
+    mapped && (error instanceof HttpError || error instanceof ApiBusinessError)
+      ? error instanceof HttpError && error.status >= 500
+        ? e.serverTitle
+        : e.validationTitle
+      : e[p.titleKey];
 
   return {
     kind: p.kind,
-    title: e[p.titleKey],
+    title,
     message,
     retryable: p.retryable,
     action: e[p.actionKey],

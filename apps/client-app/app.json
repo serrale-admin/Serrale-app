@@ -2,16 +2,16 @@
   "expo": {
     "name": "SERRALE",
     "slug": "serrale-basic",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/app-icon-square.png",
     "scheme": "serrale",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/splash-native-transparent.png",
       "resizeMode": "contain",
-      "backgroundColor": "#075539"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "assets/*"
@@ -19,11 +19,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "et.serrale.basic",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "et.serrale.basic",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-square.png",
         "backgroundColor": "#075539"
@@ -40,6 +43,8 @@
         "expo-build-properties",
         {
           "android": {
+            "targetSdkVersion": 35,
+            "compileSdkVersion": 35,
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "usesCleartextTraffic": false

@@ -239,6 +239,13 @@ describe('429 wait substitution', () => {
     expect(view.message).toContain('2 ደቂቃ');
     expect(view.message).not.toMatch(/seconds?|minutes?/i);
   });
+
+  it('shows wait time even when the error code maps to apiErrors (OTP_COOLDOWN)', () => {
+    const err = new HttpError(429, 'rate limited', 'OTP_COOLDOWN');
+    err.retryRaw = { body: { retry_after_seconds: 42 }, retryAfter: '42', rateLimitReset: null };
+    const view = presentError(err, labelsFor('en'));
+    expect(view.message).toMatch(/42 seconds/i);
+  });
 });
 
 describe('failed request breadcrumbs', () => {

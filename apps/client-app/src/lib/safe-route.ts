@@ -12,6 +12,9 @@
 /** Where to send a freshly logged-in user when no valid `next` was provided. */
 export const DEFAULT_POST_LOGIN_ROUTE = '/(tabs)/profile';
 
+/** Safe fallback when the auth stack has no history (e.g. entry via `router.replace`). */
+export const DEFAULT_AUTH_BACK_ROUTE = '/(tabs)/profile';
+
 /**
  * Returns a safe internal route to navigate to after login.
  *
@@ -40,4 +43,18 @@ export function safeNextRoute(
   if (value.includes('\\')) return fallback;
 
   return value;
+}
+
+/**
+ * Auth back navigation: pop when history exists, otherwise replace to a safe internal route.
+ * Needed because login entry points often use `router.replace`, leaving an empty back stack.
+ */
+export function navigateAuthBack(fallback: string = DEFAULT_AUTH_BACK_ROUTE): void {
+  // Lazy require avoids circular imports when safe-route is loaded before expo-router in tests.
+  const { router } = require('expo-router') as typeof import('expo-router');
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace(safeNextRoute(fallback) as never);
 }

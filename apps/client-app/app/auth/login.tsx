@@ -1,33 +1,60 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AuthScreenHeader from '../../src/components/AuthScreenHeader';
 import Button from '../../src/components/Button';
-import ScreenHeader from '../../src/components/ScreenHeader';
-import { useRequestOtp } from '../../src/hooks/queries';
+import PhoneField from '../../src/components/PhoneField';
+import { fetchPhoneAccountHint } from '../../src/api';
+import {
+  useRequestCustomerSignupOtp,
+  useRequestOtp,
+  useRequestProviderOtp,
+} from '../../src/hooks/queries';
+import { HttpError } from '../../src/lib/http';
 import { Icon } from '../../src/lib/icons';
 import { presentError } from '../../src/lib/error-presentation';
 import { useLabels } from '../../src/lib/labels';
+import { parseOtpDelivery } from '../../src/lib/otp-delivery';
 import { newIdempotencyKey } from '../../src/lib/otp-retry';
+
+  resolveCustomerOtpIntent,
+} from '../../src/lib/customer-otp-purpose';
+import { parseOtpDelivery } from '../../src/lib/otp-delivery';
+import { newIdempotencyKey } from '../../src/lib/otp-retry';
+import { parsePhoneAccountHint, resolveLoginRoleFromHint } from '../../src/lib/phone-account';
 import { normalizeEthiopianPhone } from '../../src/lib/phone';
-import { colors, fonts, radius } from '../../src/lib/theme';
+import { navigateAuthBack, safeNextRoute } from '../../src/lib/safe-route';
+import { colors, fonts, layout } from '../../src/lib/theme';
 import { PhoneForm, phoneSchema } from '../../src/schemas/auth';
 import { useAppStore } from '../../src/store/appStore';
+import type { OtpChallenge } from '../../src/api/shared';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ reason?: string; next?: string }>();
+  const params = useLocalSearchParams<{ reason?: string; next?: string; role?: string; intent?: string }>();
   const setPendingPhone = useAppStore((s) => s.setPendingPhone);
   const setPendingChallengeId = useAppStore((s) => s.setPendingChallengeId);
+  const setPendingOtpDelivery = useAppStore((s) => s.setPendingOtpDelivery);
+  const setPendingAccountHint = useAppStore((s) => s.setPendingAccountHint);
+  const setPendingAuthRole = useAppStore((s) => s.setPendingAuthRole);
+  const setPendingOtpPurpose = useAppStore((s) => s.setPendingOtpPurpose);
+  const setPhoneHasProvider = useAppStore((s) => s.setPhoneHasProvider);
   const showToast = useAppStore((s) => s.showToast);
-  const requestOtp = useRequestOtp();
+  const requestCustomerLoginOtp = useRequestOtp();
+  const requestCustomerSignupOtp = useRequestCustomerSignupOtp();
+  const requestProviderOtp = useRequestProviderOtp();
   const labels = useLabels();
-  // Synchronous in-flight guard. `requestOtp.isPending` flips on the NEXT render,
-  // so within one synchronous burst of taps it is still false — a ref flipped
-  // immediately is what actually collapses N rapid taps into a single send.
   const sending = useRef(false);
+
+  const customerIntent = resolveCustomerOtpIntent(params);
+  const customerPurpose = customerOtpPurposeForIntent(customerIntent);
+
+  const [sendError, setSendError] = useState('');
+  const [customerMissing, setCustomerMissing] = useState(false);
+  const [providerMissing, setProviderMissing] = useState(false);
 
   const { handleSubmit, watch, setValue, formState } = useForm<PhoneForm>({
     resolver: zodResolver(phoneSchema),
@@ -35,97 +62,194 @@ export default function LoginScreen() {
     mode: 'onSubmit',
   });
   const phone = watch('phone');
-  // The zod schema carries the canonical English validation contract; the screen
-  // renders the localized copy for the one phone-shape error it can produce.
   const phoneError = formState.errors.phone ? labels.auth.invalidPhone : undefined;
+  const preferredRole = params.role === 'provider' ? 'provider' : 'customer';
+  const otpPending =
+    requestCustomerLoginOtp.isPending ||
+    requestCustomerSignupOtp.isPending ||
+    requestProviderOtp.isPending;
+  const mutationError =
+    requestCustomerLoginOtp.error ??
+    requestCustomerSignupOtp.error ??
+    requestProviderOtp.error;
+  const apiError =
+    !phoneError && (sendError || (mutationError ? presentError(mutationError, labels).message : ''));
 
-  const onSend = handleSubmit((v) => {
-    // One logical send per user action: ignore duplicate taps while a send is
-    // in flight. (React Query dedupes on mutationKey too, and the Idempotency-Key
-    // makes a retried request replay the same challenge instead of a new SMS.)
-    if (sending.current || requestOtp.isPending) return;
+  const handleBack = () => {
+    navigateAuthBack(safeNextRoute(params.next));
+  };
+
+  const onSend = handleSubmit(async (v) => {
+    if (sending.current || otpPending) return;
     sending.current = true;
-    // One idempotency key per send action.
+    setSendError('');
+    setCustomerMissing(false);
+    setProviderMissing(false);
+
     const idempotencyKey = newIdempotencyKey();
-    requestOtp.mutate(
-      { phone: v.phone, idempotencyKey },
-      {
-        onSuccess: (challenge: { challengeId: string }) => {
-          setPendingPhone(normalizeEthiopianPhone(v.phone) || v.phone);
-          setPendingChallengeId(challenge.challengeId);
-          router.replace({ pathname: '/auth/verify', params: { next: params.next } });
+    const normalized = normalizeEthiopianPhone(v.phone) || v.phone;
+
+    const proceedToVerify = (
+      challenge: OtpChallenge,
+      role: 'customer' | 'provider',
+      purpose: typeof customerPurpose | 'directory_provider_login',
+    ) => {
+      setPendingPhone(normalized);
+      setPendingChallengeId(challenge.challengeId);
+      const delivery = parseOtpDelivery(challenge.delivery);
+      setPendingOtpDelivery(delivery);
+      setPendingAuthRole(role);
+      setPendingOtpPurpose(purpose);
+      const account = parsePhoneAccountHint(challenge.account);
+      setPendingAccountHint(account);
+      setPhoneHasProvider(account?.has_provider === true);
+      if (delivery === 'review_code') {
+        showToast(labels.verify.reviewCodeHint, 'ph-warning-circle');
+      }
+      router.replace({
+        pathname: '/auth/verify',
+        params: {
+          next: params.next,
+          ...(role === 'provider' ? { role: 'provider' } : {}),
+          ...(customerIntent === 'request' ? { intent: 'request' } : {}),
         },
-        onError: (e) => {
-          showToast(presentError(e, labels).message, 'ph-warning-circle');
+      });
+    };
+
+    try {
+      const hintResponse = await fetchPhoneAccountHint(normalized, preferredRole).catch(() => null);
+      const role = resolveLoginRoleFromHint(parsePhoneAccountHint(hintResponse?.account), preferredRole);
+      const mutation =
+        role === 'provider'
+          ? requestProviderOtp
+          : customerIntent === 'request'
+            ? requestCustomerSignupOtp
+            : requestCustomerLoginOtp;
+      const purpose =
+        role === 'provider' ? ('directory_provider_login' as const) : customerPurpose;
+
+      mutation.mutate(
+        { phone: v.phone, idempotencyKey },
+        {
+          onSuccess: (challenge) => proceedToVerify(challenge, role, purpose),
+          onError: (e) => {
+            if (e instanceof HttpError && e.code === 'CUSTOMER_NOT_FOUND') {
+              setSendError(labels.auth.customerNotFound);
+              setCustomerMissing(true);
+              return;
+            }
+            if (e instanceof HttpError && e.code === 'PROVIDER_NOT_FOUND') {
+              setSendError(labels.clientProfile.providerNotFound);
+              setProviderMissing(true);
+              return;
+            }
+            setSendError(presentError(e, labels).message);
+          },
+          onSettled: () => {
+            sending.current = false;
+          },
         },
-        onSettled: () => {
-          sending.current = false;
-        },
-      },
-    );
+      );
+    } catch (e) {
+      setSendError(presentError(e, labels).message);
+      sending.current = false;
+    }
   });
+
+  const lead = `${params.reason ? `${params.reason}. ` : ''}${labels.auth.loginSubtitle}`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={8}
       >
-      <View style={styles.body}>
-        <View style={styles.iconBox}>
-          <Icon name="ph-phone" size={26} color="#fff" weight="fill" />
-        </View>
-        <Text style={styles.h1}>{labels.common.loginWithPhone}</Text>
-        <Text style={styles.subtitle}>
-          {params.reason ? params.reason + '. ' : ''}{labels.auth.loginSubtitle}
-        </Text>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <AuthScreenHeader onBack={handleBack} backFallback={safeNextRoute(params.next)} />
 
-        <View style={styles.inputRow}>
-          <View style={styles.prefix}>
-            <Text style={styles.flag}>🇪🇹</Text>
-            <Text style={styles.prefixText}>+251</Text>
+          <Text style={styles.h1}>{labels.common.loginWithPhone}</Text>
+          <Text style={styles.lead}>{lead}</Text>
+
+          <View style={styles.section}>
+            <PhoneField
+              value={phone}
+              errored={!!phoneError || !!apiError}
+              onChangeText={(text) => {
+                setValue('phone', text.replace(/[^0-9]/g, '').slice(0, 10));
+                setSendError('');
+                setCustomerMissing(false);
+                setProviderMissing(false);
+                requestCustomerLoginOtp.reset();
+                requestCustomerSignupOtp.reset();
+                requestProviderOtp.reset();
+              }}
+            />
+            {!!phoneError && (
+              <View style={styles.errorRow}>
+                <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
+                <Text style={styles.errorText}>{phoneError}</Text>
+              </View>
+            )}
+            {!!apiError && (
+              <View style={styles.errorRow}>
+                <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
+                <Text style={styles.errorText}>{apiError}</Text>
+              </View>
+            )}
+            {customerMissing && (
+              <Button
+                label={labels.auth.customerRegisterLink}
+                variant="secondary"
+                size="md"
+                fullWidth
+                onPress={() =>
+                  router.replace({
+                    pathname: '/auth/login',
+                    params: { intent: 'request', next: params.next || '/(tabs)/request' },
+                  })
+                }
+              />
+            )}
+            {providerMissing && (
+              <Button
+                label={labels.clientProfile.providerRegisterLink}
+                variant="secondary"
+                size="md"
+                fullWidth
+                onPress={() => router.push('/provider/join')}
+              />
+            )}
           </View>
-          <TextInput
-            value={phone}
-            onChangeText={(t) => {
-              setValue('phone', t.replace(/[^0-9]/g, '').slice(0, 10));
-              if (requestOtp.error) requestOtp.reset();
-            }}
-            inputMode="numeric"
-            placeholder="9 12 345 678"
-            placeholderTextColor={colors.faint}
-            style={[styles.input, { borderColor: phoneError ? colors.danger : colors.borderField }]}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button
+            label={otpPending ? labels.auth.sending : labels.auth.sendCode}
+            variant="gold"
+            icon="ph-paper-plane-tilt"
+            loading={otpPending}
+            fullWidth
+            onPress={onSend}
+          />
+          <View style={styles.orRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orText}>{labels.auth.orDivider}</Text>
+            <View style={styles.orLine} />
+          </View>
+          <Button
+            label={labels.auth.continueAsGuest}
+            variant="secondary"
+            size="md"
+            fullWidth
+            onPress={() => router.replace('/(tabs)/home')}
           />
         </View>
-        {!!phoneError && (
-          <View style={styles.errorRow}>
-            <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-            <Text style={styles.errorText}>{phoneError}</Text>
-          </View>
-        )}
-        {requestOtp.error && !phoneError && (
-          <View style={styles.errorRow}>
-            <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-            <Text style={styles.errorText}>
-              {presentError(requestOtp.error, labels).message}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.footer}>
-        <Button
-          label={requestOtp.isPending ? labels.auth.sending : labels.auth.sendCode}
-          loading={requestOtp.isPending}
-          fullWidth
-          onPress={onSend}
-        />
-        <Pressable style={styles.guest} onPress={() => router.replace('/(tabs)/home')} accessibilityRole="button">
-          <Text style={styles.guestText}>{labels.auth.continueAsGuest}</Text>
-        </Pressable>
-      </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -134,18 +258,40 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: 22, paddingTop: 10 },
-  iconBox: { width: 54, height: 54, borderRadius: radius.lg + 2, backgroundColor: '#0a5d3f', alignItems: 'center', justifyContent: 'center' },
-  h1: { fontFamily: fonts.heading, fontSize: 25, color: colors.text, marginTop: 18, marginBottom: 6 },
-  subtitle: { fontSize: 13.5, color: colors.muted, lineHeight: 21, fontFamily: fonts.regular },
-  inputRow: { flexDirection: 'row', gap: 9, marginTop: 24 },
-  prefix: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderField, borderRadius: radius.md + 1 },
-  flag: { fontSize: 16 },
-  prefixText: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  input: { flex: 1, height: 52, paddingHorizontal: 16, backgroundColor: colors.surface, borderWidth: 1, borderRadius: radius.md + 1, fontSize: 16, fontFamily: fonts.semibold, color: colors.text, letterSpacing: 0.5 },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  errorText: { fontSize: 12, color: colors.danger, fontFamily: fonts.regular },
-  footer: { paddingHorizontal: 22, paddingBottom: 22 },
-  guest: { height: 48, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
-  guestText: { color: colors.muted, fontSize: 13.5, fontFamily: fonts.semibold },
+  scroll: { paddingBottom: 16 },
+  h1: {
+    fontFamily: fonts.heading,
+    fontSize: 30,
+    color: colors.green900,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
+    lineHeight: 36,
+  },
+  lead: {
+    fontFamily: fonts.regular,
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: colors.muted,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  section: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
+  errorRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  errorText: { flex: 1, fontSize: 12.5, color: colors.danger, fontFamily: fonts.regular, lineHeight: 17 },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 18,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSoft,
+    backgroundColor: colors.bg,
+    gap: 8,
+    maxWidth: layout.contentMaxWidth + 32,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 2 },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.borderSoft },
+  orText: { fontSize: 12, fontFamily: fonts.medium, color: colors.faint },
 });

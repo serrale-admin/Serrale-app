@@ -11,6 +11,13 @@ export interface ApiOtpChallenge {
   challenge_id: string;
   expires_at: string;
   reused?: boolean;
+  /** `review_code` = Play-review bypass (no SMS). Absent on older backends → treat as SMS. */
+  delivery?: 'sms' | 'review_code';
+  account?: {
+    has_customer: boolean;
+    has_provider: boolean;
+    customer_profile_complete: boolean;
+  };
 }
 
 export interface ApiOtpVerify {
@@ -72,9 +79,28 @@ export interface ApiSessionCustomer {
   phone: string;
   phone_verified: boolean;
   status: string;
+  client_type?: 'individual' | 'company' | null;
+  display_name?: string | null;
+  company_name?: string | null;
+  area_slug?: string | null;
+  id_number?: string | null;
+  id_document_url?: string | null;
+  business_license_number?: string | null;
+  business_license_url?: string | null;
+  profile_complete?: boolean;
   created_at: string;
   updated_at: string;
   last_seen_at?: string;
+}
+
+export type ApiCustomerProfile = ApiSessionCustomer;
+
+export interface ApiLinkedProviderSummary {
+  id: string;
+  full_name: string;
+  area?: string | null;
+  photo_url?: string | null;
+  category_slug?: string | null;
 }
 
 export interface ApiSessionExchange {
@@ -82,11 +108,41 @@ export interface ApiSessionExchange {
   refresh_token: string;
   access_expires_at: string;
   customer: ApiSessionCustomer;
+  account?: ApiOtpChallenge['account'];
+  linked_provider?: ApiLinkedProviderSummary | null;
+  /** Co-issued when the phone owns a provider listing — same OTP, no /providers/login round-trip. */
+  provider_session?: ApiProviderSessionResult | null;
 }
 
 export interface ApiSessionRefresh {
   access_token: string;
   refresh_token: string;
   access_expires_at: string;
+}
+
+export interface ApiProviderSessionProvider {
+  id: string;
+  full_name: string;
+  phone: string;
+  category_slug: string;
+  area?: string | null;
+  whatsapp?: string | null;
+  experience?: string | null;
+  bio?: string | null;
+  photo_url?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+}
+
+/** GET/PATCH /providers/me response row. */
+export interface ApiProviderAccount extends ApiProviderSessionProvider {
+  phone_verified?: boolean;
+  national_id_number?: string | null;
+  kyc_status?: 'pending' | 'submitted' | 'verified' | 'rejected';
+}
+
+export interface ApiProviderSessionResult {
+  provider: ApiProviderSessionProvider;
+  session_token: string;
 }
 

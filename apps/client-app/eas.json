@@ -17,7 +17,9 @@
         ]
       },
       "env": {
-        "EX_UPDATES_NATIVE_DEBUG": "0"
+        "EX_UPDATES_NATIVE_DEBUG": "0",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.serrale.com/api",
+        "EXPO_PUBLIC_USE_MOCK": "false"
       },
       "android": {
         "buildType": "apk"
@@ -26,10 +28,20 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.serrale.com/api",
+        "EXPO_PUBLIC_USE_MOCK": "false"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "track": "alpha",
+        "releaseStatus": "completed",
+        "changesNotSentForReview": false
+      }
+    }
   }
 }

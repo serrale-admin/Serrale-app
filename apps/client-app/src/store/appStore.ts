@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { OtpPurpose } from '../api/shared';
 import { AREA_ALL, AREAS } from '../data/mock';
 import type { Filters, Lang } from '../types';
 
@@ -12,6 +13,7 @@ interface AuthUser {
   id?: string;
   name: string;
   phone: string;
+  profileComplete?: boolean;
 }
 
 const emptyFilters = (): Filters => ({
@@ -30,15 +32,54 @@ interface Toast {
 }
 
 interface AppState {
-  // session
   loggedIn: boolean;
   user: AuthUser | null;
   pendingPhone: string;
   pendingChallengeId: string;
+  /** Ephemeral: how the pending OTP was delivered (`review_code` = no SMS). */
+  pendingOtpDelivery: 'sms' | 'review_code' | null;
+  pendingAccountHint: {
+    has_customer: boolean;
+    has_provider: boolean;
+    customer_profile_complete: boolean;
+  } | null;
+  phoneHasProvider: boolean;
+  linkedProvider: {
+    id: string;
+    full_name: string;
+    area?: string | null;
+    photo_url?: string | null;
+    category_slug?: string | null;
+  } | null;
+  providerProfile: {
+    id: string;
+    full_name: string;
+    phone: string;
+    area?: string | null;
+    photo_url?: string | null;
+    category_slug?: string | null;
+  } | null;
+  sessionReady: boolean;
+  pendingAuthRole: 'customer' | 'provider';
+  /** Frozen OTP purpose for the in-flight customer/provider challenge. */
+  pendingOtpPurpose: OtpPurpose | null;
+  /** Which login path is active in this app session — drives profile UI and edit flows. */
+  activeSession: 'customer' | 'provider' | null;
   login(user: AuthUser): void;
+  /** Clear customer session state only — keeps provider profile / saved providers. */
+  logoutCustomer(): void;
   logout(): void;
   setPendingPhone(phone: string): void;
   setPendingChallengeId(id: string): void;
+  setPendingOtpDelivery(delivery: AppState['pendingOtpDelivery']): void;
+  setPendingAccountHint(hint: AppState['pendingAccountHint']): void;
+  setPhoneHasProvider(value: boolean): void;
+  setLinkedProvider(provider: AppState['linkedProvider']): void;
+  setProviderProfile(profile: AppState['providerProfile']): void;
+  setSessionReady(ready: boolean): void;
+  setPendingAuthRole(role: 'customer' | 'provider'): void;
+  setPendingOtpPurpose(purpose: OtpPurpose | null): void;
+  setActiveSession(role: 'customer' | 'provider' | null): void;
 
   // preferences
   area: string;
@@ -108,11 +149,62 @@ export const useAppStore = create<AppState>()(
       user: null,
       pendingPhone: '',
       pendingChallengeId: '',
+      pendingOtpDelivery: null,
+      pendingAccountHint: null,
+      phoneHasProvider: false,
+      linkedProvider: null,
+      providerProfile: null,
+      sessionReady: false,
+      pendingAuthRole: 'customer',
+      pendingOtpPurpose: null,
+      activeSession: null,
       login: (user) =>
-        set({ loggedIn: true, user, pendingPhone: '', pendingChallengeId: '' }),
-      logout: () => set({ loggedIn: false, user: null, saved: {}, pendingPhone: '', pendingChallengeId: '' }),
+        set({
+          loggedIn: true,
+          user,
+          pendingPhone: '',
+          pendingChallengeId: '',
+          pendingOtpDelivery: null,
+          pendingAccountHint: null,
+          pendingOtpPurpose: null,
+        }),
+      logoutCustomer: () =>
+        set({
+          loggedIn: false,
+          user: null,
+          pendingPhone: '',
+          pendingChallengeId: '',
+          pendingOtpDelivery: null,
+          pendingAccountHint: null,
+          pendingOtpPurpose: null,
+        }),
+      logout: () =>
+        set({
+          loggedIn: false,
+          user: null,
+          saved: {},
+          pendingPhone: '',
+          pendingChallengeId: '',
+          pendingOtpDelivery: null,
+          pendingAccountHint: null,
+          pendingOtpPurpose: null,
+          phoneHasProvider: false,
+          linkedProvider: null,
+          providerProfile: null,
+          pendingAuthRole: 'customer',
+          activeSession: null,
+        }),
       setPendingPhone: (pendingPhone) => set({ pendingPhone }),
       setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
+      setPendingOtpDelivery: (pendingOtpDelivery) => set({ pendingOtpDelivery }),
+      setPendingAccountHint: (pendingAccountHint) => set({ pendingAccountHint }),
+      setPhoneHasProvider: (phoneHasProvider) => set({ phoneHasProvider }),
+      setLinkedProvider: (linkedProvider) => set({ linkedProvider }),
+      setProviderProfile: (providerProfile) => set({ providerProfile }),
+      setSessionReady: (sessionReady) => set({ sessionReady }),
+      setPendingAuthRole: (pendingAuthRole) => set({ pendingAuthRole }),
+      setPendingOtpPurpose: (pendingOtpPurpose) => set({ pendingOtpPurpose }),
+      setActiveSession: (activeSession) => set({ activeSession }),
 
       area: AREA_ALL,
       lang: 'en',

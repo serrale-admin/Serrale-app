@@ -1,58 +1,98 @@
-import { StyleSheet, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Platform, StyleSheet, TextInput, View } from 'react-native';
 import { fill, useLabels } from '../lib/labels';
-import { colors, fonts, radius } from '../lib/theme';
+import { OTP_LENGTH } from '../lib/otp-code';
+import OtpBox from './OtpBox';
 
 interface Props {
-  /** Current digits, one entry per box (controls length). */
   value: string[];
-  /** Called with (index, text) on change — parent owns the state machine. */
   onChangeDigit(index: number, text: string): void;
-  /** Called with (index, key) on key press — parent handles Backspace nav. */
+  /** When the user pastes a multi-digit code into any box. */
+  onPaste?(digits: string[]): void;
   onKeyPress(index: number, key: string): void;
-  /** Ref setter so the parent can focus individual boxes. */
   setRef(index: number, el: TextInput | null): void;
-  /** Draw every box with the danger border (verification failed). */
   errored?: boolean;
 }
 
+/** Compute box size so all six digits fit inside `availWidth` without overflow. */
+export function otpBoxMetrics(availWidth: number) {
+  if (availWidth <= 0) {
+    return { gap: 6, box: 40 };
+  }
+  const gap = availWidth < 300 ? 4 : availWidth < 340 ? 5 : availWidth < 380 ? 6 : 8;
+  const raw = Math.floor((availWidth - gap * (OTP_LENGTH - 1)) / OTP_LENGTH);
+  const box = Math.min(44, Math.max(32, raw));
+  return { gap, box };
+}
+
 /**
- * Presentational 6-digit code input row. All focus/advance/submit behavior lives
- * in the parent (auth/verify) — this only renders the boxes so their visuals
- * match the shared design without changing the verification logic.
+ * Responsive 6-digit OTP row. Box width is measured from the row container so
+ * inputs stay proportional inside padded cards — not from the full window.
  */
-export default function OtpInput({ value, onChangeDigit, onKeyPress, setRef, errored }: Props) {
+export default function OtpInput({
+  value,
+  onChangeDigit,
+  onPaste,
+  onKeyPress,
+  setRef,
+  errored,
+}: Props) {
   const labels = useLabels();
+  const [rowWidth, setRowWidth] = useState(0);
+
+  const metrics = useMemo(() => otpBoxMetrics(rowWidth), [rowWidth]);
+
+  const handleChange = (index: number, raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, '');
+    if (digits.length > 1) {
+      onPaste?.(digits.slice(0, OTP_LENGTH).split(''));
+      return;
+    }
+    onChangeDigit(index, raw);
+  };
+
   return (
-    <View style={styles.row}>
-      {value.map((digit, i) => (
-        <TextInput
-          key={i}
-          ref={(el) => setRef(i, el)}
-          value={digit}
-          onChangeText={(v) => onChangeDigit(i, v)}
-          onKeyPress={(e) => onKeyPress(i, e.nativeEvent.key)}
-          inputMode="numeric"
-          maxLength={1}
-          autoFocus={i === 0}
-          accessibilityLabel={fill(labels.a11y.digit, { n: i + 1 })}
-          style={[styles.box, { borderColor: errored ? colors.danger : digit ? colors.success : colors.borderInput }]}
-        />
-      ))}
+    <View
+      style={styles.outer}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0 && Math.abs(w - rowWidth) > 0.5) setRowWidth(w);
+      }}
+    >
+      <View style={[styles.row, { gap: metrics.gap }]}>
+        {value.map((digit, i) => (
+          <OtpBox
+            key={i}
+            ref={(el) => setRef(i, el)}
+            value={digit}
+            size={metrics.box}
+            errored={errored}
+            autoFocus={i === 0}
+            accessibilityLabel={fill(labels.a11y.digit, { n: i + 1 })}
+            onChangeText={(text) => handleChange(i, text)}
+            onKeyPress={(e) => onKeyPress(i, e.nativeEvent.key)}
+            selectTextOnFocus
+            {...(Platform.OS === 'android' ? { importantForAutofill: 'yes' as const } : {})}
+            textContentType="oneTimeCode"
+            autoComplete={Platform.OS === 'web' ? 'one-time-code' : 'sms-otp'}
+          />
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 9 },
-  box: {
-    flex: 1,
-    height: 58,
-    textAlign: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderRadius: radius.md + 1,
-    fontSize: 23,
-    fontFamily: fonts.bold,
-    color: colors.text,
+  outer: {
+    width: '100%',
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+    width: '100%',
   },
 });

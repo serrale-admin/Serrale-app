@@ -23,11 +23,18 @@ export const getProviderReviews = impl.getProviderReviews;
 export const searchSuggest = impl.searchSuggest;
 export const createServiceRequest = impl.createServiceRequest;
 export const logProviderContact = impl.logProviderContact;
+export const fetchPhoneAccountHint = impl.fetchPhoneAccountHint;
 export const requestOtp = impl.requestOtp;
 export const verifyOtp = impl.verifyOtp;
 export const exchangeSession = impl.exchangeSession;
 export const refreshSession = impl.refreshSession;
 export const logoutSession = impl.logoutSession;
+export const fetchCustomerMe = impl.fetchCustomerMe;
+export const updateCustomerProfile = impl.updateCustomerProfile;
+export const fetchProviderMe = impl.fetchProviderMe;
+export const updateProviderProfile = impl.updateProviderProfile;
+export const loginProvider = impl.loginProvider;
+export const registerProvider = impl.registerProvider;
 
 
 export type { Page, CategoryGroup, CreatedRequest, OtpChallenge, OtpPurpose, VerifyResult, SearchSuggestion } from './shared';

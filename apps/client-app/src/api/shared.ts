@@ -33,17 +33,27 @@ export interface SearchSuggestion {
   providerCount?: number;
 }
 
-/** OTP purposes supported by the backend (only the customer one is used here). */
+/** OTP purposes supported by the backend. */
 export type OtpPurpose =
   | 'directory_customer_request'
+  | 'directory_customer_login'
   | 'directory_provider_join'
   | 'directory_provider_login'
   | 'directory_provider_phone_change';
+
+/** Matches backend otp/request `delivery` — review_code means no SMS was sent. */
+export type OtpDelivery = 'sms' | 'review_code';
 
 export interface OtpChallenge {
   challengeId: string;
   expiresAt: string;
   reused?: boolean;
+  delivery?: OtpDelivery;
+  account?: {
+    has_customer: boolean;
+    has_provider: boolean;
+    customer_profile_complete: boolean;
+  };
 }
 
 export interface VerifyResult {

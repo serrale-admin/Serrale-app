@@ -1,4 +1,4 @@
-# SERRALE Basic Mobile — Session Orientation (as of 2026-07)
+# SERRALE Basic Mobile — Session Orientation (as of 2026-07-11)
 
 One-page orientation for Claude sessions in this repository. Canonical detail lives in root `AGENTS.md` and `apps/client-app/AGENTS.md` — read those before editing.
 
@@ -27,7 +27,9 @@ apps/client-app/dist*     Build/export outputs — do not hand-edit.
 ## Backend contract (condensed)
 
 - One universal backend for Basic web + mobile + legacy Plus: `https://api.serrale.com`. Never create a second backend or API origin.
-- Mobile uses `EXPO_PUBLIC_API_BASE_URL=https://api.serrale.com/api` (default in `src/lib/env.ts`); all Basic calls go under `/api/public-directory/*`: categories, providers (optional `lat`/`lng`/`radius_km` → nearest-first with `distance_km`), provider detail, search + suggest, `POST providers/:id/contact-events`, OTP request/verify, leads (request + provider).
+- Mobile uses `EXPO_PUBLIC_API_BASE_URL=https://api.serrale.com/api` (default in `src/lib/env.ts`); all Basic calls go under `/api/public-directory/*`: categories, providers (optional `lat`/`lng`/`radius_km` → nearest-first with `distance_km`), provider detail, search + suggest, `POST providers/:id/contact-events`, OTP request/verify, customer session exchange, leads (request + provider), **provider register**.
+- **Auth (2026-07-11):** customer OTP session via `secure-session.ts` (web AsyncStorage fallback); provider register at `/provider/join` persists JWT via `provider-session.ts`. Shared `OtpInput` on verify + join screens.
+- **Local web dev:** point `.env` at `http://127.0.0.1:5000/api` — production API rejects Expo web CORS.
 - Rule: every mobile request should carry `X-Serrale-Source: mobile_app` for source tracking (backend reads it; as of 2026-07 `src/lib/http.ts` does not yet set it — wire it there once if asked).
 - **Never call Plus namespaces** (`/api/auth`, `/api/me`, `/api/profiles`, `/api/jobs`, `/api/projects`, contracts/payments/escrow...). Plus is the legacy marketplace — live, maintenance-only, off limits to this app.
 - Data flow is fixed: screen → `src/hooks/queries.ts` → `src/api/index.ts` facade → `src/api/serrale` (or mock) → `src/lib/http.ts`. Screens never call `fetch`. Live mode is default; mock only with `EXPO_PUBLIC_USE_MOCK=true`.

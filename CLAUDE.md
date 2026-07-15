@@ -18,14 +18,17 @@ Read `AGENTS.md` in this repository before planning, editing, testing, or deploy
 
 - Expo SDK 52, React Native, TypeScript, Expo Router, React Query, Zustand, Zod, and React Hook Form.
 - Tabs: Home, Search/Categories, Request, Profile.
-- Live directory integrations: categories/counts, provider lists/details/search, OTP request/verify, customer service requests, and provider contact leads.
+- Live directory integrations: categories/counts, provider lists/details/search, OTP request/verify, customer service requests, provider registration (`/provider/join`), and provider contact leads.
+- **Customer auth:** OTP → verify → durable session (`secure-session.ts`); used for Request tab and Profile login.
+- **Provider register:** OTP (`directory_provider_join`) → verify → `POST /providers/register` → local provider JWT (`provider-session.ts`). No in-app provider dashboard yet.
+- **OTP UI:** shared `OtpInput` / `OtpBox` with responsive sizing and paste support on `auth/verify` and `provider/join`.
 - Call and WhatsApp actions open native intents; lead logging is best-effort and must never block contact.
 - Saved providers are currently local Zustand data, not server-synchronized bookmarks.
-- Mobile auth is currently a lightweight directory customer-request OTP gate, not Plus auth and not the complete Basic provider account flow.
 
 ## Current UI baseline
 
 - Preserve the compact Home and Categories redesign documented in `AGENTS.md`.
+- Request tab and Provider Join use production-quality section cards and photo hero banners (see `AGENTS.md` § Session continuity 2026-07-11).
 - Keep the background light, surfaces white, primary green deep, and gold limited to important actions.
 - Keep category images fitted without zooming: Home category tiles use a contained image region.
 - Reuse assets under `apps/client-app/assets` and the tracked Home reference under `apps/client-app/assets/design-reference`.

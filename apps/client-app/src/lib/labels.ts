@@ -102,6 +102,7 @@ export interface Labels {
     selectArea: string;
     viewAllReviews: string;
     banner: string; // {n}
+    refresh: string;
   };
   auth: {
     loginSubtitle: string;
@@ -631,6 +632,7 @@ export function labelsFor(lang: Lang): Labels {
       selectArea: am ? 'አካባቢ ይምረጡ' : 'Select an area',
       viewAllReviews: am ? 'ሁሉንም ግምገማዎች ይመልከቱ' : 'View all reviews',
       banner: am ? 'ባነር {n}' : 'Banner {n}',
+      refresh: am ? 'አድስ' : 'Refresh',
     },
     auth: {
       loginSubtitle: am

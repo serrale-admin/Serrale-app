@@ -273,6 +273,30 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   return qs ? `${url}${url.includes('?') ? '&' : '?'}${qs}` : url;
 }
 
+/**
+ * Basic catalog GETs that the backend serves without auth. Never attach a
+ * customer session Bearer here — an expired token would otherwise poison the
+ * global 401 interceptor and blank Home/Search after login.
+ */
+export function isUnauthenticatedPublicRead(method: string, path: string): boolean {
+  if (method.toUpperCase() !== 'GET') return false;
+  const normalized = path.split('?')[0].replace(/\/+$/, '');
+  const marker = '/public-directory';
+  const idx = normalized.indexOf(marker);
+  const route = idx >= 0 ? normalized.slice(idx + marker.length) || '/' : normalized;
+
+  if (route === '/categories' || route.startsWith('/categories/')) return true;
+  if (route === '/search' || route.startsWith('/search/')) return true;
+  if (route === '/providers') return true;
+  // /providers/:id is public; /providers/me* is authenticated.
+  if (route.startsWith('/providers/')) {
+    const rest = route.slice('/providers/'.length);
+    const segment = rest.split('/')[0];
+    return !!segment && segment !== 'me';
+  }
+  return false;
+}
+
 function errorMessage(e: Envelope<unknown>): { message: string; code?: string } {
   if (e.error && typeof e.error === 'object') return { message: e.error.message || 'Request failed', code: e.error.code };
   if (typeof e.error === 'string') return { message: e.error };
@@ -328,6 +352,12 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
   if (signal) signal.addEventListener('abort', onAbort);
 
   const activeToken = token || (tokenProvider ? await tokenProvider() : undefined);
+  // Public catalog reads must not send a customer Bearer. A stale/expired token
+  // attached to /providers or /categories can trip the 401 refresh interceptor
+  // and wipe the Home/Search rails even though those routes are unauthenticated.
+  const attachCustomerToken =
+    !!token || (!!activeToken && !isUnauthenticatedPublicRead(method, path));
+  const authorizationToken = attachCustomerToken ? activeToken : undefined;
 
   let res: Response;
   try {
@@ -337,7 +367,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
         Accept: 'application/json',
         ...metadataHeaders(requestId),
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        ...(authorizationToken ? { Authorization: `Bearer ${authorizationToken}` } : {}),
         ...(extraHeaders || {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -373,7 +403,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
     }
   }
 
-  if (res.status === 401 && !skipAuthInterceptor && unauthorizedHandler) {
+  if (res.status === 401 && !skipAuthInterceptor && unauthorizedHandler && authorizationToken) {
     const isSafe = method === 'GET';
     return await unauthorizedHandler(() => http<T>(path, { ...opts, skipAuthInterceptor: true }), isSafe);
   }

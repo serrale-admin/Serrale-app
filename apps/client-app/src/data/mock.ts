@@ -13,19 +13,38 @@ import type { Category, PastWork, Provider, Review } from '../types';
  */
 export const AREA_ALL = 'Addis Ababa';
 
-export const AREAS: string[] = [
-  AREA_ALL,
-  'Ayat',
-  'Bole',
-  'CMC',
-  'Kazanchis',
-  'Megenagna',
-  'Piassa',
-  'Summit',
-  'Yeka',
+/** Canonical locations — display names match web `serviceLocations` / `locationNames`. */
+export interface ServiceLocation {
+  slug: string;
+  name: string;
+  am: string;
+}
+
+export const SERVICE_LOCATIONS: ServiceLocation[] = [
+  { slug: 'addis-ababa', name: 'Addis Ababa', am: 'አዲስ አበባ' },
+  { slug: 'bole', name: 'Bole', am: 'ቦሌ' },
+  { slug: 'summit', name: 'Summit', am: 'ሰሚት' },
+  { slug: 'cmc', name: 'CMC', am: 'ሲኤምሲ' },
+  { slug: 'kazanchis', name: 'Kazanchis', am: 'ካዛንቺስ' },
+  { slug: 'yeka', name: 'Yeka', am: 'የካ' },
+  { slug: 'piassa', name: 'Piassa', am: 'ፒያሳ' },
+  { slug: 'megenagna', name: 'Megenagna', am: 'መገናኛ' },
+  { slug: 'ayat', name: 'Ayat', am: 'አያት' },
 ];
 
-/** The four category groups, matching the web app's `serviceCategoryGroups`. */
+export const AREAS: string[] = SERVICE_LOCATIONS.map((location) => location.name);
+
+/** Provider join area picker — excludes city-wide, same as web `/join`. */
+export const JOIN_AREAS: string[] = SERVICE_LOCATIONS.filter((location) => location.slug !== 'addis-ababa').map(
+  (location) => location.name,
+);
+
+export function locationDisplayName(areaName: string, useAmharic: boolean): string {
+  const location = SERVICE_LOCATIONS.find((entry) => entry.name === areaName);
+  if (!location) return areaName;
+  return useAmharic ? location.am : location.name;
+}
+
 export const GROUP_NAMES = [
   'Home Services',
   'Repairs & Maintenance',
@@ -46,34 +65,34 @@ export const GROUP_NAMES = [
 export const CATS: Category[] = [
   // ── Home Services ──────────────────────────────────────────────────────────
   { id: 'painters', name: 'Painters', am: 'ቀለም ቀቢዎች', icon: 'ph-paint-roller', count: 0, group: 'Home Services', subs: ['Interior', 'Exterior', 'Wall painting'] },
-  { id: 'plumbers', name: 'Plumbers', am: 'ቧንቧ ሰራተኞች', icon: 'ph-wrench', count: 0, group: 'Home Services', subs: ['Pipe repair', 'Leak repair', 'Toilet repair', 'Drain cleaning'] },
-  { id: 'electricians', name: 'Electricians', am: 'ኤሌክትሪሺያኖች', icon: 'ph-lightning', count: 0, group: 'Home Services', subs: ['Wiring', 'Lighting installation', 'Socket repair'] },
-  { id: 'cleaners', name: 'Cleaners', am: 'አጽጂዎች', icon: 'ph-sparkle', count: 0, group: 'Home Services', subs: ['House cleaning', 'Office cleaning', 'Deep cleaning'] },
+  { id: 'plumbers', name: 'Plumbers', am: 'የቧንቧ ባለሙያዎች', icon: 'ph-wrench', count: 0, group: 'Home Services', subs: ['Pipe repair', 'Leak repair', 'Toilet repair', 'Drain cleaning'] },
+  { id: 'electricians', name: 'Electricians', am: 'የኤሌክትሪክ ባለሙያዎች', icon: 'ph-lightning', count: 0, group: 'Home Services', subs: ['Wiring', 'Lighting installation', 'Socket repair'] },
+  { id: 'cleaners', name: 'Cleaners', am: 'የጽዳት ባለሙያዎች', icon: 'ph-sparkle', count: 0, group: 'Home Services', subs: ['House cleaning', 'Office cleaning', 'Deep cleaning'] },
   { id: 'nannies', name: 'Nannies', am: 'ሞግዚቶች', icon: 'ph-baby', count: 0, group: 'Home Services', subs: ['Babysitting', 'Live-in nanny', 'Child care'] },
-  { id: 'carpenters', name: 'Carpenters', am: 'አናጺዎች', icon: 'ph-hammer', count: 0, group: 'Home Services', subs: ['Furniture making', 'Door repair', 'Cabinet making'] },
-  { id: 'masons', name: 'Masons', am: 'ግንበኞች', icon: 'ph-wall', count: 0, group: 'Home Services', subs: ['Block work', 'Plastering', 'Concrete work'] },
-  { id: 'welders', name: 'Welders', am: 'ብየዳ ሰራተኞች', icon: 'ph-wrench', count: 0, group: 'Home Services', subs: ['Gate making', 'Grill work', 'Metal door'] },
-  { id: 'cctv-installation', name: 'CCTV Installation', am: 'ሲሲቲቪ ተከላ', icon: 'ph-shield-check', count: 0, group: 'Home Services', subs: ['Camera installation', 'Security system setup'] },
+  { id: 'carpenters', name: 'Carpenters', am: 'አናጢዎች', icon: 'ph-hammer', count: 0, group: 'Home Services', subs: ['Furniture making', 'Door repair', 'Cabinet making'] },
+  { id: 'masons', name: 'Masons', am: 'የግንባታ ባለሙያዎች', icon: 'ph-wall', count: 0, group: 'Home Services', subs: ['Block work', 'Plastering', 'Concrete work'] },
+  { id: 'welders', name: 'Welders', am: 'የብየዳ ባለሙያዎች', icon: 'ph-wrench', count: 0, group: 'Home Services', subs: ['Gate making', 'Grill work', 'Metal door'] },
+  { id: 'cctv-installation', name: 'CCTV Installation', am: 'የሲሲቲቪ ተከላ', icon: 'ph-shield-check', count: 0, group: 'Home Services', subs: ['Camera installation', 'Security system setup'] },
   { id: 'home-repair', name: 'Home Repair', am: 'የቤት ጥገና', icon: 'ph-house', count: 0, group: 'Home Services', subs: ['General repair', 'Home maintenance', 'Small fixes'] },
   { id: 'gardeners', name: 'Gardeners', am: 'አትክልተኞች', icon: 'ph-plant', count: 0, group: 'Home Services', subs: ['Landscaping', 'Lawn care', 'Tree care'] },
 
   // ── Repairs & Maintenance ──────────────────────────────────────────────────
   { id: 'phone-repair', name: 'Phone Repair', am: 'የስልክ ጥገና', icon: 'ph-wrench', count: 0, group: 'Repairs & Maintenance', subs: ['Screen replacement', 'Battery replacement', 'Software fix'] },
   { id: 'computer-repair', name: 'Computer Repair', am: 'የኮምፒውተር ጥገና', icon: 'ph-wrench', count: 0, group: 'Repairs & Maintenance', subs: ['Laptop repair', 'Hardware repair', 'Software installation'] },
-  { id: 'appliance-repair', name: 'Appliance Repair', am: 'የዕቃ ጥገና', icon: 'ph-wrench', count: 0, group: 'Repairs & Maintenance', subs: ['Fridge repair', 'Washing machine repair', 'Oven repair'] },
-  { id: 'generator-repair', name: 'Generator Repair', am: 'የጄኔሬተር ጥገና', icon: 'ph-lightning', count: 0, group: 'Repairs & Maintenance', subs: ['Generator servicing', 'Power backup setup'] },
+  { id: 'appliance-repair', name: 'Appliance Repair', am: 'የቤት መሳሪያ ጥገና', icon: 'ph-wrench', count: 0, group: 'Repairs & Maintenance', subs: ['Fridge repair', 'Washing machine repair', 'Oven repair'] },
+  { id: 'generator-repair', name: 'Generator Repair', am: 'የጀነሬተር ጥገና', icon: 'ph-lightning', count: 0, group: 'Repairs & Maintenance', subs: ['Generator servicing', 'Power backup setup'] },
   { id: 'car-mechanics', name: 'Car Mechanics', am: 'የመኪና መካኒኮች', icon: 'ph-wrench', count: 0, group: 'Repairs & Maintenance', subs: ['Engine repair', 'Brake service', 'Oil change'] },
 
   // ── Moving & Transport ─────────────────────────────────────────────────────
-  { id: 'drivers', name: 'Drivers', am: 'አሽከርካሪዎች', icon: 'ph-steering-wheel', count: 0, group: 'Moving & Transport', subs: ['Personal driver', 'Company driver'] },
-  { id: 'moving-service', name: 'Moving Service', am: 'የማዛወር አገልግሎት', icon: 'ph-truck', count: 0, group: 'Moving & Transport', subs: ['House moving', 'Office moving', 'Packing'] },
+  { id: 'drivers', name: 'Drivers', am: 'ሹፌሮች', icon: 'ph-steering-wheel', count: 0, group: 'Moving & Transport', subs: ['Personal driver', 'Company driver'] },
+  { id: 'moving-service', name: 'Moving Service', am: 'የእቃ ማንቀሳቀስ አገልግሎት', icon: 'ph-truck', count: 0, group: 'Moving & Transport', subs: ['House moving', 'Office moving', 'Packing'] },
   { id: 'truck-rental', name: 'Truck Rental', am: 'የጭነት መኪና ኪራይ', icon: 'ph-truck', count: 0, group: 'Moving & Transport', subs: ['Pickup rental', 'Cargo truck', 'Isuzu rental'] },
-  { id: 'delivery-service', name: 'Delivery Service', am: 'የማድረስ አገልግሎት', icon: 'ph-package', count: 0, group: 'Moving & Transport', subs: ['Package delivery', 'Courier service', 'Item transport'] },
+  { id: 'delivery-service', name: 'Delivery Service', am: 'የዴሊቨሪ አገልግሎት', icon: 'ph-package', count: 0, group: 'Moving & Transport', subs: ['Package delivery', 'Courier service', 'Item transport'] },
 
   // ── Health & Wellness ──────────────────────────────────────────────────────
-  { id: 'home-care-nurses', name: 'Home Care Nurses', am: 'የቤት ነርሶች', icon: 'ph-first-aid', count: 0, group: 'Health & Wellness', subs: ['Home nursing', 'Medication management', 'Injection'] },
-  { id: 'caregivers', name: 'Caregivers', am: 'እንክብካቤ ሰጪዎች', icon: 'ph-hand-heart', count: 0, group: 'Health & Wellness', subs: ['Elderly care', 'Patient care', 'Home support'] },
-  { id: 'physiotherapists', name: 'Physiotherapists', am: 'ፊዚዮቴራፒስቶች', icon: 'ph-heartbeat', count: 0, group: 'Health & Wellness', subs: ['Rehabilitation', 'Massage therapy', 'Physical therapy'] },
+  { id: 'home-care-nurses', name: 'Home Care Nurses', am: 'የቤት እንክብካቤ ነርሶች', icon: 'ph-first-aid', count: 0, group: 'Health & Wellness', subs: ['Home nursing', 'Medication management', 'Injection'] },
+  { id: 'caregivers', name: 'Caregivers', am: 'ተንከባካቢዎች', icon: 'ph-hand-heart', count: 0, group: 'Health & Wellness', subs: ['Elderly care', 'Patient care', 'Home support'] },
+  { id: 'physiotherapists', name: 'Physiotherapists', am: 'የፊዚዮቴራፒ ባለሙያዎች', icon: 'ph-heartbeat', count: 0, group: 'Health & Wellness', subs: ['Rehabilitation', 'Massage therapy', 'Physical therapy'] },
   { id: 'personal-trainers', name: 'Personal Trainers', am: 'የግል አሰልጣኞች', icon: 'ph-barbell', count: 0, group: 'Health & Wellness', subs: ['Fitness coaching', 'Gym training', 'Home workout'] },
 ];
 

@@ -312,6 +312,125 @@ but no `updates`/`runtimeVersion` block is configured (intentional for a pure st
 release); add `runtimeVersion` + `updates.url` if/when EAS Update is introduced. This is a
 deliberate decision, not a gap. (See [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md).)
 
+### 2026-07-09 mobile implementation update
+
+- Kept Profile tab login on the **customer** OTP/session path (`directory_customer_request` -> `otp/request` -> `otp/verify` -> `customers/session`).
+- Added a separate **Become Provider** registration flow in mobile at `app/provider/join.tsx`:
+  - form submit
+  - OTP request/verify with `directory_provider_join`
+  - `POST /api/public-directory/providers/register`
+- Wired Profile `Become a service provider` action to the new provider join route.
+- Improved verify/session error classification in `app/auth/verify.tsx`:
+  - only dead challenge / consumed verify-token states route to re-request,
+  - non-expiry backend/session failures now show accurate in-screen errors (not mislabeled as expired).
+- Implemented real native share on provider details (`Share.share`) with `https://serrale.com/provider/:id` payload.
+- Compacted Search/Categories promo visual density (banner + two promo cards) so category list cards appear earlier.
+- Added/updated tests for verify-flow error handling in `app/auth/__tests__/verify.test.tsx`.
+
+### 2026-07-10 testing/debugging prep + DB/app readiness pass
+
+#### App startup + UX hardening
+- Removed the extra native splash hold in `app/_layout.tsx` by dropping manual `expo-splash-screen` hold/hide control.
+- Result: the incorrect first startup hold is removed; users proceed to the in-app loading flow (the intended "Preparing..." screen) and then into tabs.
+
+#### Fresh verification run (mobile repo)
+- `npm run typecheck` -> PASS
+- `npm run lint` -> PASS
+- `npm run test -- app/auth/__tests__/verify.test.tsx app/__tests__/navigation.smoke.test.tsx` -> PASS (31/31)
+- `npx expo export --platform web` -> PASS
+- `npx expo-doctor` -> PASS (18/18)
+
+#### DB health/debug sweep (Supabase MCP)
+- Tools run: `list_tables`, `get_advisors` (security + performance), `get_logs` (`api`, `auth`, `postgres`).
+- API logs show active Basic traffic (`/directory_providers`, contact-event inserts) and no crash-level signal tied to mobile paths.
+- Auth logs returned no acute auth-service failure in the sampled window.
+- Postgres logs show repeated errors from legacy/internal queries (not mobile route codepaths), notably:
+  - invalid enum value `release_blocked` for `escrow_hold_status`,
+  - missing columns `escrow_transfer_queue.transfer_ref`, `escrow_holds.auto_release_eligible_at`,
+  - missing relation `audit_agent_heartbeats`.
+- Advisor output indicates multiple existing security/performance advisories in the shared project (legacy/system-wide), including:
+  - RLS-enabled/no-policy informational findings on several service-role/internal tables,
+  - many SECURITY DEFINER execution warnings on public RPC surface,
+  - function `search_path` mutability warnings,
+  - public-bucket listing policy warnings,
+  - performance advisory set including unindexed foreign keys.
+
+#### Interpretation for mobile launch-readiness
+- Basic mobile client is green on build/lint/test/export/doctor checks.
+- The DB logs/advisories show shared-project hygiene debt (mostly legacy/ops surfaces), not a direct blocker proven against the current Basic mobile happy path.
+- Keep legacy escrow/Plus maintenance items tracked separately while preserving Basic namespace isolation (`/api/public-directory/*`) for mobile launch execution.
+
+### 2026-07-10 Google Play review-access account (backend)
+
+Backend-only reviewer OTP override is implemented in `/Users/terusew/Projects/serrale/backend`
+(`reviewAccess.service.ts` wired into Basic `/api/public-directory/otp/*`). The mobile app
+needs no secret and no review-only UI.
+
+**Production env (Render `api.serrale.com` only — never commit values):**
+
+```env
+GOOGLE_PLAY_REVIEW_ACCESS_ENABLED=true
+GOOGLE_PLAY_REVIEW_PHONE=0938064841
+GOOGLE_PLAY_REVIEW_OTP=<private six-digit code you chose for Play review>
+```
+
+**Security boundary (fail-closed):**
+
+- Active only when `NODE_ENV=production` and `GOOGLE_PLAY_REVIEW_ACCESS_ENABLED=true`
+- Matches only the exact normalized review phone
+- Requires `X-Serrale-Source: mobile_app` (sent automatically by the mobile HTTP client)
+- Scoped to Basic directory OTP purposes only
+- Rate limits still apply (`decideOtpRequest` runs before any challenge is issued)
+- AfroMessage SMS is skipped for the review phone on mobile; all other numbers still get real SMS
+- Reusable code is verified server-side only; it is never logged or returned to clients
+
+**Play Console “App access” notes for reviewers:**
+
+1. Open the app → Profile → sign in with phone `0938064841`
+2. Request OTP → enter the reusable review code configured in production env
+3. Customer path: Request tab → submit a help request
+4. Provider path: Profile → Become a service provider → complete registration form + OTP
+
+Use fictional names/details only. Do not use a real household phone for review testing.
+
+**Backend tests (fresh):** `reviewAccess.service.test.ts`, `publicDirectory.reviewAccess.test.ts`,
+and review branches in `otp.service.test.ts` — all pass.
+
+### 2026-07-11 Request tab, OTP reliability, provider join hardening
+
+#### UI production polish
+- **Request tab** (`app/(tabs)/request.tsx`): photo hero banner, three section cards
+  (details / timing / contact), localized area labels, sticky submit footer, white
+  result cards for success and login gate.
+- **Home / Categories / Provider Join:** full-bleed photo slides with gradient
+  overlays (`home-banner-professionals.png`, `home-banner-call-whatsapp.png`,
+  `categories-banner.png`, `provider-join-banner.png`).
+- **Provider Join** (`app/provider/join.tsx`): compact section-card form aligned
+  with Basic web `/join`; Amharic labels; terms checkbox (client-side only).
+
+#### OTP UI + functional fixes
+- New **`OtpInput` / `OtpBox`** components — responsive box sizing, paste support,
+  SMS autofill hints; shared **`src/lib/otp-code.ts`** helpers.
+- **`auth/verify.tsx`:** scrollable card layout, improved error handling.
+- **Provider join verify bug fix:** `challengeIdRef` / `phoneRef` set synchronously
+  when OTP is sent so auto-submit verify does not fail with an empty challenge id.
+- **Provider session persistence:** `POST /providers/register` `session_token`
+  now saved via **`src/lib/provider-session.ts`** (was previously ignored).
+- **Web login fix:** **`src/lib/secure-session.ts`** falls back to AsyncStorage on
+  Expo web when SecureStore write fails.
+- **Amharic stability:** `amharic-font.ts` try/catch; `FieldLabel` web-safe
+  rendering; mutation renames to avoid HMR TDZ crashes on provider join.
+
+#### Verification run (mobile repo)
+- `npm run typecheck` → PASS
+- `npm run lint` → PASS
+- Targeted tests: `join.test.tsx`, `verify.test.tsx`, `OtpInput.test.tsx`,
+  `otp-code.test.ts`, `LocationSheet.test.tsx`, `secure-session.test.ts` → PASS
+
+#### Local dev note
+- Expo web against production API fails CORS; use local backend
+  (`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:5000/api`) for browser OTP testing.
+
 ---
 
 ## 13. Go / No-Go recommendation with reasons

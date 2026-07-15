@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MIN_SUGGEST_LENGTH } from '../src/api';
 import type { SearchSuggestion } from '../src/api';
@@ -17,6 +17,7 @@ import { SkeletonProviderList } from '../src/components/Skeleton';
 import { useProviders } from '../src/hooks/queries';
 import { useSearchSuggest } from '../src/hooks/useSearchSuggest';
 import { AREA_ALL } from '../src/data/mock';
+import { directoryRefreshProps, usePullToRefresh } from '../src/lib/directory-refresh';
 import { Icon } from '../src/lib/icons';
 import { fill, useLabels } from '../src/lib/labels';
 import { colors, fonts, radius } from '../src/lib/theme';
@@ -55,6 +56,7 @@ export default function ProvidersScreen() {
     [submitted, categoryId, area, filters],
   );
   const providers = useProviders(query);
+  const { refreshing, onRefresh } = usePullToRefresh(() => providers.refetch());
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? 0;
   const suffix = submitted
@@ -184,7 +186,14 @@ export default function ProvidersScreen() {
           onAction={() => router.replace({ pathname: '/auth/login', params: { next: '/providers' } })}
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.results} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.results}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...directoryRefreshProps} />
+          }
+        >
           {results.map((p) => <ProviderRow key={p.id} provider={p} />)}
           {results.length === 0 && (
             <EmptyState

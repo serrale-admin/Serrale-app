@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
 import FilterSheet from '../../src/components/FilterSheet';
@@ -12,6 +12,8 @@ import SafetyCard from '../../src/components/SafetyCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import { AREA_ALL, CATS, PASTWORK, PROV } from '../../src/data/mock';
 import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
+import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
+import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
 import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, layout, radius } from '../../src/lib/theme';
@@ -34,17 +36,23 @@ export default function HomeScreen() {
   const verified = useVerifiedProviders();
   const recent = useRecentWork();
   const categories = useCategories();
+  const { refreshing, onRefresh } = usePullToRefresh(
+    () => nearby.refetch(),
+    () => verified.refetch(),
+    () => recent.refetch(),
+    () => categories.refetch(),
+  );
 
   const liveCats = categories.data?.length ? categories.data : CATS;
   const quickCats = QUICK_IDS.map((id) => liveCats.find((category) => category.id === id)).filter(
     (category): category is (typeof liveCats)[number] => Boolean(category),
   );
   const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
-  const nearbySource = nearby.isLoading
-    ? PROV.filter((provider) => area === AREA_ALL || provider.area === area)
-    : nearby.data ?? [];
-  const verifiedSource = verified.isLoading ? PROV.filter((provider) => provider.verified || provider.adminReviewed) : verified.data ?? [];
-  const recentWork = recent.isLoading ? PASTWORK : recent.data ?? [];
+  const nearbyMock = PROV.filter((provider) => area === AREA_ALL || provider.area === area);
+  const verifiedMock = PROV.filter((provider) => provider.verified || provider.adminReviewed);
+  const nearbySource = USE_MOCK && nearby.isLoading ? nearbyMock : nearby.data ?? [];
+  const verifiedSource = USE_MOCK && verified.isLoading ? verifiedMock : verified.data ?? [];
+  const recentWork = USE_MOCK && recent.isLoading ? PASTWORK : recent.data ?? [];
   const nearbyProviders = nearbySource.slice(0, 4);
   const verifiedProviders = verifiedSource.slice(0, 8);
 
@@ -66,6 +74,9 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...directoryRefreshProps} />
+        }
       >
         <View style={styles.content}>
           <View style={styles.header}>
@@ -87,6 +98,17 @@ export default function HomeScreen() {
                 {area}
               </Text>
               <Icon name="ph-caret-down" size={11} color={colors.green800} weight="bold" />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+              onPress={onRefresh}
+              disabled={refreshing}
+              hitSlop={2}
+              accessibilityRole="button"
+              accessibilityLabel={labels.a11y.refresh}
+              accessibilityState={{ busy: refreshing }}
+            >
+              <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}

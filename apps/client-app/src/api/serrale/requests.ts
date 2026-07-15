@@ -20,6 +20,7 @@ interface ContactEventInput {
 type Timing = 'emergency' | 'today' | 'this_week' | 'flexible';
 
 function timingFor(when: string): Timing {
+  if (when === 'Emergency') return 'emergency';
   if (when === 'Today') return 'today';
   if (when === 'This week') return 'this_week';
   return 'flexible';

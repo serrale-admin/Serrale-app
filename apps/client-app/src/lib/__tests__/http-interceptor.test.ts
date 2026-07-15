@@ -8,7 +8,7 @@
  * `fetch` is mocked at the network boundary so we can count real calls to the
  * refresh endpoint. The API mock layer is NOT used here — we drive `serrale`.
  */
-import { http, setTokenProvider, setUnauthorizedHandler } from '../http';
+import { http, setTokenProvider, setUnauthorizedHandler, __resetNetworkReliability } from '../http';
 import { doRefresh, handleLogout } from '../session-manager';
 import { secureSession } from '../secure-session';
 import { useAppStore } from '../../store/appStore';
@@ -67,6 +67,7 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
   beforeEach(async () => {
     require('expo-secure-store')._clear();
     (require('@react-native-async-storage/async-storage').default as any)._clear();
+    __resetNetworkReliability();
     useAppStore.getState().logout();
     queryClient.clear();
 
@@ -113,11 +114,11 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
           }),
         );
       }
-      // Data GET: 401 while the access token is stale, 200 after refresh.
+      // Data GET: 401 while the access token is stale, then a normal customer payload after refresh.
       const auth = (init?.headers as Record<string, string>)?.Authorization;
       dataGetCalls.push(auth || 'none');
       if (auth === 'Bearer access-old') return jsonResponse(401, { success: false, error: { code: 'SESSION_EXPIRED' } });
-      return jsonResponse(200, envelope({ ok: true }));
+      return jsonResponse(200, envelope({ customer: { id: 'cust-1', phone: '+251912345678', display_name: 'Abebe', profile_complete: true } }));
     }) as unknown as typeof fetch;
 
     const results = await Promise.all([
@@ -130,7 +131,12 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
     // Exactly one refresh network call despite 4 concurrent 401s.
     expect(refreshCalls).toBe(1);
     // Every safe GET eventually succeeded (replayed with the new token).
-    expect(results).toEqual([{ ok: true }, { ok: true }, { ok: true }, { ok: true }]);
+    expect(results).toEqual([
+      { customer: { id: 'cust-1', phone: '+251912345678', display_name: 'Abebe', profile_complete: true } },
+      { customer: { id: 'cust-1', phone: '+251912345678', display_name: 'Abebe', profile_complete: true } },
+      { customer: { id: 'cust-1', phone: '+251912345678', display_name: 'Abebe', profile_complete: true } },
+      { customer: { id: 'cust-1', phone: '+251912345678', display_name: 'Abebe', profile_complete: true } },
+    ]);
     // The rotated token was persisted.
     expect((await secureSession.read())?.accessToken).toBe('access-new');
     // Replays used the fresh Bearer token.
@@ -140,6 +146,7 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
   it('does NOT auto-replay a non-idempotent write; surfaces the error after refresh', async () => {
     let refreshCalls = 0;
     let writeAttempts = 0;
+    let customerMeFetches = 0;
 
     global.fetch = jest.fn(async (url: string, init?: RequestInit) => {
       const u = String(url);
@@ -154,17 +161,26 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
           }),
         );
       }
+      if (u.includes('/public-directory/customers/me')) {
+        customerMeFetches += 1;
+        return jsonResponse(
+          200,
+          envelope({ customer: { id: 'cust-1', phone: '+251****5678', display_name: 'Abebe', profile_complete: true } }),
+        );
+      }
       writeAttempts += 1;
       return jsonResponse(401, { success: false, error: { code: 'SESSION_EXPIRED' } });
     }) as unknown as typeof fetch;
 
     await expect(
       http('/public-directory/leads/request', { method: 'POST', body: { service: 'x' } }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('write not replayed');
 
-    // Refresh happened once, but the write was attempted exactly once (no replay).
+    // Refresh happened once, the write was attempted exactly once, and the
+    // refresh bootstrap profile fetch succeeded separately.
     expect(refreshCalls).toBe(1);
     expect(writeAttempts).toBe(1);
+    expect(customerMeFetches).toBe(1);
   });
 
   it('logs out and clears the session when refresh itself returns 401', async () => {

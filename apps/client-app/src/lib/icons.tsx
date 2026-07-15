@@ -1,4 +1,5 @@
 import {
+  ArrowClockwise,
   ArrowLeft,
   ArrowRight,
   Baby,
@@ -112,6 +113,7 @@ const REGISTRY: Record<string, ComponentType<IconProps>> = {
   'ph-sliders-horizontal': SlidersHorizontal,
   'ph-arrow-right': ArrowRight,
   'ph-arrow-left': ArrowLeft,
+  'ph-arrow-clockwise': ArrowClockwise,
   'ph-seal-check': SealCheck,
   'ph-house': House,
   'ph-squares-four': SquaresFour,

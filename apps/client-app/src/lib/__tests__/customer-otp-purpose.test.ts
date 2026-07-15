@@ -14,8 +14,12 @@ describe('customer OTP purpose split', () => {
     expect(resolveCustomerOtpIntent({ intent: 'request' })).toBe('request');
   });
 
-  it('defaults Profile / bare login to existence-gated login purpose', () => {
+  it('defaults bare login and profile-return auth to login intent', () => {
     expect(resolveCustomerOtpIntent({})).toBe('login');
     expect(resolveCustomerOtpIntent({ next: '/(tabs)/profile' })).toBe('login');
+  });
+
+  it('still allows an explicit login-only override', () => {
+    expect(resolveCustomerOtpIntent({ intent: 'login' })).toBe('login');
   });
 });

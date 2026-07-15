@@ -2,7 +2,7 @@
 
 App-level context for coding agents working inside `apps/client-app`. Read the repository root `AGENTS.md` first — it is the canonical operating spec for this repo; this file adds the app-local map and the backend contract in short form. When they conflict, root `AGENTS.md` and the code win.
 
-## 1. What this is (as of 2026-07)
+## 1. What this is (as of 2026-07-11)
 
 This is the native mobile app for **SERRALE Basic** — the core SERRALE system going forward (historically called the "public directory"). It is an Expo / React Native client (Expo SDK 52, React Native 0.76, React 18, TypeScript, Expo Router 4, TanStack React Query, Zustand, Zod + React Hook Form).
 
@@ -28,14 +28,15 @@ Routes as they exist in `app/`:
 ```text
 /(tabs)/home        Home (header, search, trust banner, nearby, categories, verified)
 /(tabs)/search      Categories/discovery screen
-/(tabs)/request     Customer service-request flow (OTP-gated)
-/(tabs)/profile     Profile / settings hub
+/(tabs)/request     Customer service-request flow (OTP-gated; photo hero + section cards)
+/(tabs)/profile     Profile / settings hub; links to provider join
 /providers          Provider list
 /categories         Category index
 /categories/[id]    Providers in a category
 /provider/[id]      Provider detail (portfolio, reviews, Call/WhatsApp)
-/auth/login         Phone entry for directory OTP
-/auth/verify        6-digit OTP entry
+/provider/join      Provider registration (OTP + POST /providers/register)
+/auth/login         Phone entry for directory OTP (customer)
+/auth/verify        6-digit OTP entry (shared OtpInput component)
 /bookmarks /settings /help /language /safety
 ```
 
@@ -49,10 +50,14 @@ src/api/serrale/       Real API client (adapters, auth, categories, providers, r
 src/api/mock/          Mock implementation, same surface; used only when EXPO_PUBLIC_USE_MOCK=true
 src/hooks/queries.ts   React Query hooks (server state)
 src/hooks/useProviderActions.ts  Shared open/save/call/WhatsApp actions
-src/components/        Cards, sheets, banners, TabBar, Toast, ContactSheets, ...
+src/components/        Cards, sheets, banners, TabBar, Toast, ContactSheets, OtpInput, OtpBox, ...
 src/lib/env.ts         API_BASE_URL (default https://api.serrale.com/api), USE_MOCK, DIRECTORY='/public-directory'
 src/lib/http.ts        Typed fetch: JSON, Bearer token, 15s timeout, unwraps { success, data }, typed errors
 src/lib/theme.ts       Design tokens (colors, fonts, spacing, radius, shadows) — single source of truth
+src/lib/otp-code.ts    Shared 6-digit OTP helpers (paste, completion, sanitization)
+src/lib/secure-session.ts   Customer access/refresh tokens (SecureStore; AsyncStorage fallback on web)
+src/lib/provider-session.ts Provider JWT + profile after register (SecureStore; AsyncStorage fallback on web)
+src/lib/amharic-font.ts     Safe Amharic font remapping (try/catch; no crash on web/HMR)
 src/lib/icons.tsx      Phosphor icon mapping
 src/lib/category-images.ts / provider-images.ts  Local image fallbacks
 src/store/appStore.ts  Zustand + AsyncStorage: area, language, saved providers, user, verify token
@@ -93,9 +98,17 @@ POST /api/public-directory/providers/:id/contact-events   contact tracking (call
                                                 source_platform: 'mobile_app'
 POST /api/public-directory/otp/request
 POST /api/public-directory/otp/verify           → one-time verify_token
-POST /api/public-directory/leads/request        customer service request (needs verify_token)
+POST /api/public-directory/customers/session      exchange verify_token → access + refresh (customer login)
+POST /api/public-directory/leads/request        customer service request (Bearer or verify_token)
+POST /api/public-directory/providers/register     provider join after OTP verify (returns session_token)
 POST /api/public-directory/leads/provider       best-effort contact lead log
 ```
+
+Customer auth flow: `directory_customer_request` OTP → verify → `customers/session` → Bearer on leads/request.
+
+Provider join flow: `directory_provider_join` OTP → verify → `providers/register` → `providerSession.write`.
+
+Local web dev: production API blocks browser CORS; use `EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:5000/api` against local backend when testing OTP in Expo web.
 
 Contract rules:
 

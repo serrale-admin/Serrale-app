@@ -87,7 +87,7 @@ export default function Button({
       ) : (
         <View style={styles.content}>
           {icon ? <Icon name={icon} size={ICON_SIZES[size]} color={contentColor} weight={iconWeight} /> : null}
-          <Text style={[styles.label, { fontSize: FONT_SIZES[size], color: contentColor }]} numberOfLines={1}>
+          <Text style={[styles.label, { fontSize: FONT_SIZES[size], color: contentColor }]} numberOfLines={2}>
             {label}
           </Text>
         </View>

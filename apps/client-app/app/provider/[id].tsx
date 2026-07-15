@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as api from '../../src/api';
 import Avatar from '../../src/components/Avatar';
@@ -89,6 +89,15 @@ export default function ProviderDetailScreen() {
   const about = aboutParts.join(' ');
 
   const hasRating = pv.reviewCount > 0 && pv.rating > 0;
+  const shareProvider = async () => {
+    try {
+      const url = `https://serrale.com/provider/${encodeURIComponent(pv.id)}`;
+      const message = `${pv.name} · ${pv.service} · ${pv.area}\n${url}`;
+      await Share.share({ message, url });
+    } catch {
+      showToast(labels.errors.unknownMessage, 'ph-warning-circle');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -98,7 +107,7 @@ export default function ProviderDetailScreen() {
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable style={styles.iconBtn} onPress={() => showToast(labels.provider.linkCopied, 'ph-link')} accessibilityRole="button" accessibilityLabel={labels.common.share}>
+        <Pressable style={styles.iconBtn} onPress={shareProvider} accessibilityRole="button" accessibilityLabel={labels.common.share}>
           <Icon name="ph-share-network" size={19} color={colors.text} />
         </Pressable>
         <Pressable style={styles.iconBtn} onPress={() => save(pv.id)} accessibilityRole="button" accessibilityLabel={saved ? labels.common.saved : labels.common.save}>

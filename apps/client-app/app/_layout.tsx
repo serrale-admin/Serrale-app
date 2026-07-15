@@ -14,7 +14,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import Constants from 'expo-constants';
 import { Stack, router, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { segmentsToRouteTemplate, setCurrentRoute } from '../src/lib/http';
@@ -43,8 +42,6 @@ getCrashReporter().setRelease(APP_VERSION);
 // Route all Amharic text through the bundled Ethiopic font (no-op while lang=en).
 // Installed here so it lives only in the real app + web export, never the tests.
 applyAmharicFontPatch();
-
-SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -78,10 +75,6 @@ export default function RootLayout() {
     logger.addBreadcrumb({ category: 'navigation', message: route });
   }, [segments]);
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded, error]);
-
   if (!loaded && !error) return null;
 
 
@@ -102,10 +95,15 @@ export default function RootLayout() {
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="provider/[id]" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="provider/join" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="categories/[id]" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="providers" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="auth/login" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="auth/verify" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="auth/chooser" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="auth/profile-setup" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="auth/provider-login" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="auth/provider-verify" options={{ animation: 'slide_from_right' }} />
               </Stack>
               <Toast />
               <ContactSheets />

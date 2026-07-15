@@ -3,7 +3,12 @@ import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { checkInstallation } from './installation';
 import { setTokenProvider, setUnauthorizedHandler, HttpError } from './http';
-import { exchangeSession, refreshSession, logoutSession } from '../api';
+import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe } from '../api';
+import type { ApiCustomerProfile, ApiSessionCustomer } from '../api/serrale/types';
+import { customerDisplayName, isCustomerProfileComplete } from './customer-profile';
+import { parsePhoneAccountHint, phonesMatch } from './phone-account';
+import { providerSession, type ProviderSessionRecord } from './provider-session';
+import { readActiveSessionRole, writeActiveSessionRole } from './session-role';
 
 let refreshPromise: Promise<BasicSessionTokens | null> | null = null;
 
@@ -53,7 +58,6 @@ function utf8BytesToString(bytes: Uint8Array): string {
       const byte3 = bytes[i++] & 0x3f;
       result += String.fromCharCode(((byte1 & 0x0f) << 12) | (byte2 << 6) | byte3);
     } else {
-      // 4-byte sequence -> surrogate pair
       const byte2 = bytes[i++] & 0x3f;
       const byte3 = bytes[i++] & 0x3f;
       const byte4 = bytes[i++] & 0x3f;
@@ -81,6 +85,96 @@ export function decodeJwt(token: string): { customer_id?: string; phone?: string
   }
 }
 
+function applyCustomerToStore(customer: ApiCustomerProfile | ApiSessionCustomer) {
+  useAppStore.getState().login({
+    id: customer.id,
+    phone: customer.phone,
+    name: customerDisplayName(customer),
+    profileComplete: isCustomerProfileComplete(customer),
+  });
+}
+
+/** Restore in-memory auth state from a saved provider session (SecureStore). */
+export async function syncProviderProfile(): Promise<void> {
+  try {
+    const { fetchProviderMe } = await import('../api');
+    const provider = await fetchProviderMe();
+    const record = await providerSession.read();
+    if (record) {
+      await providerSession.write(record.sessionToken, provider);
+      applyProviderSession({ ...record, provider });
+    }
+  } catch {
+    // Best-effort refresh — local session remains usable.
+  }
+}
+
+export function applyProviderSession(record: ProviderSessionRecord): void {
+  const provider = record.provider;
+  useAppStore.getState().setPhoneHasProvider(true);
+  useAppStore.getState().setProviderProfile({
+    id: provider.id,
+    full_name: provider.full_name,
+    phone: provider.phone,
+    area: provider.area ?? null,
+    photo_url: provider.photo_url ?? null,
+    category_slug: provider.category_slug,
+  });
+  if (provider.photo_url) {
+    useAppStore.getState().setLinkedProvider({
+      id: provider.id,
+      full_name: provider.full_name,
+      area: provider.area ?? null,
+      photo_url: provider.photo_url,
+      category_slug: provider.category_slug,
+    });
+  }
+  const activeSession = useAppStore.getState().activeSession;
+  if (activeSession === 'provider' || !useAppStore.getState().loggedIn) {
+    useAppStore.getState().login({
+      id: provider.id,
+      phone: provider.phone,
+      name: provider.full_name?.trim() || provider.phone,
+      profileComplete: true,
+    });
+  }
+}
+
+/** Activate the saved provider JWT for the same phone (no OTP) when switching roles. */
+export async function switchToProviderAccount(): Promise<'switched' | 'needs_login'> {
+  const record = await providerSession.read();
+  const phone = useAppStore.getState().user?.phone;
+  if (!record?.provider?.phone || !phone || !phonesMatch(record.provider.phone, phone)) {
+    return 'needs_login';
+  }
+  await writeActiveSessionRole('provider');
+  useAppStore.getState().setActiveSession('provider');
+  applyProviderSession(record);
+  return 'switched';
+}
+
+/** Customer OTP session — never activate provider UI even when the phone has a listing. */
+export async function activateCustomerSession(): Promise<void> {
+  await writeActiveSessionRole('customer');
+  useAppStore.getState().setActiveSession('customer');
+  useAppStore.getState().setProviderProfile(null);
+}
+
+/** Prefer live GET /customers/me; fall back to the customer row from session exchange. */
+export async function syncCustomerProfile(fallback?: ApiSessionCustomer | null): Promise<void> {
+  try {
+    // During a 401 refresh replay, the original GET /customers/me may still own the
+    // in-flight dedupe slot in http(). Using skipAuthInterceptor here bypasses that
+    // dedupe/retry wrapper so this bootstrap read cannot deadlock waiting on the
+    // very request that triggered the refresh.
+    const live = await fetchCustomerMe({ skipAuthInterceptor: true });
+    applyCustomerToStore(live);
+    return;
+  } catch {
+    if (fallback) applyCustomerToStore(fallback);
+  }
+}
+
 export async function doRefresh(): Promise<BasicSessionTokens | null> {
   if (refreshPromise) return refreshPromise;
 
@@ -103,25 +197,14 @@ export async function doRefresh(): Promise<BasicSessionTokens | null> {
       };
 
       await secureSession.write(newTokens);
-
-      // Extract details from new access token to update Zustand state
-      const claims = decodeJwt(accessToken);
-      if (claims && claims.phone) {
-        useAppStore.getState().login({
-          id: claims.customer_id,
-          phone: claims.phone,
-          name: 'SERRALE user',
-        });
-      }
+      await syncCustomerProfile();
 
       return newTokens;
     } catch (err) {
       if (err instanceof HttpError && err.status === 401) {
-        // Hard logout on 401 SESSION_EXPIRED
-        await handleLogout();
+        await handleCustomerLogout();
         return null;
       }
-      // Network error, timeout or 503: do NOT destroy session. Keep existing tokens and propagate error.
       throw err;
     } finally {
       refreshPromise = null;
@@ -131,13 +214,15 @@ export async function doRefresh(): Promise<BasicSessionTokens | null> {
   return refreshPromise;
 }
 
-export async function handleExchange(phone: string, verifyToken: string): Promise<void> {
+export async function handleExchange(phone: string, verifyToken: string): Promise<{ profileComplete: boolean }> {
   const result = await exchangeSession(phone, verifyToken);
 
   const accessToken = result.access_token || (result as any).accessToken;
   const refreshToken = result.refresh_token || (result as any).refreshToken;
   const accessExpiresAt = result.access_expires_at || (result as any).accessExpiresAt;
   const customer = result.customer;
+  const account = parsePhoneAccountHint(result.account);
+  const linkedProvider = result.linked_provider ?? null;
 
   const tokens: BasicSessionTokens = {
     accessToken,
@@ -147,36 +232,68 @@ export async function handleExchange(phone: string, verifyToken: string): Promis
 
   await secureSession.write(tokens);
 
-  // Update Zustand state. The verify_token was CONSUMED by the exchange above;
-  // the store no longer retains any verify token (that field was removed).
-  useAppStore.getState().login({
-    id: customer.id,
-    phone: customer.phone,
-    name: 'SERRALE user',
-  });
+  if (account?.has_provider) {
+    useAppStore.getState().setPhoneHasProvider(true);
+    if (account) useAppStore.getState().setPendingAccountHint(account);
+  }
+  if (linkedProvider) {
+    useAppStore.getState().setLinkedProvider(linkedProvider);
+  }
+
+  const bundledProvider = result.provider_session;
+  if (bundledProvider?.session_token && bundledProvider.provider) {
+    await providerSession.write(bundledProvider.session_token, bundledProvider.provider);
+  }
+
+  await activateCustomerSession();
+  await syncCustomerProfile(customer);
+
+  return { profileComplete: useAppStore.getState().user?.profileComplete ?? isCustomerProfileComplete(customer) };
+}
+
+/** Revoke and clear the customer refresh session without signing out a provider JWT. */
+export async function handleCustomerLogout(): Promise<void> {
+  try {
+    const tokens = await secureSession.read();
+    if (tokens?.refreshToken) {
+      await logoutSession(tokens.refreshToken);
+    }
+  } catch {
+    // Ignore error, proceed to clear local customer data
+  } finally {
+    await secureSession.clear();
+    queryClient.removeQueries({ queryKey: ['customers'] });
+    useAppStore.getState().logoutCustomer();
+    useAppStore.getState().setActiveSession(null);
+    await writeActiveSessionRole(null);
+  }
 }
 
 export async function handleLogout(): Promise<void> {
   try {
     const tokens = await secureSession.read();
     if (tokens && tokens.refreshToken) {
-      // Best-effort logout API call
       await logoutSession(tokens.refreshToken);
     }
   } catch {
     // Ignore error, proceed to clear local data
+  }
+  try {
+    await providerSession.clear();
+  } catch {
+    // Best-effort provider sign-out
   } finally {
     await secureSession.clear();
     queryClient.clear();
+    await writeActiveSessionRole(null);
     useAppStore.getState().logout();
   }
 }
 
 export async function initializeSessionManager(): Promise<void> {
-  // 1. Check install
+  useAppStore.getState().setSessionReady(false);
   await checkInstallation();
 
-  // 2. Register HTTP client hooks
   setTokenProvider(async () => {
     const tokens = await secureSession.read();
     if (!tokens) return null;
@@ -196,30 +313,65 @@ export async function initializeSessionManager(): Promise<void> {
     throw new HttpError(401, 'Session expired. Write request skipped.');
   });
 
-  // 3. Bootstrap load
   try {
-    const tokens = await secureSession.read();
-    if (tokens) {
-      const claims = decodeJwt(tokens.accessToken);
-      const isExpired = Date.now() >= new Date(tokens.accessExpiresAt).getTime() - 10000;
-      
-      // Update store immediately with cached info (even if expired, we refresh in bg)
-      if (claims && claims.phone) {
+    const [tokens, providerRecord, savedRole] = await Promise.all([
+      secureSession.read(),
+      providerSession.read(),
+      readActiveSessionRole(),
+    ]);
+
+    const hasCustomer = !!tokens;
+    const hasProvider = !!providerRecord?.provider?.phone;
+    let role = savedRole;
+    if (!role) {
+      if (hasCustomer) role = 'customer';
+      else if (hasProvider) role = 'provider';
+    }
+
+    if (hasCustomer && role !== 'provider') {
+      const claims = decodeJwt(tokens!.accessToken);
+      const isExpired = Date.now() >= new Date(tokens!.accessExpiresAt).getTime() - 10000;
+
+      if (claims?.phone) {
+        useAppStore.getState().setActiveSession('customer');
+        useAppStore.getState().setProviderProfile(null);
         useAppStore.getState().login({
           id: claims.customer_id,
           phone: claims.phone,
-          name: 'SERRALE user',
+          name: claims.phone,
+          profileComplete: false,
         });
+        syncCustomerProfile().catch(() => {});
       }
 
       if (isExpired) {
-        // Trigger background refresh. If refresh fails with 401, handleLogout was
-        // already called inside doRefresh. On network/503 we keep the degraded
-        // login state.
         doRefresh().catch(() => {});
+      }
+    }
+
+    if (hasProvider) {
+      useAppStore.getState().setPhoneHasProvider(true);
+      if (role === 'provider') {
+        await writeActiveSessionRole('provider');
+        useAppStore.getState().setActiveSession('provider');
+        applyProviderSession(providerRecord!);
+      }
+    }
+
+    const state = useAppStore.getState();
+    if (state.loggedIn && !state.activeSession) {
+      if (state.providerProfile && !hasCustomer) {
+        await writeActiveSessionRole('provider');
+        useAppStore.getState().setActiveSession('provider');
+      } else {
+        await writeActiveSessionRole('customer');
+        useAppStore.getState().setActiveSession('customer');
+        useAppStore.getState().setProviderProfile(null);
       }
     }
   } catch {
     // Fail-safe bootstrap
+  } finally {
+    useAppStore.getState().setSessionReady(true);
   }
 }

@@ -35,12 +35,23 @@ export default function CategoryCard({ name, icon, imageKey, count, variant = 't
         onPress={onPress}
         style={({ pressed }) => [styles.row, pressed && styles.pressed, style]}
         accessibilityRole="button"
-        accessibilityLabel={name}
+        accessibilityLabel={count ? `${name}, ${count}` : name}
       >
-        <Image source={categoryImage(imageKey)} style={styles.rowImage} resizeMode="cover" />
+        <View style={styles.rowThumb}>
+          <Image source={categoryImage(imageKey)} style={styles.rowImage} resizeMode="cover" />
+          <View style={styles.rowThumbIcon}>
+            <Icon name={icon} size={12} color={colors.gold} weight="fill" />
+          </View>
+        </View>
         <View style={styles.rowText}>
-          <Text style={styles.rowName} numberOfLines={2}>{name}</Text>
-          {!!count && <Text style={styles.count} numberOfLines={1}>{count}</Text>}
+          <Text style={styles.rowName} numberOfLines={2} ellipsizeMode="tail">
+            {name}
+          </Text>
+          {!!count && (
+            <Text style={styles.count} numberOfLines={1} ellipsizeMode="tail">
+              {count}
+            </Text>
+          )}
         </View>
       </Pressable>
     );
@@ -58,7 +69,10 @@ export default function CategoryCard({ name, icon, imageKey, count, variant = 't
           <Icon name={icon} size={14} color="#fff" weight="fill" />
         </View>
       </ImageBackground>
-      <Text style={styles.tileName} numberOfLines={2}>{name}</Text>
+      <View style={styles.tileBody}>
+        <View style={styles.tileAccent} />
+        <Text style={styles.tileName} numberOfLines={2}>{name}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -88,7 +102,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
+    shadowColor: '#064734',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   tileImage: { height: 65, width: '100%', backgroundColor: '#F3F6F4' },
   tileImageShape: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
@@ -103,31 +122,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tileName: {
+  tileBody: {
     flex: 1,
     minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 7,
-    paddingVertical: 5,
+    paddingVertical: 4,
     backgroundColor: colors.surface,
-    color: colors.text,
+    borderTopWidth: 1,
+    borderTopColor: colors.sage,
+  },
+  tileAccent: {
+    width: 16,
+    height: 2,
+    borderRadius: 1,
+    marginBottom: 3,
+    backgroundColor: colors.gold,
+  },
+  tileName: {
+    color: colors.green800,
     fontSize: 10.5,
     lineHeight: 13,
     fontFamily: fonts.bold,
     textAlign: 'center',
   },
   row: {
-    minHeight: 68,
+    minHeight: 62,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 7,
-    backgroundColor: colors.surface,
+    gap: 8,
+    padding: 6,
+    backgroundColor: colors.frost,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.frostBorder,
     borderRadius: radius.lg,
+    shadowColor: '#064734',
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  rowImage: { width: 58, height: 54, borderRadius: radius.md, backgroundColor: colors.soft },
-  rowText: { flex: 1, minWidth: 0 },
-  rowName: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, lineHeight: 16 },
-  count: { marginTop: 3, fontSize: 10.5, fontFamily: fonts.regular, color: colors.muted },
+  rowThumb: {
+    width: 46,
+    height: 46,
+    flexShrink: 0,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: '#edf2ee',
+  },
+  rowImage: { width: '100%', height: '100%' },
+  rowThumbIcon: {
+    position: 'absolute',
+    right: 3,
+    bottom: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green800,
+    borderWidth: 1,
+    borderColor: 'rgba(246,185,59,0.28)',
+  },
+  rowText: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  rowName: { fontSize: 12, fontFamily: fonts.bold, color: colors.green900, lineHeight: 15 },
+  count: { marginTop: 2, fontSize: 10, fontFamily: fonts.semibold, color: colors.green700 },
 });

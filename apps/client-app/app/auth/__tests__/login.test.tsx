@@ -257,6 +257,47 @@ describe('LoginScreen route + success', () => {
 });
 
 describe('LoginScreen account missing', () => {
+  it('blocks bare customer login before OTP when the DB hint says no customer account exists', async () => {
+    mockFetchPhoneAccountHint.mockResolvedValue({
+      account: {
+        has_customer: false,
+        has_provider: false,
+        customer_profile_complete: false,
+      },
+      resolved_role: 'customer',
+    });
+
+    renderLogin();
+    typeValidPhone();
+    fireEvent.press(screen.getByText('Send code'));
+
+    await waitFor(() => expect(screen.getByText(/No customer account/i)).toBeTruthy());
+    expect(mockRequestOtp).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.getByText('Create a customer profile')).toBeTruthy();
+  });
+
+  it('blocks provider login before OTP when the DB hint says no provider account exists', async () => {
+    mockRouteParams = { role: 'provider' };
+    mockFetchPhoneAccountHint.mockResolvedValue({
+      account: {
+        has_customer: true,
+        has_provider: false,
+        customer_profile_complete: true,
+      },
+      resolved_role: 'provider',
+    });
+
+    renderLogin();
+    typeValidPhone();
+    fireEvent.press(screen.getByText('Send code'));
+
+    await waitFor(() => expect(screen.getByText(/No provider account/i)).toBeTruthy());
+    expect(mockRequestOtp).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.getByText('Register as a provider')).toBeTruthy();
+  });
+
   it('shows register CTA and does not open verify when customer account is missing', async () => {
     mockRequestOtp.mockRejectedValue(new HttpError(404, 'not found', 'CUSTOMER_NOT_FOUND'));
 

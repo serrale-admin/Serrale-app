@@ -1,18 +1,24 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../src/components/Card';
 import ListRow from '../src/components/ListRow';
 import LocationSheet from '../src/components/LocationSheet';
 import ScreenHeader from '../src/components/ScreenHeader';
+import { areaLabel } from '../src/lib/directory-display';
 import { useLabels } from '../src/lib/labels';
+import { displayEthiopianPhone } from '../src/lib/phone';
 import { colors } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
+
+const TERMS_URL = 'https://serrale.com/terms';
+const PRIVACY_URL = 'https://serrale.com/privacy';
 
 interface SRow {
   label: string;
   value?: string;
+  sub?: string;
   onPress(): void;
   danger?: boolean;
 }
@@ -22,40 +28,84 @@ export default function SettingsScreen() {
   const labels = useLabels();
   const t = labels.settings;
   const user = useAppStore((s) => s.user);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const providerProfile = useAppStore((s) => s.providerProfile);
+  const loggedIn = useAppStore((s) => s.loggedIn);
   const area = useAppStore((s) => s.area);
-  const setArea = useAppStore((s) => s.setArea);
   const lang = useAppStore((s) => s.lang);
+  const am = lang === 'am';
+  const setArea = useAppStore((s) => s.setArea);
   const showToast = useAppStore((s) => s.showToast);
   const [showLocation, setShowLocation] = useState(false);
 
-  const groups: SRow[][] = [
-    [
-      { label: t.accountInfo, value: user ? user.name : t.guest, onPress: () => showToast(t.accountInfoToast, 'ph-user') },
-      { label: t.phoneNumber, value: user ? user.phone : t.notSet, onPress: () => showToast(t.phoneNumber, 'ph-phone') },
-      { label: t.defaultArea, value: area, onPress: () => setShowLocation(true) },
-    ],
-    [
-      { label: labels.common.language, value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
-      { label: labels.common.notifications, value: t.on, onPress: () => showToast(t.notificationsToast, 'ph-bell') },
-      { label: t.privacy, onPress: () => showToast(t.privacyToast, 'ph-lock') },
-    ],
-    [
-      { label: t.terms, onPress: () => showToast(t.termsToast, 'ph-file-text') },
-      { label: t.deleteAccount, onPress: () => showToast(t.deleteToast, 'ph-warning'), danger: true },
-    ],
-  ];
+  const isProvider = activeSession === 'provider' && !!providerProfile;
+  const phoneRaw = isProvider ? providerProfile!.phone : user?.phone || '';
+  const phoneDisplay = phoneRaw ? displayEthiopianPhone(phoneRaw) : t.notSet;
+
+  const openUrl = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) await Linking.openURL(url);
+      else showToast(labels.errors.unknownMessage, 'ph-warning-circle');
+    } catch {
+      showToast(labels.errors.unknownMessage, 'ph-warning-circle');
+    }
+  };
+
+  const profileGroups: SRow[][] = loggedIn
+    ? [
+        [
+          {
+            label: t.phoneNumber,
+            value: phoneDisplay,
+            sub: t.phoneReadOnly,
+            onPress: () => showToast(t.phoneReadOnly, 'ph-lock'),
+          },
+          {
+            label: t.defaultArea,
+            value: areaLabel(area, am),
+            sub: t.defaultAreaHint,
+            onPress: () => setShowLocation(true),
+          },
+        ],
+        [
+          { label: labels.common.language, value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
+          { label: labels.common.notifications, value: t.on, onPress: () => showToast(t.notificationsToast, 'ph-bell') },
+          { label: t.privacy, onPress: () => openUrl(PRIVACY_URL) },
+        ],
+        [
+          { label: t.terms, onPress: () => openUrl(TERMS_URL) },
+          { label: t.deleteAccount, onPress: () => showToast(t.deleteToast, 'ph-warning'), danger: true },
+        ],
+      ]
+    : [
+        [
+          { label: labels.common.language, value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
+          {
+            label: t.defaultArea,
+            value: areaLabel(area, am),
+            sub: t.defaultAreaHint,
+            onPress: () => setShowLocation(true),
+          },
+        ],
+        [
+          { label: t.terms, onPress: () => openUrl(TERMS_URL) },
+          { label: labels.common.helpSupport, onPress: () => router.push('/help') },
+        ],
+      ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title={labels.common.settings} />
+      <ScreenHeader title={labels.common.settings} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {groups.map((rows, gi) => (
+        {profileGroups.map((rows, gi) => (
           <Card key={gi} variant="group">
             {rows.map((r, ri) => (
               <ListRow
                 key={ri}
                 label={r.label}
                 value={r.value}
+                sub={r.sub}
                 onPress={r.onPress}
                 labelColor={r.danger ? colors.danger : colors.text}
                 divided={ri > 0}

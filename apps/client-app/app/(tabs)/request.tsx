@@ -1,26 +1,94 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../src/components/Button';
 import CategorySheet from '../../src/components/CategorySheet';
-import { FieldLabel, SelectField } from '../../src/components/Field';
+import Chip from '../../src/components/Chip';
+import { FieldLabel, FormTextArea, SelectField } from '../../src/components/Field';
 import LocationSheet from '../../src/components/LocationSheet';
 import { CATS } from '../../src/data/mock';
 import { useCreateRequest } from '../../src/hooks/queries';
+import { areaLabel, categoryLabel } from '../../src/lib/directory-display';
 import { presentError } from '../../src/lib/error-presentation';
 import { Icon } from '../../src/lib/icons';
 import { fill, useLabels } from '../../src/lib/labels';
-import { colors, fonts, radius } from '../../src/lib/theme';
+import { colors, fonts, layout, radius, shadowCard } from '../../src/lib/theme';
 import { defaultRequest, RequestForm, requestSchema } from '../../src/schemas/request';
 import { useAppStore } from '../../src/store/appStore';
 
-const WHEN = ['Today', 'This week', 'Flexible'] as const;
+const WHEN = ['Emergency', 'Today', 'This week', 'Flexible'] as const;
 const BUDGETS = ['Not sure', 'Under 1,000 ETB', '1,000–3,000 ETB', '3,000–7,000 ETB', '7,000+ ETB'];
 const CONTACT = ['Call', 'WhatsApp', 'Both'] as const;
-const CONTACT_ICON: Record<string, string> = { Call: 'ph-phone', WhatsApp: 'ph-whatsapp-logo', Both: 'ph-chats-circle' };
+const WHEN_ICON: Record<(typeof WHEN)[number], string> = {
+  Emergency: 'ph-warning-circle',
+  Today: 'ph-lightning',
+  'This week': 'ph-calendar-blank',
+  Flexible: 'ph-clock',
+};
+const CONTACT_ICON: Record<(typeof CONTACT)[number], string> = {
+  Call: 'ph-phone',
+  WhatsApp: 'ph-whatsapp-logo',
+  Both: 'ph-chats-circle',
+};
+
+const HERO_GRADIENT = {
+  colors: ['rgba(4,47,34,0.82)', 'rgba(6,71,52,0.55)', 'rgba(6,71,52,0.18)'] as const,
+  locations: [0, 0.45, 1] as const,
+};
+const requestHeroPhoto = require('../../assets/categories-banner.png');
+
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+}
+
+function ResultCard({
+  icon,
+  iconColor = colors.green700,
+  title,
+  text,
+  subtext,
+  children,
+}: {
+  icon: string;
+  iconColor?: string;
+  title: string;
+  text: string;
+  subtext?: string;
+  children: ReactNode;
+}) {
+  return (
+    <ScrollView contentContainerStyle={styles.resultWrap} showsVerticalScrollIndicator={false}>
+      <View style={styles.resultCard}>
+        <View style={styles.resultIconWrap}>
+          <Icon name={icon} size={26} color={iconColor} weight="fill" />
+        </View>
+        <Text style={styles.resultTitle}>{title}</Text>
+        <Text style={styles.resultText}>{text}</Text>
+        {!!subtext && <Text style={styles.resultSubtext}>{subtext}</Text>}
+        <View style={styles.resultActions}>{children}</View>
+      </View>
+    </ScrollView>
+  );
+}
 
 export default function RequestScreen() {
   const router = useRouter();
@@ -32,25 +100,25 @@ export default function RequestScreen() {
 
   const mutation = useCreateRequest();
   const labels = useLabels();
+  const t = labels.request;
   const errorView = mutation.isError ? presentError(mutation.error, labels) : null;
-  // Display-only localization of the canonical (English) option VALUES that are
-  // sent to the backend — the stored value never changes, only its label.
   const whenLabel: Record<(typeof WHEN)[number], string> = {
-    Today: labels.request.when.today,
-    'This week': labels.request.when.thisWeek,
-    Flexible: labels.request.when.flexible,
+    Emergency: t.when.emergency,
+    Today: t.when.today,
+    'This week': t.when.thisWeek,
+    Flexible: t.when.flexible,
   };
   const contactLabel: Record<(typeof CONTACT)[number], string> = {
-    Call: labels.request.contact.call,
-    WhatsApp: labels.request.contact.whatsapp,
-    Both: labels.request.contact.both,
+    Call: t.contact.call,
+    WhatsApp: t.contact.whatsapp,
+    Both: t.contact.both,
   };
   const budgetLabel: Record<string, string> = {
-    'Not sure': labels.request.budget.notSure,
-    'Under 1,000 ETB': labels.request.budget.under1000,
-    '1,000–3,000 ETB': labels.request.budget.between1,
-    '3,000–7,000 ETB': labels.request.budget.between2,
-    '7,000+ ETB': labels.request.budget.over7000,
+    'Not sure': t.budget.notSure,
+    'Under 1,000 ETB': t.budget.under1000,
+    '1,000–3,000 ETB': t.budget.between1,
+    '3,000–7,000 ETB': t.budget.between2,
+    '7,000+ ETB': t.budget.over7000,
   };
   const { handleSubmit, watch, setValue, reset } = useForm<RequestForm>({
     resolver: zodResolver(requestSchema),
@@ -66,190 +134,229 @@ export default function RequestScreen() {
     reset(defaultRequest(area));
   };
 
-  // Success state
   if (mutation.isSuccess) {
     const wasDuplicate = mutation.data?.duplicate;
+    const successArea = mutation.variables?.area ? areaLabel(mutation.variables.area, am) : areaLabel(area, am);
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.centerWrap} showsVerticalScrollIndicator={false}>
-          <View style={[styles.bigCircle, { backgroundColor: colors.soft }]}>
-            <Icon name="ph-check-circle" size={48} color={colors.success} weight="fill" />
-          </View>
-          <Text style={styles.successTitle}>{wasDuplicate ? labels.request.successDupTitle : labels.request.successTitle}</Text>
-          <Text style={styles.successText}>
-            {wasDuplicate
-              ? labels.request.successDupText
-              : fill(labels.request.successText, { area: mutation.variables?.area ?? '' })}
-          </Text>
-          <Button label={labels.common.browseProviders} fullWidth onPress={() => router.push('/providers')} style={styles.stackedBtn} />
-          <Button
-            label={labels.request.postAnother}
-            variant="secondary"
-            size="md"
-            fullWidth
-            onPress={startOver}
-            style={styles.stackedBtnTight}
-          />
-        </ScrollView>
+        <ResultCard
+          icon="ph-check-circle"
+          iconColor={colors.success}
+          title={wasDuplicate ? t.successDupTitle : t.successTitle}
+          text={wasDuplicate ? t.successDupText : fill(t.successText, { area: successArea })}
+          subtext={t.successBody}
+        >
+          <Button label={labels.common.browseProviders} variant="gold" size="md" fullWidth onPress={() => router.push('/providers')} />
+          <Button label={t.postAnother} variant="secondary" size="md" fullWidth onPress={startOver} />
+        </ResultCard>
       </SafeAreaView>
     );
   }
 
-  // Guest gate
   if (!loggedIn) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.centerWrap} showsVerticalScrollIndicator={false}>
-          <View style={styles.gateIcon}>
-            <Icon name="ph-hand-heart" size={40} color={colors.goldText} weight="fill" />
-          </View>
-          <Text style={styles.successTitle}>{labels.request.gateTitle}</Text>
-          <Text style={styles.successText}>{labels.request.gateText}</Text>
+        <ResultCard icon="ph-hand-heart" title={t.gateTitle} text={t.gateText}>
           <Button
             label={labels.common.loginWithPhone}
             icon="ph-phone"
             iconWeight="fill"
+            variant="gold"
+            size="md"
             fullWidth
-            onPress={() => router.replace({ pathname: '/auth/login', params: { reason: labels.auth.reasonRequest, next: '/(tabs)/request' } })}
-            style={styles.stackedBtn}
+            onPress={() =>
+              router.replace({ pathname: '/auth/login', params: { reason: labels.auth.reasonRequest, next: '/(tabs)/request' } })
+            }
           />
-          <Button label={labels.request.continueBrowsing} variant="secondary" size="md" fullWidth onPress={() => router.push('/categories')} style={styles.stackedBtnTight} />
-        </ScrollView>
+          <Button label={t.continueBrowsing} variant="secondary" size="md" fullWidth onPress={() => router.push('/(tabs)/search')} />
+        </ResultCard>
       </SafeAreaView>
     );
   }
 
   const cat = CATS.find((c) => c.id === values.categoryId);
-  const onInvalid = () => showToast(!values.categoryId ? labels.request.chooseService : labels.request.describeWork, 'ph-warning-circle');
-  // The idempotency key lives inside useCreateRequest: stable across retry-taps
-  // of this submission, refreshed only after a confirmed success.
+  const categoryLabelText = cat ? categoryLabel(cat, am) : '';
+  const areaDisplay = values.area ? areaLabel(values.area, am) : areaLabel(area, am);
+  const onInvalid = () => showToast(!values.categoryId ? t.chooseService : t.describeWork, 'ph-warning-circle');
   const submit = handleSubmit((v) => mutation.mutate(v), onInvalid);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={8}
-      >
-      <View style={styles.formHeader}>
-        <Text style={styles.h1}>{labels.request.title}</Text>
-        <Text style={styles.subtitle}>{labels.request.subtitle}</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <FieldLabel>{labels.request.serviceLabel}</FieldLabel>
-        <SelectField
-          onPress={() => setShowCat(true)}
-          icon="ph-magnifying-glass"
-          value={cat ? (am ? cat.am : cat.name) : undefined}
-          placeholder={labels.request.servicePlaceholder}
-          caret="right"
-          accessibilityLabel={labels.a11y.selectService}
-        />
-
-        <View style={styles.fieldGap}>
-          <FieldLabel>{labels.request.areaLabel}</FieldLabel>
-        </View>
-        <SelectField
-          onPress={() => setShowArea(true)}
-          icon="ph-map-pin"
-          iconColor={colors.success}
-          iconWeight="fill"
-          value={values.area}
-          placeholder={values.area}
-          caret="down"
-          accessibilityLabel={labels.a11y.selectArea}
-        />
-
-        <View style={styles.fieldGap}>
-          <FieldLabel>{labels.request.describeLabel}</FieldLabel>
-        </View>
-        <TextInput
-          value={values.description}
-          onChangeText={(t) => setValue('description', t.slice(0, 300))}
-          placeholder={labels.request.descPlaceholder}
-          placeholderTextColor={colors.faint}
-          multiline
-          style={styles.textarea}
-        />
-        <Text style={styles.counter}>{values.description.length}/300</Text>
-
-        <View style={styles.fieldGapSm}>
-          <FieldLabel>{labels.request.whenLabel}</FieldLabel>
-        </View>
-        <View style={styles.rowGap}>
-          {WHEN.map((w) => (
-            <Pressable key={w} style={[styles.segment, values.when === w && styles.segmentActive]} onPress={() => setValue('when', w)}>
-              <Text style={[styles.segmentText, values.when === w && styles.segmentTextActive]}>{whenLabel[w]}</Text>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={8}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" accessibilityLabel="SERRALE" />
+            <Pressable
+              style={({ pressed }) => [styles.locPill, pressed && styles.pressed]}
+              onPress={() => setShowArea(true)}
+              hitSlop={4}
+              accessibilityRole="button"
+              accessibilityLabel={fill(labels.a11y.location, { area: areaDisplay })}
+            >
+              <Icon name="ph-map-pin" size={13} color={colors.green700} weight="fill" />
+              <Text style={styles.locText} numberOfLines={1}>
+                {areaDisplay}
+              </Text>
+              <Icon name="ph-caret-down" size={10} color={colors.green800} weight="bold" />
             </Pressable>
-          ))}
-        </View>
-
-        <View style={styles.fieldGap}>
-          <FieldLabel optional>{labels.request.budgetLabel}</FieldLabel>
-        </View>
-        <View style={styles.wrapRow}>
-          {BUDGETS.map((b) => {
-            const active = values.budget === b;
-            return (
-              <Pressable key={b} style={[styles.budget, active && styles.segmentActive]} onPress={() => setValue('budget', active ? '' : b)}>
-                <Text style={[styles.budgetText, active && styles.segmentTextActive]}>{budgetLabel[b] ?? b}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.fieldGap}>
-          <FieldLabel>{labels.request.contactLabel}</FieldLabel>
-        </View>
-        <View style={styles.contactGroup}>
-          {CONTACT.map((c) => {
-            const active = values.preferredContact === c;
-            return (
-              <Pressable key={c} style={[styles.contactBtn, active && styles.contactActive]} onPress={() => setValue('preferredContact', c)}>
-                <Icon name={CONTACT_ICON[c]} size={15} color={active ? colors.green800 : '#5a7a6c'} weight="fill" />
-                <Text style={[styles.contactText, { color: active ? colors.green800 : '#5a7a6c' }]}>{contactLabel[c]}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View style={{ height: 24 }} />
-      </ScrollView>
-
-      <View style={styles.footer}>
-        {mutation.isError && (
-          <View style={styles.errorRow}>
-            <Icon name="ph-warning-circle" size={16} color={colors.danger} weight="fill" />
-            <Text style={styles.errorText} numberOfLines={2}>
-              {errorView?.message}
-            </Text>
           </View>
-        )}
-        <Button
-          label={
-            mutation.isPending
-              ? labels.request.submitting
-              : errorView?.kind === 'session-expired'
-                ? errorView.action
-                : mutation.isError
-                  ? labels.errors.retry
-                  : labels.request.submit
-          }
-          icon="ph-paper-plane-tilt"
-          variant="gold"
-          fullWidth
-          loading={mutation.isPending}
-          onPress={
-            errorView?.kind === 'session-expired'
-              ? () => router.replace({ pathname: '/auth/login', params: { next: '/(tabs)/request' } })
-              : submit
-          }
-        />
-      </View>
+
+          <View style={styles.heroWrap}>
+            <ImageBackground source={requestHeroPhoto} style={styles.heroPhoto} imageStyle={styles.heroPhotoImage} resizeMode="cover">
+              <LinearGradient colors={[...HERO_GRADIENT.colors]} locations={[...HERO_GRADIENT.locations]} style={styles.heroOverlay}>
+                <View style={styles.heroBadge}>
+                  <Icon name="ph-hand-heart" size={11} color={colors.gold} weight="fill" />
+                  <Text style={styles.heroBadgeText}>{t.heroBadge}</Text>
+                </View>
+                <Text style={styles.heroTitle}>{t.title}</Text>
+                <Text style={styles.heroSub}>{t.subtitle}</Text>
+              </LinearGradient>
+            </ImageBackground>
+          </View>
+
+          <View style={styles.formStack}>
+            <SectionCard title={t.sectionDetails}>
+              <FieldLabel compact>{t.serviceLabel}</FieldLabel>
+              <SelectField
+                compact
+                onPress={() => setShowCat(true)}
+                icon="ph-wrench"
+                iconColor={colors.green700}
+                iconWeight="fill"
+                value={categoryLabelText}
+                placeholder={t.servicePlaceholder}
+                caret="down"
+                accessibilityLabel={labels.a11y.selectService}
+              />
+
+              <FieldLabel compact>{t.areaLabel}</FieldLabel>
+              <SelectField
+                compact
+                onPress={() => setShowArea(true)}
+                icon="ph-map-pin"
+                iconColor={colors.green700}
+                iconWeight="fill"
+                value={values.area ? areaLabel(values.area, am) : ''}
+                placeholder={t.areaLabel}
+                caret="down"
+                accessibilityLabel={labels.a11y.selectArea}
+              />
+
+              <FormTextArea
+                compact
+                label={t.describeLabel}
+                value={values.description}
+                onChangeText={(text) => setValue('description', text.slice(0, 300))}
+                placeholder={t.descPlaceholder}
+              />
+              <Text style={styles.counter}>{values.description.length}/300</Text>
+            </SectionCard>
+
+            <SectionCard title={t.sectionTiming}>
+              <FieldLabel compact>{t.whenLabel}</FieldLabel>
+              <View style={styles.chipWrap}>
+                {WHEN.map((w) => (
+                  <Chip
+                    key={w}
+                    label={whenLabel[w]}
+                    iconName={WHEN_ICON[w]}
+                    iconColor={values.when === w ? colors.onDark : colors.green700}
+                    active={values.when === w}
+                    height={32}
+                    onPress={() => setValue('when', w)}
+                  />
+                ))}
+              </View>
+
+              <FieldLabel compact optional>
+                {t.budgetLabel}
+              </FieldLabel>
+              <View style={styles.chipWrap}>
+                {BUDGETS.map((b) => {
+                  const active = values.budget === b;
+                  return (
+                    <Chip
+                      key={b}
+                      label={budgetLabel[b] ?? b}
+                      active={active}
+                      height={32}
+                      onPress={() => setValue('budget', active ? '' : b)}
+                    />
+                  );
+                })}
+              </View>
+            </SectionCard>
+
+            <SectionCard title={t.sectionContact}>
+              <FieldLabel compact>{t.contactLabel}</FieldLabel>
+              <View style={styles.contactRow}>
+                {CONTACT.map((c) => {
+                  const active = values.preferredContact === c;
+                  return (
+                    <Pressable
+                      key={c}
+                      style={[styles.contactBtn, active && styles.contactActive]}
+                      onPress={() => setValue('preferredContact', c)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Icon name={CONTACT_ICON[c]} size={14} color={active ? colors.onDark : colors.green800} weight="fill" />
+                      <Text style={[styles.contactText, active && styles.contactTextActive]} numberOfLines={1}>
+                        {contactLabel[c]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </SectionCard>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          {mutation.isError && (
+            <View style={styles.errorRow}>
+              <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
+              <Text style={styles.errorText} numberOfLines={2}>
+                {errorView?.message}
+              </Text>
+            </View>
+          )}
+          <Button
+            label={
+              mutation.isPending
+                ? t.submitting
+                : errorView?.kind === 'session-expired'
+                  ? errorView.action
+                  : mutation.isError
+                    ? labels.errors.retry
+                    : t.submit
+            }
+            icon="ph-paper-plane-tilt"
+            variant="gold"
+            size="md"
+            fullWidth
+            loading={mutation.isPending}
+            onPress={
+              errorView?.kind === 'session-expired'
+                ? () => router.replace({ pathname: '/auth/login', params: { next: '/(tabs)/request' } })
+                : submit
+            }
+          />
+          <Text style={styles.submitHint}>{t.submitHint}</Text>
+        </View>
       </KeyboardAvoidingView>
 
-      <CategorySheet visible={showCat} onClose={() => setShowCat(false)} onSelect={(id) => setValue('categoryId', id)} />
+      <CategorySheet
+        visible={showCat}
+        onClose={() => setShowCat(false)}
+        value={values.categoryId}
+        onSelect={(id) => setValue('categoryId', id)}
+      />
       <LocationSheet visible={showArea} onClose={() => setShowArea(false)} value={values.area} onSelect={(a) => setValue('area', a)} />
     </SafeAreaView>
   );
@@ -258,34 +365,181 @@ export default function RequestScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  centerWrap: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24 },
-  bigCircle: { width: 84, height: 84, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  gateIcon: { width: 78, height: 78, borderRadius: 22, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' },
-  successTitle: { fontFamily: fonts.heading, fontSize: 23, color: colors.text, marginTop: 18, textAlign: 'center' },
-  successText: { fontSize: 13.5, color: colors.muted, lineHeight: 21, marginTop: 9, textAlign: 'center', maxWidth: 290, fontFamily: fonts.regular },
-  stackedBtn: { marginTop: 24, maxWidth: 290 },
-  stackedBtnTight: { marginTop: 11, maxWidth: 290 },
-  formHeader: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
-  h1: { fontFamily: fonts.heading, fontSize: 25, color: colors.text },
-  subtitle: { fontSize: 13, color: colors.muted, marginTop: 3, fontFamily: fonts.regular },
-  form: { paddingHorizontal: 16, paddingTop: 8 },
-  fieldGap: { marginTop: 18 },
-  fieldGapSm: { marginTop: 14 },
-  textarea: { height: 92, padding: 12, paddingTop: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderField, borderRadius: radius.md + 1, fontSize: 13.5, fontFamily: fonts.regular, color: colors.text, textAlignVertical: 'top', lineHeight: 20 },
-  counter: { textAlign: 'right', fontSize: 11, color: colors.faint, marginTop: 4, fontFamily: fonts.regular },
-  rowGap: { flexDirection: 'row', gap: 8 },
-  segment: { flex: 1, height: 40, borderRadius: 11, borderWidth: 1, borderColor: colors.borderField, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  segmentActive: { backgroundColor: colors.green800, borderColor: colors.green800 },
-  segmentText: { fontSize: 13, fontFamily: fonts.semibold, color: colors.text },
-  segmentTextActive: { color: '#fff' },
-  wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  budget: { height: 36, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: colors.borderField, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  budgetText: { fontSize: 12.5, fontFamily: fonts.semibold, color: colors.text },
-  contactGroup: { flexDirection: 'row', gap: 8, backgroundColor: colors.soft, borderRadius: radius.md + 1, padding: 4 },
-  contactBtn: { flex: 1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
-  contactActive: { backgroundColor: colors.surface },
-  contactText: { fontSize: 13, fontFamily: fonts.bold },
-  footer: { paddingHorizontal: 16, paddingTop: 11, paddingBottom: 20, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: 'rgba(6,71,52,0.09)' },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
-  errorText: { flex: 1, fontSize: 12.5, color: colors.danger, fontFamily: fonts.regular, lineHeight: 17 },
+  scroll: { paddingBottom: 12 },
+  pressed: { opacity: 0.88 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: layout.gutter,
+    paddingTop: 2,
+    paddingBottom: 4,
+  },
+  logo: { height: 36, width: 96, tintColor: colors.green800 },
+  locPill: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.soft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    maxWidth: '56%',
+  },
+  locText: { flexShrink: 1, fontSize: 12.5, fontFamily: fonts.semibold, color: colors.text },
+  heroWrap: {
+    marginHorizontal: layout.gutter,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    marginBottom: 10,
+    ...shadowCard,
+    shadowOpacity: 0.08,
+  },
+  heroPhoto: { width: '100%', minHeight: 104 },
+  heroPhotoImage: {
+    borderRadius: radius.xl,
+    height: '112%',
+    transform: [{ translateY: -4 }],
+  },
+  heroOverlay: {
+    flex: 1,
+    minHeight: 104,
+    paddingHorizontal: 13,
+    paddingVertical: 12,
+    justifyContent: 'flex-end',
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 6,
+  },
+  heroBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.onDark, letterSpacing: 0.15 },
+  heroTitle: { fontFamily: fonts.heading, fontSize: 17, color: colors.onDark, lineHeight: 21 },
+  heroSub: { marginTop: 3, fontSize: 11.5, lineHeight: 16, color: 'rgba(255,255,255,0.88)', fontFamily: fonts.regular },
+  formStack: { paddingHorizontal: layout.gutter, gap: 10, maxWidth: layout.contentMaxWidth, alignSelf: 'center', width: '100%' },
+  sectionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 13,
+    ...shadowCard,
+    shadowOpacity: 0.05,
+  },
+  sectionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13.5,
+    color: colors.green900,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  sectionBody: { gap: 8 },
+  counter: { textAlign: 'right', fontSize: 10.5, color: colors.muted, marginTop: -2, fontFamily: fonts.regular },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  contactRow: {
+    flexDirection: 'row',
+    gap: 5,
+    backgroundColor: colors.frost,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.frostBorder,
+    padding: 4,
+  },
+  contactBtn: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: radius.sm + 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 4,
+  },
+  contactActive: { backgroundColor: colors.green800 },
+  contactText: { fontSize: 11.5, fontFamily: fonts.bold, color: colors.green800 },
+  contactTextActive: { color: colors.onDark },
+  footer: {
+    paddingHorizontal: layout.gutter,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: colors.bg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(6,71,52,0.08)',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  submitHint: {
+    marginTop: 8,
+    fontSize: 10.5,
+    lineHeight: 15,
+    color: colors.muted,
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    paddingHorizontal: 6,
+  },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  errorText: { flex: 1, fontSize: 11.5, color: colors.danger, fontFamily: fonts.regular, lineHeight: 15 },
+  resultWrap: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: layout.gutter,
+    paddingVertical: 20,
+  },
+  resultCard: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    ...shadowCard,
+    shadowOpacity: 0.06,
+  },
+  resultIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: colors.soft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    color: colors.green900,
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 23,
+  },
+  resultText: {
+    fontSize: 13,
+    color: colors.muted,
+    lineHeight: 19,
+    marginTop: 6,
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+  },
+  resultSubtext: {
+    fontSize: 12,
+    color: colors.muted,
+    lineHeight: 17,
+    marginTop: 6,
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    paddingHorizontal: 4,
+  },
+  resultActions: { width: '100%', marginTop: 16, gap: 8 },
 });

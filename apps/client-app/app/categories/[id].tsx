@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Badge from '../../src/components/Badge';
 import Button from '../../src/components/Button';
@@ -12,6 +12,7 @@ import ProviderRow from '../../src/components/ProviderRow';
 import ScreenHeader from '../../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../../src/components/Skeleton';
 import { useCategory, useProviders } from '../../src/hooks/queries';
+import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
 import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
 import { fill, useLabels } from '../../src/lib/labels';
@@ -36,6 +37,10 @@ export default function CategoryDetailScreen() {
   // param (contract matrix M-4), so the UI does not offer illusory sorting.
   const query = useMemo(() => ({ categoryId: id, area, filters }), [id, area, filters]);
   const providers = useProviders(query);
+  const { refreshing, onRefresh } = usePullToRefresh(
+    () => category.refetch(),
+    () => providers.refetch(),
+  );
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? results.length;
 
@@ -80,7 +85,13 @@ export default function CategoryDetailScreen() {
           onAction={() => router.replace({ pathname: '/auth/login', params: { next: `/categories/${id}` } })}
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} {...directoryRefreshProps} />
+          }
+        >
           {results.map((p) => <ProviderRow key={p.id} provider={p} />)}
           {results.length === 0 && (
             <EmptyState

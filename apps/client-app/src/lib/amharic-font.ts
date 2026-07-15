@@ -43,19 +43,31 @@ export function applyAmharicFontPatch(): void {
   if (typeof originalRender !== 'function') return; // web/other targets: skip safely.
 
   TextInternals.render = function patchedRender(...args: unknown[]) {
-    const element = originalRender.apply(this, args);
-    if (!element || useAppStore.getState().lang !== 'am') return element;
+    let element: React.ReactElement | null;
+    try {
+      element = originalRender.apply(this, args) as React.ReactElement | null;
+    } catch {
+      return null;
+    }
+    if (!element || !React.isValidElement(element)) return element;
 
-    const flat = (StyleSheet.flatten(
-      (element.props as { style?: unknown }).style,
-    ) || {}) as { fontFamily?: string };
-    const mapped = flat.fontFamily
-      ? INTER_TO_ETHIOPIC[flat.fontFamily]
-      : 'NotoSansEthiopic_400Regular';
-    if (!mapped) return element; // non-Inter family (none today): leave untouched.
+    try {
+      if (useAppStore.getState().lang !== 'am') return element;
 
-    return React.cloneElement(element, {
-      style: [(element.props as { style?: unknown }).style, { fontFamily: mapped }],
-    } as Partial<typeof element.props>);
+      const flat = (StyleSheet.flatten(
+        (element.props as { style?: unknown }).style,
+      ) || {}) as { fontFamily?: string };
+      const mapped = flat.fontFamily
+        ? INTER_TO_ETHIOPIC[flat.fontFamily]
+        : 'NotoSansEthiopic_400Regular';
+      if (!mapped || flat.fontFamily === mapped) return element;
+
+      return React.cloneElement(element, {
+        style: [(element.props as { style?: unknown }).style, { fontFamily: mapped }],
+      } as Partial<typeof element.props>);
+    } catch {
+      // Never take down a screen because font remapping failed (web/HMR edge cases).
+      return element;
+    }
   };
 }

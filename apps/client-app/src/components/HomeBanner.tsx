@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   Image,
+  ImageSourcePropType,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -20,9 +21,12 @@ interface Slide {
   sub: string;
   cta: string;
   bg: [string, string];
+  photo?: ImageSourcePropType;
 }
 
-const artwork = require('../../assets/home-trust-banner.png');
+const trustArtwork = require('../../assets/home-trust-banner.png');
+const professionalsArtwork = require('../../assets/home-banner-professionals.png');
+const callWhatsappArtwork = require('../../assets/home-banner-call-whatsapp.png');
 
 /** Fixed per-slide gradient backgrounds (localized copy is layered on at render). */
 const SLIDE_BGS: [string, string][] = [
@@ -32,14 +36,84 @@ const SLIDE_BGS: [string, string][] = [
 ];
 const SLIDE_COUNT = SLIDE_BGS.length;
 
-/** Reference-based Home carousel with native copy over dedicated decorative artwork. */
+function PhotoSlide({ slide, onPress }: { slide: Slide; onPress(): void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.slide, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${slide.title}. ${slide.cta}`}
+    >
+      <Image source={slide.photo} style={styles.photoBg} resizeMode="cover" accessibilityIgnoresInvertColors />
+      <LinearGradient
+        colors={['rgba(4,47,34,0.80)', 'rgba(6,71,52,0.58)', 'rgba(6,71,52,0.22)', 'rgba(6,71,52,0.02)']}
+        locations={[0, 0.36, 0.58, 0.86]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View style={styles.photoCopy}>
+        <Text style={styles.title} numberOfLines={2}>
+          {slide.title}
+        </Text>
+        <Text style={styles.sub} numberOfLines={2}>
+          {slide.sub}
+        </Text>
+        <View style={styles.cta}>
+          <Text style={styles.ctaText}>{slide.cta}</Text>
+          <Icon name="ph-caret-right" size={11} color={colors.green900} weight="bold" />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+function GradientSlide({ slide, onPress }: { slide: Slide; onPress(): void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.slide, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${slide.title}. ${slide.cta}`}
+    >
+      <LinearGradient colors={slide.bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFillObject} />
+      <Image source={trustArtwork} style={styles.artwork} resizeMode="cover" accessibilityIgnoresInvertColors />
+      <View style={styles.copy}>
+        <Text style={styles.title} numberOfLines={2}>
+          {slide.title}
+        </Text>
+        <Text style={styles.sub} numberOfLines={2}>
+          {slide.sub}
+        </Text>
+        <View style={styles.cta}>
+          <Text style={styles.ctaText}>{slide.cta}</Text>
+          <Icon name="ph-caret-right" size={11} color={colors.green900} weight="bold" />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+/** Reference-based Home carousel with native copy over decorative or photo artwork. */
 export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
   const labels = useLabels();
   const b = labels.banner;
   const SLIDES: Slide[] = [
-    { title: b.slide1Title, sub: b.slide1Sub, cta: labels.explore, bg: SLIDE_BGS[0] },
+    {
+      title: b.slide1Title,
+      sub: b.slide1Sub,
+      cta: labels.explore,
+      bg: SLIDE_BGS[0],
+      photo: professionalsArtwork,
+    },
     { title: b.slide2Title, sub: b.slide2Sub, cta: b.slide2Cta, bg: SLIDE_BGS[1] },
-    { title: b.slide3Title, sub: b.slide3Sub, cta: b.slide3Cta, bg: SLIDE_BGS[2] },
+    {
+      title: b.slide3Title,
+      sub: b.slide3Sub,
+      cta: b.slide3Cta,
+      bg: SLIDE_BGS[2],
+      photo: callWhatsappArtwork,
+    },
   ];
   const { width } = useWindowDimensions();
   const slideW = Math.min(width, layout.contentMaxWidth) - layout.gutter * 2;
@@ -75,29 +149,13 @@ export default function HomeBanner({ onGo }: { onGo(index: number): void }) {
         style={[styles.track, { width: slideW }]}
       >
         {SLIDES.map((slide, slideIndex) => (
-          <Pressable
-            key={slide.title}
-            onPress={() => onGo(slideIndex)}
-            style={({ pressed }) => [{ width: slideW }, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`${slide.title}. ${slide.cta}`}
-          >
-            <LinearGradient colors={slide.bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.slide}>
-              <Image source={artwork} style={styles.artwork} resizeMode="cover" accessibilityIgnoresInvertColors />
-              <View style={styles.copy}>
-                <Text style={styles.title} numberOfLines={2}>
-                  {slide.title}
-                </Text>
-                <Text style={styles.sub} numberOfLines={2}>
-                  {slide.sub}
-                </Text>
-                <View style={styles.cta}>
-                  <Text style={styles.ctaText}>{slide.cta}</Text>
-                  <Icon name="ph-caret-right" size={11} color={colors.green900} weight="bold" />
-                </View>
-              </View>
-            </LinearGradient>
-          </Pressable>
+          <View key={slide.title} style={{ width: slideW }}>
+            {slide.photo ? (
+              <PhotoSlide slide={slide} onPress={() => onGo(slideIndex)} />
+            ) : (
+              <GradientSlide slide={slide} onPress={() => onGo(slideIndex)} />
+            )}
+          </View>
         ))}
       </ScrollView>
       <View style={styles.dots} accessibilityRole="tablist">
@@ -132,6 +190,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
     borderRadius: radius.xl,
+    position: 'relative',
+  },
+  photoBg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  photoCopy: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    maxWidth: '58%',
+    zIndex: 1,
   },
   artwork: { position: 'absolute', top: 0, left: 0, width: '43%', height: '100%' },
   copy: {
@@ -142,6 +210,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     paddingRight: 10,
     paddingVertical: 10,
+    zIndex: 1,
   },
   title: { fontSize: 14.5, lineHeight: 17, fontFamily: fonts.bold, color: '#fff', letterSpacing: -0.2 },
   sub: { marginTop: 3, fontSize: 10.5, lineHeight: 13, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.82)' },

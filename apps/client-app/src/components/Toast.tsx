@@ -11,7 +11,7 @@ export default function Toast() {
     <View pointerEvents="none" style={styles.wrap}>
       <View style={styles.toast}>
         <Icon name={toast.icon} size={17} color={colors.gold} weight="fill" />
-        <Text style={styles.text} numberOfLines={1}>
+        <Text style={styles.text} numberOfLines={3}>
           {toast.text}
         </Text>
       </View>

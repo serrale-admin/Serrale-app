@@ -10,16 +10,15 @@ import PhoneField from '../../src/components/PhoneField';
 import { fetchPhoneAccountHint } from '../../src/api';
 import {
   useRequestCustomerSignupOtp,
-  useRequestOtp,
+  useRequestCustomerOtp,
   useRequestProviderOtp,
 } from '../../src/hooks/queries';
 import { HttpError } from '../../src/lib/http';
 import { Icon } from '../../src/lib/icons';
 import { presentError } from '../../src/lib/error-presentation';
 import { useLabels } from '../../src/lib/labels';
-import { parseOtpDelivery } from '../../src/lib/otp-delivery';
-import { newIdempotencyKey } from '../../src/lib/otp-retry';
-
+import {
+  customerOtpPurposeForIntent,
   resolveCustomerOtpIntent,
 } from '../../src/lib/customer-otp-purpose';
 import { parseOtpDelivery } from '../../src/lib/otp-delivery';
@@ -43,14 +42,13 @@ export default function LoginScreen() {
   const setPendingOtpPurpose = useAppStore((s) => s.setPendingOtpPurpose);
   const setPhoneHasProvider = useAppStore((s) => s.setPhoneHasProvider);
   const showToast = useAppStore((s) => s.showToast);
-  const requestCustomerLoginOtp = useRequestOtp();
+  const customerIntent = resolveCustomerOtpIntent(params);
+  const customerPurpose = customerOtpPurposeForIntent(customerIntent);
+  const requestCustomerOtp = useRequestCustomerOtp(customerPurpose);
   const requestCustomerSignupOtp = useRequestCustomerSignupOtp();
   const requestProviderOtp = useRequestProviderOtp();
   const labels = useLabels();
   const sending = useRef(false);
-
-  const customerIntent = resolveCustomerOtpIntent(params);
-  const customerPurpose = customerOtpPurposeForIntent(customerIntent);
 
   const [sendError, setSendError] = useState('');
   const [customerMissing, setCustomerMissing] = useState(false);
@@ -65,11 +63,11 @@ export default function LoginScreen() {
   const phoneError = formState.errors.phone ? labels.auth.invalidPhone : undefined;
   const preferredRole = params.role === 'provider' ? 'provider' : 'customer';
   const otpPending =
-    requestCustomerLoginOtp.isPending ||
+    requestCustomerOtp.isPending ||
     requestCustomerSignupOtp.isPending ||
     requestProviderOtp.isPending;
   const mutationError =
-    requestCustomerLoginOtp.error ??
+    requestCustomerOtp.error ??
     requestCustomerSignupOtp.error ??
     requestProviderOtp.error;
   const apiError =
@@ -118,13 +116,29 @@ export default function LoginScreen() {
 
     try {
       const hintResponse = await fetchPhoneAccountHint(normalized, preferredRole).catch(() => null);
-      const role = resolveLoginRoleFromHint(parsePhoneAccountHint(hintResponse?.account), preferredRole);
+      const accountHint = parsePhoneAccountHint(hintResponse?.account);
+      const role = hintResponse?.resolved_role ?? resolveLoginRoleFromHint(accountHint, preferredRole);
+
+      if (role === 'provider' && accountHint && !accountHint.has_provider) {
+        setSendError(labels.clientProfile.providerNotFound);
+        setProviderMissing(true);
+        sending.current = false;
+        return;
+      }
+
+      if (role === 'customer' && customerIntent === 'login' && accountHint && !accountHint.has_customer) {
+        setSendError(labels.auth.customerNotFound);
+        setCustomerMissing(true);
+        sending.current = false;
+        return;
+      }
+
       const mutation =
         role === 'provider'
           ? requestProviderOtp
           : customerIntent === 'request'
             ? requestCustomerSignupOtp
-            : requestCustomerLoginOtp;
+            : requestCustomerOtp;
       const purpose =
         role === 'provider' ? ('directory_provider_login' as const) : customerPurpose;
 
@@ -185,7 +199,7 @@ export default function LoginScreen() {
                 setSendError('');
                 setCustomerMissing(false);
                 setProviderMissing(false);
-                requestCustomerLoginOtp.reset();
+                requestCustomerOtp.reset();
                 requestCustomerSignupOtp.reset();
                 requestProviderOtp.reset();
               }}

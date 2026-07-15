@@ -1,3 +1,4 @@
+import { CATS } from '../../../data/mock';
 import { adaptCategory, adaptProvider, toProviderPage } from '../adapters';
 import type { ApiProvider } from '../types';
 
@@ -58,12 +59,13 @@ describe('adaptProvider (honest M-3 mapping)', () => {
 
 describe('adaptCategory (graceful unknown-slug fallback)', () => {
   it('resolves known ontology slugs to local presentation metadata', () => {
+    const plumbers = CATS.find((c) => c.id === 'plumbers')!;
     const c = adaptCategory('plumbers', 7);
     expect(c.id).toBe('plumbers');
-    expect(c.name).toBe('Plumbers');
-    expect(c.am).toBe('ቧንቧ ሰራተኞች');
+    expect(c.name).toBe(plumbers.name);
+    expect(c.am).toBe(plumbers.am);
     expect(c.count).toBe(7);
-    expect(c.group).toBe('Home Services');
+    expect(c.group).toBe(plumbers.group);
     expect(c.subs.length).toBeGreaterThan(0);
   });
 

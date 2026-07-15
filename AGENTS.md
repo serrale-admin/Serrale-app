@@ -2,6 +2,128 @@
 
 This file is the canonical operating context for Codex and other coding agents in this repository. Read it before changing code. `CLAUDE.md` points Claude Code to the same rules.
 
+## Session continuity notes (2026-07-09)
+
+These notes are for smooth handoff across new chats and do not change the core
+rules below.
+
+- Scope correction applied: launch-readiness work must treat **SERRALE Basic**
+  mobile and `/api/public-directory/*` as the primary product path. Legacy Plus
+  escrow/contracts/payments findings are maintenance items unless they are
+  proven to degrade shared backend runtime for Basic endpoints.
+- A preview Android APK build was created via EAS for real-user testing:
+  `12e2d978-8ce4-483b-9f91-ee545bda9d57`.
+- Real-user/UAT checklist added at:
+  `apps/client-app/docs/deployment/REAL_USER_TEST_SCRIPT.md`.
+- Deployment readiness report was updated with a two-part structure:
+  **Section A — Basic Mobile Launch Readiness** and
+  **Section B — Legacy Plus Maintenance Issues**.
+
+## Session continuity notes (2026-07-11)
+
+UI polish, OTP reliability, and provider registration hardening landed in this
+session. Details also in
+`apps/client-app/docs/deployment/DEPLOYMENT_READINESS_REPORT.md` (§ 2026-07-11).
+
+### Request tab production redesign (`app/(tabs)/request.tsx`)
+- Photo hero banner (`assets/categories-banner.png`) with the same gradient overlay
+  pattern as Home/Categories/Provider Join.
+- Form split into three section cards: request details, when & budget, contact
+  preference.
+- Light location pill (matches Search/Categories), localized area display via
+  `areaLabel()`, sticky gold submit footer with hint copy.
+- Success and login-gate states use centered white result cards (not full-screen
+  green blocks).
+
+### Home / Categories / Provider Join banner polish
+- Full-bleed photo slides on Home (`home-banner-professionals.png`,
+  `home-banner-call-whatsapp.png`) and Categories (`categories-banner.png`).
+- Provider Join trust banner uses `assets/provider-join-banner.png`.
+- Shared gradient overlay tuned for readable copy on photos.
+
+### Provider join (`app/provider/join.tsx`)
+- Compact section-card form aligned with Basic web `/join`: contact, service
+  fields, terms checkbox (client-side), area picker (`JOIN_AREAS`), category
+  sheet with Amharic labels.
+- OTP step uses the shared responsive `OtpInput` component.
+- **Registration flow:** `directory_provider_join` OTP → verify →
+  `POST /providers/register` → persist provider session (see below).
+- **Critical fix:** `challengeIdRef` / `phoneRef` are set synchronously when OTP
+  is sent so auto-submit verify does not run with an empty challenge id.
+- Mutations renamed (`otpRequestMutation`, etc.) to avoid TDZ/HMR shadowing bugs
+  with `api.requestOtp`.
+
+### OTP UI + auth reliability (login + register)
+- **`src/components/OtpInput.tsx` + `OtpBox.tsx`:** viewport-based box sizing
+  (no overflow on narrow screens), SMS paste support, `oneTimeCode` / `sms-otp`
+  autofill hints.
+- **`src/lib/otp-code.ts`:** shared 6-digit helpers (`emptyOtp`, `parseOtpPaste`,
+  `otpComplete`, etc.) used by `auth/verify.tsx` and `provider/join.tsx`.
+- **`app/auth/verify.tsx`:** scrollable card layout, clearer errors, paste handling.
+- **`src/lib/secure-session.ts`:** customer tokens use SecureStore with
+  **AsyncStorage fallback on web** so login session exchange works in Expo web dev.
+- **`src/lib/amharic-font.ts`:** font remap wrapped in try/catch so Amharic text
+  rendering cannot crash the tree on web/HMR edge cases.
+
+### Sessions and storage
+- **Customer login (existing):** `directory_customer_request` OTP → verify →
+  `POST /customers/session` → `secureSession` + `appStore.login`.
+- **Provider register (added 2026-07-11):** after successful
+  `POST /providers/register`, the app writes `session_token` + provider profile
+  to **`src/lib/provider-session.ts`** (SecureStore, web AsyncStorage fallback).
+  Full in-app provider account management is still future work; tokens are stored
+  for later authenticated provider routes.
+
+### Local web dev (CORS)
+- Expo web on `localhost:8081` cannot call production `api.serrale.com` (CORS).
+  For browser dev, point `apps/client-app/.env` at the local backend, e.g.
+  `EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:5000/api`, and ensure
+  `serrale/backend` dev CORS allows Expo web origins. Use mock mode only when
+  explicitly testing offline UI (`EXPO_PUBLIC_USE_MOCK=true`).
+
+### New / notable assets
+```text
+apps/client-app/assets/categories-banner.png
+apps/client-app/assets/home-banner-professionals.png
+apps/client-app/assets/home-banner-call-whatsapp.png
+apps/client-app/assets/provider-join-banner.png
+```
+
+### Tests added or extended (2026-07-11)
+- `app/provider/__tests__/join.test.tsx` — Amharic copy, OTP flow, full register
+- `src/components/__tests__/LocationSheet.test.tsx`
+- `src/components/__tests__/OtpInput.test.tsx`
+- `src/lib/__tests__/otp-code.test.ts`
+
+## Session continuity notes (2026-07-11 — phone auth foundation)
+
+Cross-repo auth hardening — full plan:
+`docs/plans/2026-07-11-basic-phone-auth-foundation.md`
+
+**Backend (`serrale`):**
+- OTP request pre-checks: provider join → `409 PHONE_ALREADY_REGISTERED`; provider login → `404 PROVIDER_NOT_FOUND` before SMS.
+- OTP success response adds `account` hint (`has_customer`, `has_provider`, `customer_profile_complete`).
+- `getDirectoryCustomerByPhone()` for lookups.
+
+**Mobile (this repo):**
+- Removed hardcoded `"SERRALE user"` — `GET /customers/me` after login/bootstrap (`syncCustomerProfile`).
+- Display name from `display_name` / `company_name` / formatted phone.
+- Profile tab banner when `profile_complete === false`.
+
+**Web (`serrale/frontend/public-directory`):**
+- Provider join shows login link on `PHONE_ALREADY_REGISTERED`.
+
+**Still TODO:** unify web customer token models; full provider account tab with GET/PATCH `/providers/me`.
+
+### Phase 2 (2026-07-11 continued) — mobile auth UX
+
+- **`/auth/chooser`** — customer vs provider login chooser (matches web `/login`).
+- **`/auth/profile-setup`** — in-app hiring profile form (`PATCH /customers/me`).
+- **`/auth/provider-login`** + **`/auth/provider-verify`** — provider OTP login (`POST /providers/login`).
+- After customer verify, incomplete profiles redirect to profile-setup (not generic placeholder name).
+- Profile tab: tappable complete-profile banner, provider session card when logged in as provider.
+- Guest login entry → `/auth/chooser`.
+
 ## 1. Repository scope
 
 This repository is the Expo mobile client for SERRALE Basic:
@@ -170,17 +292,41 @@ directory_customer_request
 ```
 
 ### Customer Persistent Sessions (Added 2026-07)
-- **Secure Persistent Storage**: Access/refresh tokens and metadata are stored securely using `expo-secure-store` with JSON serialization.
+- **Secure Persistent Storage**: Access/refresh tokens and metadata are stored securely using `expo-secure-store` with JSON serialization. On **web**, `secure-session.ts` falls back to AsyncStorage when SecureStore is unavailable.
 - **Single-Use Rotation**: Opaque rotating refresh tokens are exchanged for a new access token (1h) and a new refresh token (30d). Presenting an already-used or revoked token triggers family-wide revocation to mitigate breaches.
 - **Bootstrap Restoring**: On app startup, the bootstrap sequence restores existing credentials. Valid tokens sign the user in immediately; expired access tokens trigger an automatic background refresh request.
 - **Fresh Install Guard**: Stale tokens surviving Keychain storage after app reinstallation are automatically cleared on first launch by verifying an `installed` marker in `AsyncStorage`.
 - **HTTP Client Auto-Auth**: The HTTP helper automatically injects the `Authorization: Bearer <access_token>` header when a customer session is active.
 - **Zustand Store (`appStore.ts`)**: Synchronizes lightweight auth state (`loggedIn` flag and basic user info) with session availability.
 
+### Provider registration (Added 2026-07-11)
+
+Separate from customer login. Entry: Profile → **Become a service provider** →
+`/provider/join`.
+
+```text
+directory_provider_join
+  -> POST /otp/request
+  -> POST /otp/verify  -> one-time verify_token
+  -> POST /providers/register  -> provider row + session_token (JWT)
+  -> providerSession.write (local SecureStore / web AsyncStorage)
+```
+
+- Terms acceptance is **client-side only** (checkbox + link to `https://serrale.com/terms`); backend has no terms field on register.
+- Area picker uses `JOIN_AREAS` (same eight neighborhoods as Basic web join; excludes city-wide Addis Ababa).
+- `PHONE_ALREADY_REGISTERED` (409) returns user to the form with localized toast copy.
+- Provider JWT is persisted locally; there is no provider tab or in-app profile editor yet.
+
+### OTP UI components (Added 2026-07-11)
+
+- **`OtpInput` / `OtpBox`:** responsive six-box row; used by `auth/verify` and `provider/join`.
+- **`otp-code.ts`:** digit sanitization, paste parsing, completion check.
+- Auto-submit when all six digits are entered; parents must keep challenge/phone refs in sync before auto-submit fires (see provider join fix above).
+
 Current limitations must not be described as completed backend features:
 
 - Saved providers are local Zustand state, not server-synchronized bookmarks.
-- Mobile login is a customer-only OTP session; provider onboarding/profile management is not part of the current bottom tabs.
+- Mobile login is a **customer** OTP session; provider onboarding creates a directory provider + local JWT but not a full in-app provider dashboard.
 - Recent work is not fetched globally in live mode.
 
 Do not reuse Plus tokens, Supabase browser sessions, or Plus profile helpers for Basic mobile auth.
@@ -213,6 +359,7 @@ Stack and utility routes:
 /categories
 /categories/:id
 /provider/:id
+/provider/join       Provider registration (OTP + POST /providers/register)
 /auth/login
 /auth/verify
 /bookmarks
@@ -254,7 +401,8 @@ Visual rules:
 - Use Inter consistently for headings and UI copy.
 - Preserve accessible labels, native text, touch feedback, and readable contrast.
 - Home contains the compact header/location/bookmark controls, search/filter control, green trust banner, shortcut pills, nearby providers, photographic category grid, verified providers, recent work when available, safety card, and compact bottom navigation.
-- Search tab is the Categories screen with category search, filter chips, trust/request banner, feature cards, and two-column category rows.
+- Search tab is the Categories screen with category search, filter chips, photo promo banner (`categories-banner.png`), feature cards, and two-column category rows.
+- **Request tab** (`/(tabs)/request`) uses a photo hero, three section cards (details / timing / contact), localized area labels, and result cards for success and login gate. Submit requires customer OTP session.
 - Category/provider cards have presentation variants; extend variants instead of duplicating card implementations.
 
 Category image rules:
@@ -278,6 +426,10 @@ apps/client-app/assets/categories/*.webp
 apps/client-app/assets/categories/extended/*.png
 apps/client-app/assets/providers/*.webp
 apps/client-app/assets/home-trust-banner.png
+apps/client-app/assets/categories-banner.png
+apps/client-app/assets/home-banner-professionals.png
+apps/client-app/assets/home-banner-call-whatsapp.png
+apps/client-app/assets/provider-join-banner.png
 ```
 
 The base category/provider assets were copied from:

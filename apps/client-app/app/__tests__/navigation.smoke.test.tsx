@@ -46,11 +46,21 @@ import SettingsScreen from '../settings';
 // (mock-prefixed so the hoisted expo-router factory may reference it).
 let mockRouteParams: Record<string, string | undefined> = {};
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), navigate: jest.fn() }),
-  useLocalSearchParams: () => mockRouteParams,
-  useSegments: () => [],
-}));
+jest.mock('expo-router', () => {
+  const React = require('react');
+  return {
+    useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), navigate: jest.fn() }),
+    useLocalSearchParams: () => mockRouteParams,
+    useSegments: () => [],
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      React.useEffect(() => effect(), [effect]);
+    },
+    Redirect: ({ href }: { href: string }) => {
+      const { Text } = require('react-native');
+      return <Text>{`redirect:${href}`}</Text>;
+    },
+  };
+});
 
 // Mock the API facade: keep the real constants + typed-error classes (spread of
 // requireActual) but replace every data function with a jest.fn we drive per
@@ -156,7 +166,7 @@ async function expectMappedError(error: unknown) {
 
 beforeEach(() => {
   mockRouteParams = {};
-  useAppStore.setState({ lang: 'en', loggedIn: false, user: null, saved: {}, area: 'Addis Ababa' });
+  useAppStore.setState({ lang: 'en', loggedIn: false, user: null, saved: {}, area: 'Addis Ababa', sessionReady: true, providerProfile: null, activeSession: null });
   useAppStore.getState().resetFilters();
   useAppStore.setState({ pendingPhone: '', pendingChallengeId: '' });
 
@@ -217,7 +227,12 @@ describe('bottom-tab routes mount and render', () => {
   });
 
   it('profile renders the account rows when signed in', () => {
-    useAppStore.setState({ loggedIn: true, user: { name: 'Sara T.', phone: '+251911000000' } });
+    useAppStore.setState({
+      loggedIn: true,
+      sessionReady: true,
+      activeSession: 'customer',
+      user: { name: 'Sara T.', phone: '+251911000000', profileComplete: true },
+    });
     renderScreen(<ProfileScreen />);
     expect(screen.getByText('Sara T.')).toBeTruthy();
     expect(screen.getByText(en.profile.logout)).toBeTruthy();
@@ -287,11 +302,9 @@ describe('stack + utility routes mount and render', () => {
     await expectMappedError(err);
   });
 
-  it('categories/index renders grouped categories', async () => {
-    const { client } = renderScreen(<CategoriesIndexScreen />);
-    expect(screen.getByText(en.categories.title)).toBeTruthy();
-    await settle(client);
-    expect(await screen.findByText('Home Services')).toBeTruthy();
+  it('categories/index redirects to the search tab', () => {
+    renderScreen(<CategoriesIndexScreen />);
+    expect(screen.getByText('redirect:/(tabs)/search')).toBeTruthy();
   });
 
   it('bookmarks renders the empty state with no saved providers', () => {

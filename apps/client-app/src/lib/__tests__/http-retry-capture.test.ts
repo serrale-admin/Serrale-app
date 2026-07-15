@@ -132,4 +132,21 @@ describe('requestOtp Idempotency-Key header', () => {
 
     expect(sentHeaders?.['Idempotency-Key']).toBeUndefined();
   });
+
+  it('maps delivery=review_code from the otp/request envelope', async () => {
+    global.fetch = jest.fn(async () =>
+      jsonResponse(200, {
+        success: true,
+        data: {
+          challenge_id: 'c-review',
+          expires_at: new Date().toISOString(),
+          delivery: 'review_code',
+        },
+      }),
+    ) as unknown as typeof fetch;
+
+    const result = await requestOtp('0938064841', 'directory_customer_request', 'otp_review');
+    expect(result.delivery).toBe('review_code');
+    expect(result.challengeId).toBe('c-review');
+  });
 });

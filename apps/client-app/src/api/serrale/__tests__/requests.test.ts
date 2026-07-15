@@ -54,10 +54,12 @@ describe('createServiceRequest — authenticated + idempotent (M-1)', () => {
 
   it('maps the timing options to the backend enum', async () => {
     mockHttp.mockResolvedValue({ ok: true, duplicate: false } as never);
+    await createServiceRequest({ ...INPUT, when: 'Emergency' }, 'k0');
     await createServiceRequest({ ...INPUT, when: 'This week' }, 'k1');
     await createServiceRequest({ ...INPUT, when: 'Flexible' }, 'k2');
-    expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).timing).toBe('this_week');
-    expect((mockHttp.mock.calls[1][1]?.body as Record<string, unknown>).timing).toBe('flexible');
+    expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).timing).toBe('emergency');
+    expect((mockHttp.mock.calls[1][1]?.body as Record<string, unknown>).timing).toBe('this_week');
+    expect((mockHttp.mock.calls[2][1]?.body as Record<string, unknown>).timing).toBe('flexible');
   });
 
   it('returns the HONEST backend shape — never a synthesized id/status/created_at', async () => {

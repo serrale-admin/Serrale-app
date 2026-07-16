@@ -102,6 +102,10 @@ export default function RequestScreen() {
   const labels = useLabels();
   const t = labels.request;
   const errorView = mutation.isError ? presentError(mutation.error, labels) : null;
+  const engagementLabel: Record<'Temporary' | 'Permanent', string> = {
+    Temporary: t.engagement.temporary,
+    Permanent: t.engagement.permanent,
+  };
   const whenLabel: Record<(typeof WHEN)[number], string> = {
     Emergency: t.when.emergency,
     Today: t.when.today,
@@ -246,6 +250,24 @@ export default function RequestScreen() {
                 caret="down"
                 accessibilityLabel={labels.a11y.selectArea}
               />
+
+              <FieldLabel compact optional>
+                {t.engagementLabel}
+              </FieldLabel>
+              <View style={styles.chipWrap}>
+                {(['Temporary', 'Permanent'] as const).map((e) => {
+                  const active = values.engagement === e;
+                  return (
+                    <Chip
+                      key={e}
+                      label={engagementLabel[e]}
+                      active={active}
+                      height={32}
+                      onPress={() => setValue('engagement', active ? '' : e)}
+                    />
+                  );
+                })}
+              </View>
 
               <FormTextArea
                 compact

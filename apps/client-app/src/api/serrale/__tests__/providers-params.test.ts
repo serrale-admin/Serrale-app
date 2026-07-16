@@ -11,7 +11,16 @@ jest.mock('../../../lib/http', () => ({
 
 const mockHttp = http as jest.MockedFunction<typeof http>;
 
-const emptyFilters = (): Filters => ({ areas: [], avail: [], trust: [], rating: 'Any', contact: [], price: [], exp: [] });
+const emptyFilters = (): Filters => ({
+  areas: [],
+  avail: [],
+  trust: [],
+  rating: 'Any',
+  contact: [],
+  price: [],
+  exp: [],
+  engagement: '',
+});
 
 beforeEach(() => {
   mockHttp.mockReset();
@@ -63,10 +72,25 @@ describe('getProviders — only backend-supported params (M-4/M-5)', () => {
       contact: ['WhatsApp available'],
       price: ['Budget'],
       exp: ['5+ years'],
+      engagement: '',
     };
     await getProviders({ filters, sort: 'Rating' });
     const query = mockHttp.mock.calls[0][1]?.query || {};
     expect(Object.keys(query).sort()).toEqual(['area', 'limit', 'offset']);
+  });
+
+  it('sends engagement when set in filters', async () => {
+    const filters = { ...emptyFilters(), engagement: 'temporary' };
+    await getProviders({ filters });
+    const query = mockHttp.mock.calls[0][1]?.query || {};
+    expect(Object.keys(query).sort()).toEqual(['engagement', 'limit', 'offset']);
+    expect(query.engagement).toBe('temporary');
+  });
+
+  it('omits engagement when not set', async () => {
+    await getProviders({ filters: emptyFilters() });
+    const query = mockHttp.mock.calls[0][1]?.query || {};
+    expect(query).not.toHaveProperty('engagement');
   });
 });
 

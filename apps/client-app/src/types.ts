@@ -30,6 +30,10 @@ export interface Provider {
   phone: string;
   whatsapp?: string;
   imageUrl?: string;
+  /** individual | business — omitted when the backend hasn't returned it (never fabricated). */
+  providerType?: 'individual' | 'business';
+  /** Subset of {temporary, permanent} — omitted when the backend hasn't returned it. */
+  engagementTypes?: ('temporary' | 'permanent')[];
 }
 
 export interface Review {
@@ -58,6 +62,8 @@ export interface Filters {
   contact: string[];
   price: string[];
   exp: string[];
+  /** '' = All, else 'temporary' | 'permanent' — single-select, mirrors areas[0]. */
+  engagement: string;
 }
 
 /** Service request payload (mirrors service_requests in the spec). */
@@ -65,6 +71,8 @@ export interface ServiceRequest {
   categoryId: string;
   area: string;
   description: string;
+  /** '' | 'Temporary' | 'Permanent' — optional, distinct from `when` (urgency). */
+  engagement: string;
   when: string;
   budget: string;
   preferredContact: string;

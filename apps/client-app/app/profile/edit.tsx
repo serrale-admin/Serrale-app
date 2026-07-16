@@ -43,6 +43,8 @@ function providerToForm(provider: ApiProviderAccount): ProviderProfileFormValues
     whatsapp: provider.whatsapp || '',
     experience: provider.experience || '',
     description: provider.bio || '',
+    providerType: provider.provider_type || 'individual',
+    engagementTypes: provider.engagement_types || ['temporary', 'permanent'],
   };
 }
 

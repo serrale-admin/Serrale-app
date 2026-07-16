@@ -24,6 +24,7 @@ const emptyFilters = (): Filters => ({
   contact: [],
   price: [],
   exp: [],
+  engagement: '',
 });
 
 interface Toast {
@@ -101,6 +102,8 @@ interface AppState {
    * active area again clears it.
    */
   selectAreaFilter(area: string): void;
+  /** Single-select engagement filter: '' clears it, selecting the active value again clears it. */
+  selectEngagementFilter(value: string): void;
   setRating(value: string): void;
   toggleQuick(kind: string): void;
   resetFilters(): void;
@@ -229,6 +232,10 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           filters: { ...s.filters, areas: s.filters.areas[0] === area ? [] : [area] },
         })),
+      selectEngagementFilter: (value) =>
+        set((s) => ({
+          filters: { ...s.filters, engagement: s.filters.engagement === value ? '' : value },
+        })),
       setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
       toggleQuick: (kind) =>
         set((s) => {
@@ -250,7 +257,8 @@ export const useAppStore = create<AppState>()(
           (f.rating !== 'Any' ? 1 : 0) +
           f.contact.length +
           f.price.length +
-          f.exp.length
+          f.exp.length +
+          (f.engagement ? 1 : 0)
         );
       },
 

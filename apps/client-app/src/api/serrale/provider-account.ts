@@ -28,6 +28,8 @@ export interface ProviderProfilePatch {
   experience?: string;
   description?: string;
   categorySlug?: string;
+  providerType?: 'individual' | 'business';
+  engagementTypes?: ('temporary' | 'permanent')[];
 }
 
 /** PATCH /providers/me — update listing details (provider JWT). */

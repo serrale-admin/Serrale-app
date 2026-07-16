@@ -77,6 +77,9 @@ export default function ProviderDetailScreen() {
   if (pv.exp) facts.push({ label: fill(labels.provider.yearsExperience, { n: pv.exp }), icon: 'ph-medal' });
   if (pv.hasPastWork) facts.push({ label: labels.provider.hasPastWork, icon: 'ph-image-square' });
   if (pv.whatsapp) facts.push({ label: labels.provider.whatsappAvailable, icon: 'ph-whatsapp-logo' });
+  if (pv.engagementTypes?.includes('temporary')) facts.push({ label: labels.provider.temporaryAvailable, icon: 'ph-calendar-check' });
+  if (pv.engagementTypes?.includes('permanent')) facts.push({ label: labels.provider.permanentAvailable, icon: 'ph-shield-check' });
+  if (pv.providerType === 'business') facts.push({ label: labels.provider.businessProvider, icon: 'ph-buildings' });
 
   // Honest about text: the provider's own bio, plus the experience line only
   // when experience is actually known. No invented "trusted by clients" claims.

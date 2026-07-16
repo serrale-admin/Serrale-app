@@ -81,6 +81,8 @@ export function adaptProvider(api: ApiProvider): Provider {
     phone: api.phone || api.whatsapp || '',
     whatsapp: api.whatsapp || api.phone || undefined,
     imageUrl: api.photo_url || undefined,
+    providerType: api.provider_type || undefined,
+    engagementTypes: api.engagement_types || undefined,
   };
 }
 

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../../src/api';
 import Button from '../../src/components/Button';
 import CategorySheet from '../../src/components/CategorySheet';
+import Chip from '../../src/components/Chip';
 import {
   EthiopianPhoneField,
   FieldLabel,
@@ -79,6 +80,13 @@ export default function ProviderJoinScreen() {
     area: '',
     experience: '',
   });
+  const [providerType, setProviderType] = useState<'individual' | 'business'>('individual');
+  const [engagementTypes, setEngagementTypes] = useState<('temporary' | 'permanent')[]>(['temporary', 'permanent']);
+  const toggleEngagement = (value: 'temporary' | 'permanent') => {
+    setEngagementTypes((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    );
+  };
   const sending = useRef(false);
   const verifying = useRef(false);
   const resending = useRef(false);
@@ -109,6 +117,8 @@ export default function ProviderJoinScreen() {
         area: form.area || undefined,
         whatsappNumber: whatsapp || undefined,
         experience: form.experience || undefined,
+        providerType,
+        engagementTypes,
       });
     },
   });
@@ -176,6 +186,10 @@ export default function ProviderJoinScreen() {
     }
     if (!form.categorySlug) {
       showToast(t.categoryRequired, 'ph-warning-circle');
+      return false;
+    }
+    if (engagementTypes.length === 0) {
+      showToast(t.engagementRequired, 'ph-warning-circle');
       return false;
     }
     if (!termsAccepted) {
@@ -404,6 +418,26 @@ export default function ProviderJoinScreen() {
                   value={form.whatsapp}
                   onChangeText={(v) => setForm((s) => ({ ...s, whatsapp: v }))}
                 />
+
+                <FieldLabel compact>{t.providerType}</FieldLabel>
+                <View style={styles.typeRow}>
+                  <Pressable
+                    style={[styles.typeBtn, providerType === 'individual' && styles.typeBtnActive]}
+                    onPress={() => setProviderType('individual')}
+                  >
+                    <Text style={[styles.typeBtnText, providerType === 'individual' && styles.typeBtnTextActive]}>
+                      {t.providerTypeIndividual}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.typeBtn, providerType === 'business' && styles.typeBtnActive]}
+                    onPress={() => setProviderType('business')}
+                  >
+                    <Text style={[styles.typeBtnText, providerType === 'business' && styles.typeBtnTextActive]}>
+                      {t.providerTypeBusiness}
+                    </Text>
+                  </Pressable>
+                </View>
               </SectionCard>
 
               <SectionCard title={t.sectionService}>
@@ -419,6 +453,23 @@ export default function ProviderJoinScreen() {
                   caret="down"
                   accessibilityLabel={labels.a11y.selectService}
                 />
+
+                <FieldLabel compact>{t.engagementLabel}</FieldLabel>
+                <View style={styles.chipWrap}>
+                  <Chip
+                    label={t.engagement.temporary}
+                    active={engagementTypes.includes('temporary')}
+                    height={32}
+                    onPress={() => toggleEngagement('temporary')}
+                  />
+                  <Chip
+                    label={t.engagement.permanent}
+                    active={engagementTypes.includes('permanent')}
+                    height={32}
+                    onPress={() => toggleEngagement('permanent')}
+                  />
+                </View>
+                <Text style={styles.engagementHint}>{t.engagementHint}</Text>
 
                 <FieldLabel compact optional>
                   {t.area}
@@ -636,6 +687,23 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontFamily: fonts.bold, fontSize: 12, color: colors.green900 },
   sectionBody: { gap: 6 },
+  typeRow: { flexDirection: 'row', gap: 8 },
+  typeBtn: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  typeBtnActive: { borderColor: colors.green800, backgroundColor: colors.soft },
+  typeBtnText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.green800, textAlign: 'center' },
+  typeBtnTextActive: { color: colors.green900 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  engagementHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
   photoPlaceholder: {
     borderWidth: 1,
     borderColor: colors.borderSoft,

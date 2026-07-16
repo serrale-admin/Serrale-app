@@ -16,6 +16,7 @@ const INPUT: ServiceRequest = {
   categoryId: 'plumbers',
   area: 'Bole',
   description: 'Leaking sink.',
+  engagement: '',
   when: 'Today',
   budget: '',
   preferredContact: 'Both',

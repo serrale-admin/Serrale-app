@@ -201,6 +201,7 @@ export interface Labels {
     areaLabel: string;
     describeLabel: string;
     descPlaceholder: string;
+    engagementLabel: string;
     whenLabel: string;
     budgetLabel: string;
     contactLabel: string;
@@ -222,6 +223,7 @@ export interface Labels {
     sectionContact: string;
     submitHint: string;
     heroBadge: string;
+    engagement: { temporary: string; permanent: string };
     when: { emergency: string; today: string; thisWeek: string; flexible: string };
     contact: { call: string; whatsapp: string; both: string };
     budget: {
@@ -236,6 +238,9 @@ export interface Labels {
     availableToday: string;
     hasPastWork: string;
     whatsappAvailable: string;
+    temporaryAvailable: string;
+    permanentAvailable: string;
+    businessProvider: string;
     yearsExperience: string; // {n}
     aboutExp: string; // {n} {area}
     aboutServing: string; // {area}
@@ -377,8 +382,14 @@ export interface Labels {
     fullName: string;
     phone: string;
     whatsapp: string;
+    providerType: string;
+    providerTypeIndividual: string;
+    providerTypeBusiness: string;
     serviceCategory: string;
     selectCategory: string;
+    engagementLabel: string;
+    engagementHint: string;
+    engagement: { temporary: string; permanent: string };
     area: string;
     selectArea: string;
     experience: string;
@@ -394,6 +405,7 @@ export interface Labels {
     submitHint: string;
     requiredFields: string;
     categoryRequired: string;
+    engagementRequired: string;
     sendingOtp: string;
     otpSentTitle: string;
     otpSentBody: string; // {phone}
@@ -433,6 +445,10 @@ export interface Labels {
   filter: {
     location: string;
     locationHint: string;
+    engagement: string;
+    engagementAll: string;
+    engagementTemporary: string;
+    engagementPermanent: string;
     showCount: string; // {count}
   };
   location: {
@@ -774,7 +790,8 @@ export function labelsFor(lang: Lang): Labels {
       areaLabel: am ? 'አካባቢ' : 'Area',
       describeLabel: am ? 'ምን ያስፈልግዎታል?' : 'What do you need?',
       descPlaceholder: am ? 'ችግኙን በአጭር ይግለጹ።' : 'Describe the issue briefly.',
-      whenLabel: am ? 'መቼ?' : 'When?',
+      engagementLabel: am ? 'ለምን ያህል ጊዜ ያስፈልግዎታል?' : 'How long do you need help?',
+      whenLabel: am ? 'መቼ ያስፈልግዎታል?' : 'When do you need them?',
       budgetLabel: am ? 'በጀት' : 'Budget',
       contactLabel: am ? 'እንዴት ይገናኙ?' : 'Contact via',
       submit: am ? 'ጥያቄ ላክ' : 'Send request',
@@ -805,6 +822,10 @@ export function labelsFor(lang: Lang): Labels {
         ? 'በአካባቢዎ ባለሙያዎች በስልክ ወይም WhatsApp ሊያግኙዎት ይችላሉ።'
         : 'Providers in your area may contact you by phone or WhatsApp.',
       heroBadge: am ? 'እርዳታ ይጠይቁ' : 'Request help',
+      engagement: {
+        temporary: am ? 'ጊዜያዊ' : 'Temporary',
+        permanent: am ? 'ቋሚ' : 'Permanent',
+      },
       when: {
         emergency: am ? 'አስቸኳይ' : 'Urgent',
         today: am ? 'ዛሬ' : 'Today',
@@ -828,6 +849,9 @@ export function labelsFor(lang: Lang): Labels {
       availableToday: am ? 'ዛሬ ይገኛል' : 'Available today',
       hasPastWork: am ? 'ያለፈ ስራ አለው' : 'Has past work',
       whatsappAvailable: am ? 'WhatsApp አለ' : 'WhatsApp available',
+      temporaryAvailable: am ? 'ለጊዜያዊ ሥራ ዝግጁ' : 'Available for temporary work',
+      permanentAvailable: am ? 'ለቋሚ ሥራ ዝግጁ' : 'Available for permanent work',
+      businessProvider: am ? 'ንግድ' : 'Business',
       yearsExperience: am ? '{n} ዓመት ልምድ' : '{n} years experience',
       aboutExp: am
         ? 'በ{area} በማገልገል {n} ዓመት የተግባር ልምድ።'
@@ -1001,8 +1025,17 @@ export function labelsFor(lang: Lang): Labels {
       fullName: am ? 'ሙሉ ስም' : 'Full name',
       phone: am ? 'ስልክ ቁጥር' : 'Phone number',
       whatsapp: am ? 'የዋትስአፕ ቁጥር' : 'WhatsApp number',
+      providerType: am ? 'የምዝገባ ዓይነት' : 'Registering as',
+      providerTypeIndividual: am ? 'ግለሰብ ባለሙያ' : 'Individual provider',
+      providerTypeBusiness: am ? 'ንግድ/የአገልግሎት ድርጅት' : 'Business / service company',
       serviceCategory: am ? 'የአገልግሎት ዘርፍ' : 'Service category',
       selectCategory: am ? 'ዘርፍ ይምረጡ' : 'Select a category',
+      engagementLabel: am ? 'ለምን ዓይነት ሥራ ዝግጁ ነዎት?' : 'What work are you available for?',
+      engagementHint: am ? 'ቢያንስ አንዱን ይምረጡ።' : 'Select at least one.',
+      engagement: {
+        temporary: am ? 'ጊዜያዊ' : 'Temporary',
+        permanent: am ? 'ቋሚ' : 'Permanent',
+      },
       area: am ? 'አካባቢ' : 'Area',
       selectArea: am ? 'አካባቢ ይምረጡ' : 'Select an area',
       experience: am ? 'ልምድ' : 'Experience',
@@ -1024,6 +1057,7 @@ export function labelsFor(lang: Lang): Labels {
         ? 'መጀመሪያ ሙሉ ስም፣ ስልክ ቁጥር እና የአገልግሎት ዘርፍ ያስገቡ።'
         : 'Enter your full name, phone number, and service category first.',
       categoryRequired: am ? 'የአገልግሎት ዘርፍዎን ይምረጡ።' : 'Choose your service category.',
+      engagementRequired: am ? 'ቢያንስ አንድ የስራ ዓይነት ይምረጡ።' : 'Select at least one work type.',
       sendingOtp: am ? 'የማረጋገጫ ኮድ በመላክ ላይ…' : 'Sending verification code…',
       otpSentTitle: am ? 'ስልክዎን ያረጋግጡ' : 'Verify your phone',
       otpSentBody: am
@@ -1075,6 +1109,10 @@ export function labelsFor(lang: Lang): Labels {
       locationHint: am
         ? 'አንድ አካባቢ ይምረጡ፣ ወይም ለመላው አዲስ አበባ ምንም አይምረጡ።'
         : 'Pick one area, or none for all of Addis Ababa.',
+      engagement: am ? 'ለምን ያህል ጊዜ' : 'Engagement',
+      engagementAll: am ? 'ሁሉም' : 'All',
+      engagementTemporary: am ? 'ጊዜያዊ' : 'Temporary',
+      engagementPermanent: am ? 'ቋሚ' : 'Permanent',
       showCount: am ? '{count} ባለሙያዎችን አሳይ' : 'Show {count} providers',
     },
     location: {

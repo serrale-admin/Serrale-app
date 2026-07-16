@@ -20,6 +20,7 @@ const INPUT: ServiceRequest = {
   categoryId: 'plumbers',
   area: 'Bole',
   description: 'Leaking sink under the kitchen counter.',
+  engagement: '',
   when: 'Today',
   budget: 'Under 1,000 ETB',
   preferredContact: 'Call',
@@ -60,6 +61,18 @@ describe('createServiceRequest — authenticated + idempotent (M-1)', () => {
     expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).timing).toBe('emergency');
     expect((mockHttp.mock.calls[1][1]?.body as Record<string, unknown>).timing).toBe('this_week');
     expect((mockHttp.mock.calls[2][1]?.body as Record<string, unknown>).timing).toBe('flexible');
+  });
+
+  it('maps engagement to engagementType, distinct from timing — omitted when not specified', async () => {
+    mockHttp.mockResolvedValue({ ok: true, duplicate: false } as never);
+    await createServiceRequest({ ...INPUT, engagement: 'Temporary' }, 'e0');
+    await createServiceRequest({ ...INPUT, engagement: 'Permanent' }, 'e1');
+    await createServiceRequest({ ...INPUT, engagement: '' }, 'e2');
+    expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).engagementType).toBe('temporary');
+    expect((mockHttp.mock.calls[1][1]?.body as Record<string, unknown>).engagementType).toBe('permanent');
+    expect((mockHttp.mock.calls[2][1]?.body as Record<string, unknown>).engagementType).toBeUndefined();
+    // timing is unaffected by engagement — the two dimensions stay independent.
+    expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).timing).toBe('today');
   });
 
   it('returns the HONEST backend shape — never a synthesized id/status/created_at', async () => {

@@ -17,12 +17,13 @@ function unwrapProvider(payload: ApiProvider | ApiProviderDetailPayload | null):
 }
 
 /**
- * Translates the UI's logical page + area into the ONLY list params the backend
- * actually reads: `category`, `area`, `q`, `limit`, `offset` (contract matrix
- * M-4/M-5). Filter/sort UI state that has no backing column server-side
- * (verified, available_today, rating, price, experience, sort) is intentionally
- * NOT sent — it would be silently ignored and imply filtering that cannot happen.
- * The city-wide sentinel area omits `area` entirely (browse the whole city).
+ * Translates the UI's logical page + area into the list params the backend
+ * actually reads: `category`, `area`, `q`, `limit`, `offset`, and (added with
+ * provider_type/engagement_types) `engagement` (contract matrix M-4/M-5). Filter/
+ * sort UI state that still has no backing column server-side (available_today,
+ * rating, price, experience, sort) is intentionally NOT sent — it would be
+ * silently ignored and imply filtering that cannot happen. The city-wide
+ * sentinel area omits `area` entirely (browse the whole city).
  */
 function listParams(query: ProviderQuery, page: number, limit = PAGE_SIZE): Record<string, QueryValue> {
   const params: Record<string, QueryValue> = {
@@ -32,6 +33,7 @@ function listParams(query: ProviderQuery, page: number, limit = PAGE_SIZE): Reco
   if (query.categoryId) params.category = query.categoryId;
   const area = query.filters?.areas?.[0] ?? query.area;
   if (area && area !== AREA_ALL) params.area = area;
+  if (query.filters?.engagement) params.engagement = query.filters.engagement;
   return params;
 }
 

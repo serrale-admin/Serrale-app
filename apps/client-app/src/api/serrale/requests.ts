@@ -26,6 +26,13 @@ function timingFor(when: string): Timing {
   return 'flexible';
 }
 
+/** Backend engagement enum. '' (not specified) -> omitted, distinct from `timing`. */
+function engagementTypeFor(engagement: string): 'temporary' | 'permanent' | undefined {
+  if (engagement === 'Temporary') return 'temporary';
+  if (engagement === 'Permanent') return 'permanent';
+  return undefined;
+}
+
 /**
  * Submits a customer service request (POST /leads/request).
  *
@@ -58,6 +65,7 @@ export async function createServiceRequest(input: ServiceRequest, idempotencyKey
       serviceCategory: input.categoryId,
       location: input.area,
       timing: timingFor(input.when),
+      engagementType: engagementTypeFor(input.engagement),
       note,
     },
   });

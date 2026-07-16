@@ -177,6 +177,8 @@ export interface RegisterProviderPayload {
   whatsappNumber?: string;
   experience?: string;
   description?: string;
+  providerType?: 'individual' | 'business';
+  engagementTypes?: ('temporary' | 'permanent')[];
 }
 
 /** POST /providers/register — registers a Basic provider after provider_join OTP verification. */
@@ -193,6 +195,8 @@ export async function registerProvider(payload: RegisterProviderPayload): Promis
       whatsappNumber: payload.whatsappNumber || undefined,
       experience: payload.experience || undefined,
       description: payload.description || undefined,
+      providerType: payload.providerType,
+      engagementTypes: payload.engagementTypes,
     },
     skipAuthInterceptor: true,
   });

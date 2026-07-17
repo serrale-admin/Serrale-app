@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import * as api from '../api';
 import type { VerifyArgs } from '../api';
 import { generateRequestId } from '../lib/request-policy';
+import { useAppStore } from '../store/appStore';
 import type { ProviderQuery, ServiceRequest } from '../types';
 
 export const keys = {
@@ -50,14 +51,16 @@ export const useProviderWork = (id: string) =>
 export const useProviderReviews = (id: string) =>
   useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 10), enabled: !!id });
 
-export const useReviewEligibility = (id: string, enabled = true) =>
-  useQuery({
-    queryKey: ['reviews', 'eligibility', id] as const,
+export const useReviewEligibility = (id: string, enabled = true) => {
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  return useQuery({
+    // Include loggedIn so eligibility refetches after login/logout (Bearer present).
+    queryKey: ['reviews', 'eligibility', id, loggedIn] as const,
     queryFn: () => api.getReviewEligibility(id),
     enabled: !!id && enabled,
     staleTime: 30_000,
   });
-
+};
 /**
  * Service-request submission with a stable Idempotency-Key per LOGICAL
  * submission: the key is minted on the first attempt and reused across

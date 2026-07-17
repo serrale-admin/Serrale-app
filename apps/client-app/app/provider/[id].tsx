@@ -29,8 +29,6 @@ export default function ProviderDetailScreen() {
   const showToast = useAppStore((s) => s.showToast);
   const loggedIn = useAppStore((s) => s.loggedIn);
   const sessionReady = useAppStore((s) => s.sessionReady);
-  const activeSession = useAppStore((s) => s.activeSession);
-  const isCustomerSession = loggedIn && activeSession !== 'provider';
 
   const userArea = useAppStore((s) => s.area);
   const provider = useProvider(id);
@@ -104,16 +102,16 @@ export default function ProviderDetailScreen() {
   const hasRating = displayReviewCount > 0 && displayRating > 0;
   const reviewList = localReviews ?? reviews.data ?? [];
 
-  // Conventional: guests see Sign in; signed-in customers see Rate / Already rated.
-  // Never show a contact gate. Soft-fail / token race must not force Sign in on a
-  // customer session (false positive). Provider-only sessions still need customer login.
+  // Sign in to rate ONLY for guests. Any logged-in session (customer or provider)
+  // gets Rate / Already rated — never a false "Sign in" CTA. While session is
+  // still hydrating, prefer Rate so we don't flash Sign in ahead of login state.
   const rawEligibility = eligibility.data?.status;
   const eligibilityStatus =
-    !isCustomerSession
-      ? 'need_login'
-      : rawEligibility === 'already_rated'
+    !sessionReady || loggedIn
+      ? rawEligibility === 'already_rated'
         ? 'already_rated'
-        : 'eligible';
+        : 'eligible'
+      : 'need_login';
 
   const onRateCta = () => {
     if (eligibilityStatus === 'need_login') {

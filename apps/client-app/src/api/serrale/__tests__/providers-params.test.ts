@@ -112,10 +112,16 @@ describe('rails and detail-embedded resources', () => {
     expect(mockHttp.mock.calls[0][1]?.query).toEqual({ limit: 5, offset: 0 });
   });
 
-  it('past work and reviews resolve empty WITHOUT a network call (M-3)', async () => {
+  it('past work resolves empty WITHOUT a network call; reviews hit the live endpoint', async () => {
     await expect(getProviderPastWork('some-id')).resolves.toEqual([]);
-    await expect(getProviderReviews('some-id')).resolves.toEqual([]);
     expect(mockHttp).not.toHaveBeenCalled();
+
+    mockHttp.mockResolvedValue({ reviews: [], total: 0 } as never);
+    await expect(getProviderReviews('some-id')).resolves.toEqual([]);
+    expect(mockHttp).toHaveBeenCalledWith(
+      '/public-directory/providers/some-id/reviews',
+      expect.objectContaining({ query: { limit: 20, offset: 0 } }),
+    );
   });
 });
 

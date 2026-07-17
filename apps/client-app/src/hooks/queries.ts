@@ -48,7 +48,14 @@ export const useProviderWork = (id: string) =>
   useQuery({ queryKey: keys.providerWork(id), queryFn: () => api.getProviderPastWork(id), enabled: !!id });
 
 export const useProviderReviews = (id: string) =>
-  useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 2), enabled: !!id });
+  useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 10), enabled: !!id });
+
+export const useReviewEligibility = (id: string, enabled = true) =>
+  useQuery({
+    queryKey: ['reviews', 'eligibility', id] as const,
+    queryFn: () => api.getReviewEligibility(id),
+    enabled: !!id && enabled,
+  });
 
 /**
  * Service-request submission with a stable Idempotency-Key per LOGICAL

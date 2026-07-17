@@ -1,6 +1,6 @@
 import { AREA_ALL } from '../../data/mock';
 import { DIRECTORY } from '../../lib/env';
-import { http, QueryValue } from '../../lib/http';
+import { http, HttpError, NetworkError, QueryValue } from '../../lib/http';
 import type { PastWork, Provider, ProviderQuery, Review } from '../../types';
 import { Page, PAGE_SIZE } from '../shared';
 import { toProviderPage } from './adapters';
@@ -86,7 +86,117 @@ export function getRecentWork(_limit = 4): Promise<PastWork[]> {
   return Promise.resolve([]);
 }
 
-/** The live backend exposes no per-provider reviews (M-3); resolve to empty. */
-export function getProviderReviews(_providerId: string, _limit?: number): Promise<Review[]> {
-  return Promise.resolve([]);
+/** Live published reviews for a provider. Soft-fails under circuit/5xx/404. */
+export async function getProviderReviews(providerId: string, limit = 20): Promise<Review[]> {
+  try {
+    const payload = await http<{
+      reviews?: Array<{
+        id?: string;
+        rating?: number;
+        comment?: string | null;
+        display_name?: string | null;
+        created_at?: string;
+      }>;
+    }>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reviews`, {
+      query: { limit, offset: 0 },
+    });
+    const rows = payload?.reviews || [];
+    return rows
+      .filter((r) => r && typeof r.rating === 'number' && r.rating > 0)
+      .map((r) => ({
+        providerId,
+        userName: (r.display_name && String(r.display_name).trim()) || 'Customer',
+        area: '',
+        rating: Number(r.rating),
+        text: (r.comment && String(r.comment).trim()) || '',
+      }));
+  } catch (err) {
+    if (err instanceof HttpError && (err.status === 404 || err.status === 501 || err.status >= 500)) {
+      return [];
+    }
+    if (err instanceof NetworkError) return [];
+    throw err;
+  }
+}
+
+export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'need_contact' | 'already_rated';
+
+export interface ReviewEligibility {
+  status: ReviewEligibilityStatus;
+  existing_rating?: number | null;
+  contact_event_id?: string | null;
+}
+
+/**
+ * Contact-gated rating eligibility.
+ * Soft-fails: 401/404 → need_login; network/circuit/5xx → need_contact (safe CTA).
+ */
+export async function getReviewEligibility(providerId: string): Promise<ReviewEligibility> {
+  try {
+    const payload = await http<ReviewEligibility>(
+      `${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reviews/eligibility`
+    );
+    return {
+      status: payload?.status || 'need_login',
+      existing_rating: payload?.existing_rating ?? null,
+      contact_event_id: payload?.contact_event_id ?? null,
+    };
+  } catch (err) {
+    if (err instanceof HttpError && (err.status === 401 || err.status === 404 || err.status === 501)) {
+      return { status: 'need_login' };
+    }
+    if (err instanceof HttpError && (err.status === 429 || err.status >= 500)) {
+      return { status: 'need_contact' };
+    }
+    if (err instanceof NetworkError) return { status: 'need_contact' };
+    throw err;
+  }
+}
+
+export interface SubmitReviewResult {
+  review: Review;
+  avg_rating: number | null;
+  review_count: number;
+}
+
+/** Submit a contact-gated customer review (instant publish). */
+export async function submitProviderReview(
+  providerId: string,
+  input: { rating: number; comment?: string; contactEventId?: string | null; idempotencyKey?: string }
+): Promise<SubmitReviewResult> {
+  const idem =
+    input.idempotencyKey ||
+    `review:${providerId}:${input.rating}:${(input.comment || '').slice(0, 48)}`;
+  const payload = await http<{
+    review: {
+      id?: string;
+      rating: number;
+      comment?: string | null;
+      display_name?: string | null;
+      created_at?: string;
+    };
+    avg_rating?: number | null;
+    review_count?: number;
+  }>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reviews`, {
+    method: 'POST',
+    body: {
+      rating: input.rating,
+      comment: input.comment,
+      contact_event_id: input.contactEventId || undefined,
+    },
+    headers: {
+      'Idempotency-Key': idem.slice(0, 128),
+    },
+  });
+  return {
+    review: {
+      providerId,
+      userName: (payload.review?.display_name && String(payload.review.display_name).trim()) || 'Customer',
+      area: '',
+      rating: Number(payload.review?.rating || input.rating),
+      text: (payload.review?.comment && String(payload.review.comment).trim()) || input.comment || '',
+    },
+    avg_rating: payload.avg_rating ?? null,
+    review_count: Number(payload.review_count || 0),
+  };
 }

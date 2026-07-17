@@ -50,9 +50,10 @@ function titleFromSlug(slug: string): string {
 
 /**
  * Adapts the REAL public provider row into the app `Provider`. Fields the
- * backend does not expose (rating, reviews, verified, availableToday, price,
- * portfolio) are NOT fabricated (contract matrix M-3):
- *   - rating/reviewCount default to 0 → the UI hides rating chrome when 0,
+ * backend does not expose (verified, availableToday, price, portfolio) are NOT
+ * fabricated (contract matrix M-3):
+ *   - rating/reviewCount come from avg_rating/review_count when present; else 0
+ *     so the UI hides rating chrome when count is 0,
  *   - verified/availableToday/hasPastWork default to false,
  *   - price defaults to 'Standard' (a neutral label, never shown as a real tier),
  *   - `adminReviewed` is true because appearing in the public list already means
@@ -63,13 +64,17 @@ export function adaptProvider(api: ApiProvider): Provider {
   const service = presentationForSlug(api.category_slug || undefined)?.name
     || (api.category_slug ? titleFromSlug(api.category_slug) : 'Service');
 
+  const reviewCount = Number(api.review_count || 0);
+  const avg = api.avg_rating != null ? Number(api.avg_rating) : 0;
+  const rating = reviewCount > 0 && Number.isFinite(avg) && avg > 0 ? avg : 0;
+
   return {
     id: api.id,
     name: api.full_name || 'Provider',
     service,
     categoryId: api.category_slug || '',
-    rating: 0,
-    reviewCount: 0,
+    rating,
+    reviewCount,
     area: api.area || 'Addis Ababa',
     verified: false,
     adminReviewed: true,

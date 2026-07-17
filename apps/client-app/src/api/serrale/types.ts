@@ -59,6 +59,10 @@ export interface ApiProvider {
   provider_type?: 'individual' | 'business' | null;
   /** Subset of {temporary, permanent} — what engagement lengths this provider accepts. */
   engagement_types?: ('temporary' | 'permanent')[] | null;
+  /** Published review average — null/absent when none. */
+  avg_rating?: number | null;
+  /** Published review count — 0 when none. */
+  review_count?: number | null;
 }
 
 /**

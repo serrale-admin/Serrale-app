@@ -289,6 +289,10 @@ export function isUnauthenticatedPublicRead(method: string, path: string): boole
   if (route === '/search' || route.startsWith('/search/')) return true;
   if (route === '/providers') return true;
   // /providers/:id is public; /providers/me* is authenticated.
+  // Rating eligibility needs the customer Bearer when present — do not strip it.
+  if (route.includes('/reviews/eligibility')) return false;
+  // Published review lists are public reads.
+  if (/\/providers\/[^/]+\/reviews$/.test(route)) return true;
   if (route.startsWith('/providers/')) {
     const rest = route.slice('/providers/'.length);
     const segment = rest.split('/')[0];

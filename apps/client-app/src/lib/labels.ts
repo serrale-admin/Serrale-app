@@ -311,6 +311,26 @@ export interface Labels {
       unavailable: string;
     };
   };
+  rating: {
+    sheetTitle: string;
+    sheetSub: string; // {name}
+    starsA11y: string;
+    commentPlaceholder: string;
+    submit: string;
+    submitting: string;
+    success: string;
+    ctaRate: string;
+    ctaSignIn: string;
+    ctaNeedContact: string;
+    ctaAlready: string; // {n}
+    errorGeneric: string;
+    errorTooSoon: string;
+    errorVelocity: string;
+    errorComment: string;
+    errorRateLimited: string;
+    errorNeedContact: string;
+    errorAlready: string;
+  };
   settings: {
     accountInfo: string;
     guest: string;
@@ -963,6 +983,34 @@ export function labelsFor(lang: Lang): Labels {
         closed: am ? 'ተዘግቷል' : 'Closed',
         unavailable: am ? 'አልተገኘም' : 'Unavailable',
       },
+    },
+    rating: {
+      sheetTitle: am ? 'ባለሙያውን ደረጃ ይስጡ' : 'Rate this provider',
+      sheetSub: am
+        ? 'ከ{name} ጋር ያለዎትን ልምድ ያጋሩ። ግምገማዎ ወዲያውኑ ይታያል።'
+        : 'Share your experience with {name}. Your review goes live right away.',
+      starsA11y: am ? 'ደረጃ ይምረጡ' : 'Choose a star rating',
+      commentPlaceholder: am ? 'አማራጭ አስተያየት (አማራጭ)' : 'Optional comment',
+      submit: am ? 'ግምገማ ላክ' : 'Submit review',
+      submitting: am ? 'በመላክ ላይ…' : 'Submitting…',
+      success: am ? 'አመሰግናለን — ግምገማዎ ቀጥታ ታይቷል።' : 'Thanks — your review is live.',
+      ctaRate: am ? 'ደረጃ ይስጡ' : 'Rate',
+      ctaSignIn: am ? 'ለመደረጃ መስጠት ይግቡ' : 'Sign in to rate',
+      ctaNeedContact: am ? 'መጀመሪያ ይደውሉ ወይም WhatsApp ይላኩ' : 'Call or message first',
+      ctaAlready: am ? 'እርስዎ ★{n} ሰጥተዋል' : 'You rated ★{n}',
+      errorGeneric: am ? 'ግምገማ ማስገባት አልተቻለም። እንደገና ይሞክሩ።' : 'Could not submit your review. Try again.',
+      errorTooSoon: am
+        ? 'ከባለሙያው ጋር ካገናኙ በኋላ ትንሽ ይጠብቁ።'
+        : 'Please wait a moment after contacting the provider before rating.',
+      errorVelocity: am
+        ? 'ዛሬ በጣም ብዙ ግምገማዎች ልከዋል። ነገ እንደገና ይሞክሩ።'
+        : 'You have submitted too many reviews today. Try again tomorrow.',
+      errorComment: am
+        ? 'እባክዎ ያለ አገናኝ ወይም ስልክ ቁጥር አጭር ግምገማ ይጻፉ።'
+        : 'Please write a short review without links or phone numbers.',
+      errorRateLimited: am ? 'በጣም ብዙ ሙከራ። ትንሽ ቆይተው ይሞክሩ።' : 'Too many attempts. Please slow down and try again.',
+      errorNeedContact: am ? 'መጀመሪያ ይደውሉ ወይም WhatsApp ይላኩ።' : 'Call or message the provider first.',
+      errorAlready: am ? 'ይህን ባለሙያ አስቀድመው ደረጃ ሰጥተዋል።' : 'You have already rated this provider.',
     },
     settings: {
       accountInfo: am ? 'የመለያ መረጃ' : 'Account information',

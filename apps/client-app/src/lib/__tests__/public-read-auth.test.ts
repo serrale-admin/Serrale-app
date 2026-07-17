@@ -8,6 +8,7 @@ describe('isUnauthenticatedPublicRead', () => {
     expect(isUnauthenticatedPublicRead('GET', '/public-directory/providers/abc-123')).toBe(true);
     expect(isUnauthenticatedPublicRead('GET', '/public-directory/search')).toBe(true);
     expect(isUnauthenticatedPublicRead('GET', '/public-directory/search/suggest')).toBe(true);
+    expect(isUnauthenticatedPublicRead('GET', '/public-directory/providers/abc-123/reviews')).toBe(true);
   });
 
   it('keeps authenticated provider/customer account routes private', () => {
@@ -16,6 +17,9 @@ describe('isUnauthenticatedPublicRead', () => {
     expect(isUnauthenticatedPublicRead('GET', '/public-directory/customers/me')).toBe(false);
     expect(isUnauthenticatedPublicRead('POST', '/public-directory/providers')).toBe(false);
     expect(isUnauthenticatedPublicRead('POST', '/public-directory/otp/request')).toBe(false);
+    expect(
+      isUnauthenticatedPublicRead('GET', '/public-directory/providers/abc-123/reviews/eligibility'),
+    ).toBe(false);
   });
 });
 

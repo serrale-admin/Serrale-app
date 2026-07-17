@@ -1,27 +1,33 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import * as api from '../../src/api';
 import Avatar from '../../src/components/Avatar';
 import Badge from '../../src/components/Badge';
 import Button from '../../src/components/Button';
 import ErrorBlock from '../../src/components/ErrorBlock';
+import RateProviderSheet from '../../src/components/RateProviderSheet';
 import { useProviderActions } from '../../src/hooks/useProviderActions';
-import { useCategory, useProvider, useProviderReviews, useProviderWork } from '../../src/hooks/queries';
+import { keys, useCategory, useProvider, useProviderReviews, useProviderWork, useReviewEligibility } from '../../src/hooks/queries';
 import { Icon } from '../../src/lib/icons';
 import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius } from '../../src/lib/theme';
+import { HttpError } from '../../src/lib/http';
 import { useAppStore } from '../../src/store/appStore';
+import type { Review } from '../../src/types';
 
 export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const labels = useLabels();
+  const queryClient = useQueryClient();
   const { save, call, whatsapp } = useProviderActions();
   const saved = useAppStore((s) => !!s.saved[id]);
   const showToast = useAppStore((s) => s.showToast);
+  const loggedIn = useAppStore((s) => s.loggedIn);
 
   const userArea = useAppStore((s) => s.area);
   const provider = useProvider(id);
@@ -29,6 +35,11 @@ export default function ProviderDetailScreen() {
   const category = useCategory(pv?.categoryId ?? '');
   const work = useProviderWork(id);
   const reviews = useProviderReviews(id);
+  const eligibility = useReviewEligibility(id, !!id);
+  const [rateOpen, setRateOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [localReviews, setLocalReviews] = useState<Review[] | null>(null);
+  const [localRating, setLocalRating] = useState<{ rating: number; reviewCount: number } | null>(null);
 
   // Log a profile_view once the provider loads (once per id). Fire-and-forget —
   // logProviderContact never throws and is never awaited. (Contract matrix M-6.)
@@ -65,12 +76,7 @@ export default function ProviderDetailScreen() {
     );
   }
 
-  // Common services for this category — presentation metadata (what the trade
-  // covers), never fabricated per-provider price tiers (contract matrix M-3).
   const services = (category.data?.subs || []).slice(0, 4);
-  // Quick facts: only REAL signals. Admin review is real (public listing implies
-  // it), experience comes off the provider row, availability/past-work render
-  // only when the data actually says so, WhatsApp only when a number exists.
   const facts: { label: string; icon: string }[] = [];
   if (pv.availableToday) facts.push({ label: labels.provider.availableToday, icon: 'ph-clock' });
   if (pv.adminReviewed) facts.push({ label: labels.adminReviewed, icon: 'ph-seal-check' });
@@ -81,8 +87,6 @@ export default function ProviderDetailScreen() {
   if (pv.engagementTypes?.includes('permanent')) facts.push({ label: labels.provider.permanentAvailable, icon: 'ph-shield-check' });
   if (pv.providerType === 'business') facts.push({ label: labels.provider.businessProvider, icon: 'ph-buildings' });
 
-  // Honest about text: the provider's own bio, plus the experience line only
-  // when experience is actually known. No invented "trusted by clients" claims.
   const aboutParts = [
     pv.description,
     pv.exp
@@ -91,7 +95,65 @@ export default function ProviderDetailScreen() {
   ].filter(Boolean);
   const about = aboutParts.join(' ');
 
-  const hasRating = pv.reviewCount > 0 && pv.rating > 0;
+  const displayRating = localRating?.rating ?? pv.rating;
+  const displayReviewCount = localRating?.reviewCount ?? pv.reviewCount;
+  const hasRating = displayReviewCount > 0 && displayRating > 0;
+  const reviewList = localReviews ?? reviews.data ?? [];
+
+  const eligibilityStatus = !loggedIn
+    ? 'need_login'
+    : eligibility.data?.status ?? 'need_login';
+
+  const onRateCta = () => {
+    if (eligibilityStatus === 'need_login') {
+      router.push({ pathname: '/auth/login', params: { next: `/provider/${id}` } });
+      return;
+    }
+    if (eligibilityStatus === 'need_contact') {
+      showToast(labels.rating.ctaNeedContact, 'ph-phone-call');
+      return;
+    }
+    if (eligibilityStatus === 'already_rated') {
+      const n = eligibility.data?.existing_rating ?? displayRating;
+      showToast(fill(labels.rating.ctaAlready, { n: n || '' }), 'ph-star');
+      return;
+    }
+    setRateOpen(true);
+  };
+
+  const onSubmitReview = async (input: { rating: number; comment: string }) => {
+    setSubmitting(true);
+    try {
+      const result = await api.submitProviderReview(pv.id, {
+        rating: input.rating,
+        comment: input.comment || undefined,
+        contactEventId: eligibility.data?.contact_event_id,
+      });
+      setLocalReviews([result.review, ...reviewList]);
+      setLocalRating({
+        rating: result.avg_rating ?? result.review.rating,
+        reviewCount: result.review_count,
+      });
+      setRateOpen(false);
+      showToast(labels.rating.success, 'ph-star');
+      void queryClient.invalidateQueries({ queryKey: keys.reviews(pv.id) });
+      void queryClient.invalidateQueries({ queryKey: keys.provider(pv.id) });
+      void queryClient.invalidateQueries({ queryKey: ['reviews', 'eligibility', pv.id] });
+    } catch (err) {
+      const code = err instanceof HttpError ? String(err.code || '') : '';
+      const status = err instanceof HttpError ? err.status : 0;
+      if (code === 'ALREADY_RATED') showToast(labels.rating.errorAlready, 'ph-star');
+      else if (code === 'NEED_CONTACT') showToast(labels.rating.errorNeedContact, 'ph-phone-call');
+      else if (code === 'REVIEW_TOO_SOON') showToast(labels.rating.errorTooSoon, 'ph-clock');
+      else if (code === 'REVIEW_VELOCITY_LIMITED') showToast(labels.rating.errorVelocity, 'ph-warning-circle');
+      else if (code === 'COMMENT_REJECTED') showToast(labels.rating.errorComment, 'ph-warning-circle');
+      else if (status === 429 || code.includes('RATE_LIMITED')) showToast(labels.rating.errorRateLimited, 'ph-warning-circle');
+      else showToast(labels.rating.errorGeneric, 'ph-warning-circle');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const shareProvider = async () => {
     try {
       const url = `https://serrale.com/provider/${encodeURIComponent(pv.id)}`;
@@ -102,9 +164,17 @@ export default function ProviderDetailScreen() {
     }
   };
 
+  const rateCtaLabel =
+    eligibilityStatus === 'need_login'
+      ? labels.rating.ctaSignIn
+      : eligibilityStatus === 'need_contact'
+        ? labels.rating.ctaNeedContact
+        : eligibilityStatus === 'already_rated'
+          ? fill(labels.rating.ctaAlready, { n: eligibility.data?.existing_rating ?? '' })
+          : labels.rating.ctaRate;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Top bar */}
       <View style={styles.topBar}>
         <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={labels.common.back} hitSlop={6}>
           <Icon name="ph-arrow-left" size={20} color={colors.text} weight="bold" />
@@ -119,7 +189,6 @@ export default function ProviderDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Hero */}
         <View style={styles.hero}>
           <Avatar name={pv.name} size={74} radius={20} fontSize={27} imageUrl={pv.imageUrl} />
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -132,8 +201,8 @@ export default function ProviderDetailScreen() {
               {hasRating && (
                 <>
                   <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
-                  <Text style={styles.ratingText}>{pv.rating.toFixed(1)}</Text>
-                  <Text style={styles.metaMuted}>{fill(labels.provider.reviewsMeta, { n: pv.reviewCount })}</Text>
+                  <Text style={styles.ratingText}>{displayRating.toFixed(1)}</Text>
+                  <Text style={styles.metaMuted}>{fill(labels.provider.reviewsMeta, { n: displayReviewCount })}</Text>
                 </>
               )}
               <Icon name="ph-map-pin" size={12} color={colors.muted} />
@@ -142,7 +211,6 @@ export default function ProviderDetailScreen() {
           </View>
         </View>
 
-        {/* Quick facts */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.facts}>
           {facts.map((f, i) => (
             <View key={i} style={styles.fact}>
@@ -152,13 +220,17 @@ export default function ProviderDetailScreen() {
           ))}
         </ScrollView>
 
-        {/* About */}
+        <Pressable style={styles.rateCta} onPress={onRateCta} accessibilityRole="button" accessibilityLabel={rateCtaLabel}>
+          <Icon name="ph-star" size={18} color={colors.gold} weight="fill" />
+          <Text style={styles.rateCtaText}>{rateCtaLabel}</Text>
+          <Icon name="ph-caret-right" size={16} color={colors.muted} />
+        </Pressable>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{labels.provider.about}</Text>
           <Text style={styles.about}>{about}</Text>
         </View>
 
-        {/* Services (category coverage — no fabricated per-provider prices) */}
         {services.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{labels.provider.services}</Text>
@@ -173,7 +245,6 @@ export default function ProviderDetailScreen() {
           </View>
         )}
 
-        {/* Recent work */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{labels.pastWorkTitle}</Text>
           {work.data && work.data.length > 0 ? (
@@ -195,30 +266,29 @@ export default function ProviderDetailScreen() {
           )}
         </View>
 
-        {/* Reviews */}
         <View style={styles.section}>
           <View style={styles.reviewHead}>
             <Text style={styles.sectionTitle}>{labels.provider.reviews}</Text>
-            {reviews.data && reviews.data.length > 0 && (
+            {reviewList.length > 0 && (
               <Pressable onPress={() => showToast(labels.provider.showingReviews, 'ph-chats')} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.a11y.viewAllReviews}>
                 <Text style={styles.viewAll}>{labels.viewAll}</Text>
               </Pressable>
             )}
           </View>
-          {reviews.data && reviews.data.length > 0 ? (
-            reviews.data.map((r, i) => (
-              <View key={i} style={[styles.reviewCard, i > 0 && { marginTop: 10 }]}>
+          {reviewList.length > 0 ? (
+            reviewList.map((r, i) => (
+              <View key={`${r.userName}-${i}`} style={[styles.reviewCard, i > 0 && { marginTop: 10 }]}>
                 <View style={styles.reviewTop}>
                   <View style={styles.reviewAvatar}>
                     <Text style={styles.reviewInitial}>{(r.userName || '?')[0]}</Text>
                   </View>
                   <Text style={styles.reviewName}>{r.userName}</Text>
-                  <Text style={styles.reviewArea}>· {r.area}</Text>
+                  {!!r.area && <Text style={styles.reviewArea}>· {r.area}</Text>}
                   <View style={{ flex: 1 }} />
                   <Icon name="ph-star" size={12} color={colors.gold} weight="fill" />
                   <Text style={styles.reviewRating}>{r.rating}</Text>
                 </View>
-                <Text style={styles.reviewText}>{r.text}</Text>
+                {!!r.text && <Text style={styles.reviewText}>{r.text}</Text>}
               </View>
             ))
           ) : (
@@ -226,7 +296,6 @@ export default function ProviderDetailScreen() {
           )}
         </View>
 
-        {/* Safety */}
         <View style={styles.safetyCard}>
           <Icon name="ph-shield-check" size={22} color={colors.goldText} weight="fill" />
           <View style={{ flex: 1 }}>
@@ -241,11 +310,18 @@ export default function ProviderDetailScreen() {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Sticky Call / WhatsApp bar */}
       <View style={[styles.stickyBar, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
         <Button label={labels.common.call} icon="ph-phone-call" iconWeight="fill" onPress={() => call(pv)} style={styles.stickyBtn} />
         <Button label={labels.common.whatsapp} variant="whatsapp" icon="ph-whatsapp-logo" iconWeight="fill" onPress={() => whatsapp(pv)} style={styles.stickyBtn} />
       </View>
+
+      <RateProviderSheet
+        visible={rateOpen}
+        providerName={pv.name}
+        submitting={submitting}
+        onClose={() => setRateOpen(false)}
+        onSubmit={onSubmitReview}
+      />
     </SafeAreaView>
   );
 }
@@ -266,6 +342,19 @@ const styles = StyleSheet.create({
   facts: { gap: 7, marginTop: 16 },
   fact: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   factText: { fontSize: 12, fontFamily: fonts.semibold, color: colors.text },
+  rateCta: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  rateCtaText: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, color: colors.text },
   section: { marginTop: 20 },
   sectionTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, marginBottom: 9 },
   about: { fontSize: 13.5, color: colors.muted, lineHeight: 22, fontFamily: fonts.regular },

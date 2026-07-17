@@ -3,45 +3,15 @@ import { categoryImage } from '../lib/category-images';
 import { Icon } from '../lib/icons';
 import { colors, fonts, radius } from '../lib/theme';
 
-type ShortcutTone = 'default' | 'temporary' | 'permanent';
-
 interface Props {
   name: string;
   icon: string;
   imageKey?: string;
   count?: string;
   variant?: 'shortcut' | 'tile' | 'row';
-  /** Tint for engagement filter chips in the home shortcut row. */
-  tone?: ShortcutTone;
-  /** Selected state for toggleable shortcut chips (engagement filters). */
-  active?: boolean;
   onPress(): void;
   style?: ViewStyle;
 }
-
-const SHORTCUT_TONE = {
-  default: {
-    icon: colors.green700,
-    text: colors.text,
-    chip: undefined as ViewStyle | undefined,
-    chipActive: undefined as ViewStyle | undefined,
-    textActive: undefined as { color: string } | undefined,
-  },
-  temporary: {
-    icon: colors.goldText,
-    text: colors.goldSoftText,
-    chip: { backgroundColor: colors.goldSoft, borderColor: 'rgba(246,185,59,0.35)' } as ViewStyle,
-    chipActive: { backgroundColor: '#FFE9B0', borderColor: colors.gold } as ViewStyle,
-    textActive: { color: colors.onGold },
-  },
-  permanent: {
-    icon: colors.success,
-    text: colors.green800,
-    chip: { backgroundColor: colors.soft, borderColor: 'rgba(21,127,89,0.28)' } as ViewStyle,
-    chipActive: { backgroundColor: colors.frostDeep, borderColor: colors.success } as ViewStyle,
-    textActive: { color: colors.green900 },
-  },
-} as const;
 
 /** Category treatments: compact icon pills plus photographic discovery cards. */
 export default function CategoryCard({
@@ -50,32 +20,19 @@ export default function CategoryCard({
   imageKey,
   count,
   variant = 'tile',
-  tone = 'default',
-  active = false,
   onPress,
   style,
 }: Props) {
   if (variant === 'shortcut') {
-    const tint = SHORTCUT_TONE[tone];
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.shortcut,
-          tint.chip,
-          active && tint.chipActive,
-          pressed && styles.pressed,
-          style,
-        ]}
+        style={({ pressed }) => [styles.shortcut, pressed && styles.pressed, style]}
         accessibilityRole="button"
         accessibilityLabel={name}
-        accessibilityState={tone !== 'default' ? { selected: active } : undefined}
       >
-        <Icon name={icon} size={17} color={active && tint.textActive ? tint.textActive.color : tint.icon} weight="fill" />
-        <Text
-          style={[styles.shortcutName, { color: tint.text }, active && tint.textActive]}
-          numberOfLines={1}
-        >
+        <Icon name={icon} size={17} color={colors.green700} weight="fill" />
+        <Text style={styles.shortcutName} numberOfLines={1}>
           {name}
         </Text>
       </Pressable>

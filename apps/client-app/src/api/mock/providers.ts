@@ -19,6 +19,9 @@ function matchesFilters(p: Provider, filters?: Filters): boolean {
   if (f.exp.includes('5+ years') && p.exp < 5) return false;
   else if (f.exp.includes('3+ years') && p.exp < 3) return false;
   else if (f.exp.includes('1+ years') && p.exp < 1) return false;
+  if (f.engagement === 'temporary' || f.engagement === 'permanent') {
+    if (!(p.engagementTypes || []).includes(f.engagement)) return false;
+  }
   return true;
 }
 
@@ -55,14 +58,21 @@ export function getProvider(id: string): Promise<Provider | undefined> {
   return delay(PROV.find((p) => p.id === id));
 }
 
-export function getNearbyProviders(area: string, limit = 5): Promise<Provider[]> {
+export function getNearbyProviders(area: string, limit = 5, engagement?: string): Promise<Provider[]> {
   let near = PROV.filter((p) => (area === AREA_ALL ? true : p.area === area));
-  if (near.length < 3) near = PROV.slice();
+  if (engagement === 'temporary' || engagement === 'permanent') {
+    near = near.filter((p) => (p.engagementTypes || []).includes(engagement));
+  }
+  if (near.length < 3 && !engagement) near = PROV.slice();
   return delay(near.slice(0, limit));
 }
 
-export function getVerifiedProviders(limit = 3): Promise<Provider[]> {
-  return delay(PROV.filter((p) => p.verified).slice(0, limit));
+export function getVerifiedProviders(limit = 3, engagement?: string): Promise<Provider[]> {
+  let list = PROV.filter((p) => p.verified);
+  if (engagement === 'temporary' || engagement === 'permanent') {
+    list = list.filter((p) => (p.engagementTypes || []).includes(engagement));
+  }
+  return delay(list.slice(0, limit));
 }
 
 export function getProviderPastWork(providerId: string): Promise<PastWork[]> {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
+import EngagementSegment from '../../src/components/EngagementSegment';
 import FilterSheet from '../../src/components/FilterSheet';
 import HomeBanner from '../../src/components/HomeBanner';
 import LocationSheet from '../../src/components/LocationSheet';
@@ -27,13 +28,14 @@ export default function HomeScreen() {
   const area = useAppStore((state) => state.area);
   const lang = useAppStore((state) => state.lang);
   const setArea = useAppStore((state) => state.setArea);
+  const engagement = useAppStore((state) => state.filters.engagement);
   const am = lang === 'am';
 
   const [showFilter, setShowFilter] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
 
-  const nearby = useNearbyProviders(area);
-  const verified = useVerifiedProviders();
+  const nearby = useNearbyProviders(area, engagement);
+  const verified = useVerifiedProviders(engagement);
   const recent = useRecentWork();
   const categories = useCategories();
   const { refreshing, onRefresh } = usePullToRefresh(
@@ -48,8 +50,20 @@ export default function HomeScreen() {
     (category): category is (typeof liveCats)[number] => Boolean(category),
   );
   const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
-  const nearbyMock = PROV.filter((provider) => area === AREA_ALL || provider.area === area);
-  const verifiedMock = PROV.filter((provider) => provider.verified || provider.adminReviewed);
+  const nearbyMock = PROV.filter((provider) => {
+    if (area !== AREA_ALL && provider.area !== area) return false;
+    if (engagement === 'temporary' || engagement === 'permanent') {
+      return (provider.engagementTypes || []).includes(engagement);
+    }
+    return true;
+  });
+  const verifiedMock = PROV.filter((provider) => {
+    if (!(provider.verified || provider.adminReviewed)) return false;
+    if (engagement === 'temporary' || engagement === 'permanent') {
+      return (provider.engagementTypes || []).includes(engagement);
+    }
+    return true;
+  });
   const nearbySource = USE_MOCK && nearby.isLoading ? nearbyMock : nearby.data ?? [];
   const verifiedSource = USE_MOCK && verified.isLoading ? verifiedMock : verified.data ?? [];
   const recentWork = USE_MOCK && recent.isLoading ? PASTWORK : recent.data ?? [];
@@ -145,6 +159,7 @@ export default function HomeScreen() {
                 <Icon name="ph-sliders-horizontal" size={19} color={colors.green800} weight="bold" />
               </Pressable>
             </Pressable>
+            <EngagementSegment style={styles.engagementSegment} />
             <HomeBanner onGo={onBanner} />
           </View>
 
@@ -309,6 +324,7 @@ const styles = StyleSheet.create({
   searchPressed: { backgroundColor: colors.ivory },
   searchText: { flex: 1, fontSize: 13.5, fontFamily: fonts.regular, color: colors.muted },
   filterButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
+  engagementSegment: { marginTop: 8 },
   quickRow: { gap: 7, paddingHorizontal: layout.gutter, paddingTop: 6, paddingBottom: 1 },
   providerRail: { gap: 8, paddingHorizontal: layout.gutter, paddingBottom: 2 },
   inlineEmpty: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },

@@ -102,6 +102,11 @@ describe('rails and detail-embedded resources', () => {
     expect(opts?.query).toEqual({ limit: 3, offset: 0 });
   });
 
+  it('getVerifiedProviders forwards engagement when set', async () => {
+    await getVerifiedProviders(3, 'permanent');
+    expect(mockHttp.mock.calls[0][1]?.query).toEqual({ limit: 3, offset: 0, engagement: 'permanent' });
+  });
+
   it('getNearbyProviders sends area only when not city-wide', async () => {
     await getNearbyProviders('Bole', 5);
     expect(mockHttp.mock.calls[0][1]?.query).toEqual({ limit: 5, offset: 0, area: 'Bole' });
@@ -110,6 +115,16 @@ describe('rails and detail-embedded resources', () => {
     mockHttp.mockResolvedValue({ providers: [], total: 0 } as never);
     await getNearbyProviders(AREA_ALL, 5);
     expect(mockHttp.mock.calls[0][1]?.query).toEqual({ limit: 5, offset: 0 });
+  });
+
+  it('getNearbyProviders forwards engagement when set', async () => {
+    await getNearbyProviders('Bole', 5, 'temporary');
+    expect(mockHttp.mock.calls[0][1]?.query).toEqual({
+      limit: 5,
+      offset: 0,
+      area: 'Bole',
+      engagement: 'temporary',
+    });
   });
 
   it('past work resolves empty WITHOUT a network call; reviews hit the live endpoint', async () => {

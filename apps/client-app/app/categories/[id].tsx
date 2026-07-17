@@ -6,6 +6,7 @@ import Badge from '../../src/components/Badge';
 import Button from '../../src/components/Button';
 import Chip from '../../src/components/Chip';
 import EmptyState from '../../src/components/EmptyState';
+import EngagementSegment from '../../src/components/EngagementSegment';
 import ErrorBlock from '../../src/components/ErrorBlock';
 import FilterSheet from '../../src/components/FilterSheet';
 import ProviderRow from '../../src/components/ProviderRow';
@@ -59,6 +60,10 @@ export default function CategoryDetailScreen() {
           </Pressable>
         }
       />
+
+      <View style={styles.engagementWrap}>
+        <EngagementSegment />
+      </View>
 
       {/* Subcategory chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subRow} style={{ flexGrow: 0 }}>
@@ -116,6 +121,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.borderField, borderRadius: radius.sm + 2, backgroundColor: colors.surface },
   filterBtnText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.green800 },
+  engagementWrap: { paddingHorizontal: 16, paddingBottom: 10 },
   subRow: { gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   sortRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 },
   resultCount: { fontSize: 12.5, color: colors.muted, fontFamily: fonts.regular },

@@ -104,6 +104,8 @@ interface AppState {
   selectAreaFilter(area: string): void;
   /** Single-select engagement filter: '' clears it, selecting the active value again clears it. */
   selectEngagementFilter(value: string): void;
+  /** Always assign engagement ('' = All). Used by the home/categories segment control. */
+  setEngagementFilter(value: string): void;
   setRating(value: string): void;
   toggleQuick(kind: string): void;
   resetFilters(): void;
@@ -235,6 +237,10 @@ export const useAppStore = create<AppState>()(
       selectEngagementFilter: (value) =>
         set((s) => ({
           filters: { ...s.filters, engagement: s.filters.engagement === value ? '' : value },
+        })),
+      setEngagementFilter: (value) =>
+        set((s) => ({
+          filters: { ...s.filters, engagement: value === 'temporary' || value === 'permanent' ? value : '' },
         })),
       setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
       toggleQuick: (kind) =>

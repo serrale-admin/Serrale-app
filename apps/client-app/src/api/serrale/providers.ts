@@ -52,9 +52,14 @@ export async function getProvider(id: string): Promise<Provider | undefined> {
   return row ? toProviderPage([row], 0).items[0] : undefined;
 }
 
-export async function getNearbyProviders(area: string, limit = 5): Promise<Provider[]> {
+export async function getNearbyProviders(
+  area: string,
+  limit = 5,
+  engagement?: string,
+): Promise<Provider[]> {
   const params: Record<string, QueryValue> = { limit, offset: 0 };
   if (area && area !== AREA_ALL) params.area = area;
+  if (engagement === 'temporary' || engagement === 'permanent') params.engagement = engagement;
   const payload = await http<ApiProvider[] | ApiListPayload<ApiProvider>>(`${DIRECTORY}/providers`, { query: params });
   return toProviderPage(payload, 0).items.slice(0, limit);
 }
@@ -64,10 +69,13 @@ export async function getNearbyProviders(area: string, limit = 5): Promise<Provi
  * (M-3/M-4), so this simply returns the most recent public providers — every
  * publicly listed provider is admin-reviewed, which is the real trust signal the
  * card surfaces. No `verified: true` param is sent (it would be ignored).
+ * Optional `engagement` mirrors the list filter (`?engagement=`).
  */
-export async function getVerifiedProviders(limit = 3): Promise<Provider[]> {
+export async function getVerifiedProviders(limit = 3, engagement?: string): Promise<Provider[]> {
+  const params: Record<string, QueryValue> = { limit, offset: 0 };
+  if (engagement === 'temporary' || engagement === 'permanent') params.engagement = engagement;
   const payload = await http<ApiProvider[] | ApiListPayload<ApiProvider>>(`${DIRECTORY}/providers`, {
-    query: { limit, offset: 0 },
+    query: params,
   });
   return toProviderPage(payload, 0).items.slice(0, limit);
 }

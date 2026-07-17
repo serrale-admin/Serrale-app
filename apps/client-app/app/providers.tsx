@@ -8,6 +8,7 @@ import Badge from '../src/components/Badge';
 import Button from '../src/components/Button';
 import Chip from '../src/components/Chip';
 import EmptyState from '../src/components/EmptyState';
+import EngagementSegment from '../src/components/EngagementSegment';
 import ErrorBlock from '../src/components/ErrorBlock';
 import { TextField } from '../src/components/Field';
 import FilterSheet from '../src/components/FilterSheet';
@@ -29,8 +30,9 @@ import { useAppStore } from '../src/store/appStore';
  * Search assistance: the input drives GET /search/suggest (300 ms debounce,
  * cancellation, six results, brief cache — see useSearchSuggest); submitting or
  * picking a suggestion commits the query that drives the results list. Quick
- * chips only expose what the backend can really filter ("Near me" → area);
- * rating/availability/WhatsApp chips were removed with contract matrix M-4.
+ * chips expose backend-backed filters (Near me → area; Temporary/Permanent →
+ * engagement). Rating/availability/WhatsApp chips were removed with contract
+ * matrix M-4.
  */
 export default function ProvidersScreen() {
   const router = useRouter();
@@ -167,6 +169,7 @@ export default function ProvidersScreen() {
         <Text style={styles.count}>
           <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> {labels.providersWord}{suffix}
         </Text>
+        <EngagementSegment style={styles.engagementSegment} />
         {area !== AREA_ALL && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
             <Chip label={fill(labels.providersList.nearMe, { area })} iconName="ph-map-pin" active={nearOn} height={30} onPress={() => toggleQuick('near')} />
@@ -246,6 +249,7 @@ const styles = StyleSheet.create({
   assistCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.green800 },
   countWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   count: { fontSize: 13.5, color: colors.muted, marginBottom: 9, fontFamily: fonts.regular },
+  engagementSegment: { marginBottom: 8 },
   results: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
   emptyActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginTop: 18 },
 });

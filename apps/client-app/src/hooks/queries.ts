@@ -12,8 +12,8 @@ export const keys = {
   category: (id: string) => ['category', id] as const,
   providers: (q: ProviderQuery) => ['providers', q] as const,
   provider: (id: string) => ['provider', id] as const,
-  nearby: (area: string) => ['providers', 'nearby', area] as const,
-  verified: ['providers', 'verified'] as const,
+  nearby: (area: string, engagement = '') => ['providers', 'nearby', area, engagement] as const,
+  verified: (engagement = '') => ['providers', 'verified', engagement] as const,
   recentWork: ['pastwork', 'recent'] as const,
   providerWork: (id: string) => ['pastwork', id] as const,
   reviews: (id: string) => ['reviews', id] as const,
@@ -36,11 +36,17 @@ export const useProviders = (query: ProviderQuery) =>
 export const useProvider = (id: string) =>
   useQuery({ queryKey: keys.provider(id), queryFn: () => api.getProvider(id), enabled: !!id });
 
-export const useNearbyProviders = (area: string) =>
-  useQuery({ queryKey: keys.nearby(area), queryFn: () => api.getNearbyProviders(area) });
+export const useNearbyProviders = (area: string, engagement = '') =>
+  useQuery({
+    queryKey: keys.nearby(area, engagement),
+    queryFn: () => api.getNearbyProviders(area, 5, engagement || undefined),
+  });
 
-export const useVerifiedProviders = () =>
-  useQuery({ queryKey: keys.verified, queryFn: () => api.getVerifiedProviders() });
+export const useVerifiedProviders = (engagement = '') =>
+  useQuery({
+    queryKey: keys.verified(engagement),
+    queryFn: () => api.getVerifiedProviders(8, engagement || undefined),
+  });
 
 export const useRecentWork = () =>
   useQuery({ queryKey: keys.recentWork, queryFn: () => api.getRecentWork() });

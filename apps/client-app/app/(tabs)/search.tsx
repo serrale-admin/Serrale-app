@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
 import CategoryFilterSheet, { CategorySort } from '../../src/components/CategoryFilterSheet';
 import Chip from '../../src/components/Chip';
+import EngagementSegment from '../../src/components/EngagementSegment';
 import LocationSheet from '../../src/components/LocationSheet';
 import PromoBanner from '../../src/components/PromoBanner';
 import { CATS, GROUP_NAMES } from '../../src/data/mock';
@@ -115,6 +116,10 @@ export default function CategoriesScreen() {
 
         {/* Title */}
         <Text style={styles.h1}>{labels.categories.title}</Text>
+
+        <View style={styles.engagementWrap}>
+          <EngagementSegment />
+        </View>
 
         {/* Search row */}
         <View style={styles.searchRow}>
@@ -235,6 +240,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 10,
   },
+  engagementWrap: { paddingHorizontal: 16, paddingBottom: 10 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
   field: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, height: 54, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.xxl, paddingHorizontal: 16, ...shadowCard },
   input: { flex: 1, fontSize: 14.5, fontFamily: fonts.regular, color: colors.text, padding: 0 },

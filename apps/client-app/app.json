@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SERRALE",
-    "slug": "serrale-basic",
+    "slug": "serrale-app",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/app-icon-square.png",
@@ -57,9 +57,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c0bdd64b-34fa-44d2-aef0-a1290ab29a1a"
+        "projectId": "9f6f966b-164c-4cb2-a51a-13d6b4b9fa07"
       }
     },
-    "owner": "nati2328"
+    "owner": "serrale2026"
   }
 }

@@ -1,9 +1,8 @@
 import { adaptProvider } from '../adapters';
 import type { ApiProvider } from '../types';
 
-jest.mock('../../../lib/http', () => ({
-  http: jest.fn(),
-  HttpError: class HttpError extends Error {
+jest.mock('../../../lib/http', () => {
+  class HttpError extends Error {
     status: number;
     code?: string;
     constructor(status: number, message: string, code?: string) {
@@ -12,8 +11,19 @@ jest.mock('../../../lib/http', () => ({
       this.code = code;
       this.name = 'HttpError';
     }
-  },
-}));
+  }
+  class NetworkError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'NetworkError';
+    }
+  }
+  return {
+    http: jest.fn(),
+    HttpError,
+    NetworkError,
+  };
+});
 
 import { http, HttpError } from '../../../lib/http';
 import { getProviderReviews, getReviewEligibility, submitProviderReview } from '../providers';

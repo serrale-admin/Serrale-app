@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
-import EngagementSegment from '../../src/components/EngagementSegment';
 import FilterSheet from '../../src/components/FilterSheet';
 import HomeBanner from '../../src/components/HomeBanner';
 import LocationSheet from '../../src/components/LocationSheet';
@@ -29,6 +28,7 @@ export default function HomeScreen() {
   const lang = useAppStore((state) => state.lang);
   const setArea = useAppStore((state) => state.setArea);
   const engagement = useAppStore((state) => state.filters.engagement);
+  const selectEngagementFilter = useAppStore((state) => state.selectEngagementFilter);
   const am = lang === 'am';
 
   const [showFilter, setShowFilter] = useState(false);
@@ -159,11 +159,26 @@ export default function HomeScreen() {
                 <Icon name="ph-sliders-horizontal" size={19} color={colors.green800} weight="bold" />
               </Pressable>
             </Pressable>
-            <EngagementSegment style={styles.engagementSegment} />
             <HomeBanner onGo={onBanner} />
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+            <CategoryCard
+              name={labels.filter.engagementTemporary}
+              icon="ph-calendar-check"
+              variant="shortcut"
+              tone="temporary"
+              active={engagement === 'temporary'}
+              onPress={() => selectEngagementFilter('temporary')}
+            />
+            <CategoryCard
+              name={labels.filter.engagementPermanent}
+              icon="ph-shield-check"
+              variant="shortcut"
+              tone="permanent"
+              active={engagement === 'permanent'}
+              onPress={() => selectEngagementFilter('permanent')}
+            />
             {quickCats.map((category) => (
               <CategoryCard
                 key={category.id}
@@ -324,7 +339,6 @@ const styles = StyleSheet.create({
   searchPressed: { backgroundColor: colors.ivory },
   searchText: { flex: 1, fontSize: 13.5, fontFamily: fonts.regular, color: colors.muted },
   filterButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
-  engagementSegment: { marginTop: 8 },
   quickRow: { gap: 7, paddingHorizontal: layout.gutter, paddingTop: 6, paddingBottom: 1 },
   providerRail: { gap: 8, paddingHorizontal: layout.gutter, paddingBottom: 2 },
   inlineEmpty: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },

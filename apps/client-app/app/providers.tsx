@@ -8,7 +8,6 @@ import Badge from '../src/components/Badge';
 import Button from '../src/components/Button';
 import Chip from '../src/components/Chip';
 import EmptyState from '../src/components/EmptyState';
-import EngagementSegment from '../src/components/EngagementSegment';
 import ErrorBlock from '../src/components/ErrorBlock';
 import { TextField } from '../src/components/Field';
 import FilterSheet from '../src/components/FilterSheet';
@@ -42,6 +41,7 @@ export default function ProvidersScreen() {
   const setArea = useAppStore((s) => s.setArea);
   const filters = useAppStore((s) => s.filters);
   const toggleQuick = useAppStore((s) => s.toggleQuick);
+  const selectEngagementFilter = useAppStore((s) => s.selectEngagementFilter);
   const filterCount = useAppStore((s) => s.activeFilterCount)();
 
   const initialQ = typeof params.q === 'string' ? params.q : '';
@@ -169,12 +169,25 @@ export default function ProvidersScreen() {
         <Text style={styles.count}>
           <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> {labels.providersWord}{suffix}
         </Text>
-        <EngagementSegment style={styles.engagementSegment} />
-        {area !== AREA_ALL && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+          <Chip
+            label={labels.filter.engagementTemporary}
+            iconName="ph-calendar-check"
+            active={filters.engagement === 'temporary'}
+            height={30}
+            onPress={() => selectEngagementFilter('temporary')}
+          />
+          <Chip
+            label={labels.filter.engagementPermanent}
+            iconName="ph-shield-check"
+            active={filters.engagement === 'permanent'}
+            height={30}
+            onPress={() => selectEngagementFilter('permanent')}
+          />
+          {area !== AREA_ALL && (
             <Chip label={fill(labels.providersList.nearMe, { area })} iconName="ph-map-pin" active={nearOn} height={30} onPress={() => toggleQuick('near')} />
-          </ScrollView>
-        )}
+          )}
+        </ScrollView>
       </View>
 
       {/* Results */}
@@ -249,7 +262,6 @@ const styles = StyleSheet.create({
   assistCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.green800 },
   countWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   count: { fontSize: 13.5, color: colors.muted, marginBottom: 9, fontFamily: fonts.regular },
-  engagementSegment: { marginBottom: 8 },
   results: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
   emptyActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginTop: 18 },
 });

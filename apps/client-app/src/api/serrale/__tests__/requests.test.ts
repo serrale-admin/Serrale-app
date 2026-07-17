@@ -1,4 +1,4 @@
-import { createServiceRequest, logProviderContact } from '../requests';
+import { createServiceRequest, logProviderContact, reportProvider } from '../requests';
 import { http } from '../../../lib/http';
 import type { ServiceRequest } from '../../../types';
 
@@ -161,5 +161,28 @@ describe('logProviderContact — public contact-events endpoint (M-2/M-6)', () =
     mockHttp.mockResolvedValue({ recorded: true } as never);
     await logProviderContact({ providerId: 'prov-9', eventType: 'profile_view', sourceFlow: 'provider_detail' });
     expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).event_type).toBe('profile_view');
+  });
+});
+
+describe('reportProvider — POST /providers/:id/reports', () => {
+  it('POSTs reason + mobile_app platform', async () => {
+    mockHttp.mockResolvedValue({ recorded: true, id: 'rep-1' } as never);
+    const res = await reportProvider('prov-1', { reason: 'scam', details: 'Asked for upfront fee' });
+
+    const [path, opts] = mockHttp.mock.calls[0];
+    expect(path).toBe('/public-directory/providers/prov-1/reports');
+    expect(opts?.method).toBe('POST');
+    expect(opts?.body).toMatchObject({
+      reason: 'scam',
+      details: 'Asked for upfront fee',
+      source_platform: 'mobile_app',
+      source_flow: 'provider_detail',
+    });
+    expect(res).toEqual({ recorded: true, id: 'rep-1' });
+  });
+
+  it('throws when the API rejects (UI must not fake success)', async () => {
+    mockHttp.mockRejectedValue(new Error('network down'));
+    await expect(reportProvider('prov-1', { reason: 'spam' })).rejects.toThrow('network down');
   });
 });

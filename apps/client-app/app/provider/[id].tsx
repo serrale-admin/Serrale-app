@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import * as api from '../../src/api';
@@ -19,6 +19,7 @@ import { mapRateEligibilityCta } from '../../src/lib/rateEligibilityCta';
 import { reviewErrorMessage } from '../../src/lib/reviewSubmitErrors';
 import { useAppStore } from '../../src/store/appStore';
 import type { Review } from '../../src/types';
+import type { ProviderReportReason } from '../../src/api';
 
 export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -121,6 +122,36 @@ export default function ProviderDetailScreen() {
       pathname: '/auth/login',
       params: { next: `/provider/${id}` },
     });
+  };
+
+  const submitProviderReport = async (reason: ProviderReportReason) => {
+    try {
+      await api.reportProvider(pv.id, { reason });
+      showToast(labels.provider.reportSent, 'ph-flag');
+    } catch {
+      showToast(labels.provider.reportFailed, 'ph-warning-circle');
+    }
+  };
+
+  const onReportProvider = () => {
+    Alert.alert(labels.provider.reportProvider, labels.provider.reportChooseReason, [
+      { text: labels.provider.reportReasonSpam, onPress: () => void submitProviderReport('spam') },
+      { text: labels.provider.reportReasonScam, onPress: () => void submitProviderReport('scam') },
+      {
+        text: labels.provider.reportReasonInappropriate,
+        onPress: () => void submitProviderReport('inappropriate'),
+      },
+      {
+        text: labels.provider.reportReasonWrongInfo,
+        onPress: () => void submitProviderReport('wrong_info'),
+      },
+      {
+        text: labels.provider.reportReasonNotReachable,
+        onPress: () => void submitProviderReport('not_reachable'),
+      },
+      { text: labels.provider.reportReasonOther, onPress: () => void submitProviderReport('other') },
+      { text: labels.common.cancel, style: 'cancel' },
+    ]);
   };
 
   const onRateCta = () => {
@@ -354,7 +385,7 @@ export default function ProviderDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.safetyTitle}>{labels.provider.staySafe}</Text>
             <Text style={styles.safetyText}>{labels.provider.safetyText}</Text>
-            <Pressable style={styles.reportBtn} onPress={() => showToast(labels.provider.reportSent, 'ph-flag')} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.provider.reportProvider}>
+            <Pressable style={styles.reportBtn} onPress={onReportProvider} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.provider.reportProvider}>
               <Icon name="ph-flag" size={13} color={colors.danger} />
               <Text style={styles.reportText}>{labels.provider.reportProvider}</Text>
             </Pressable>

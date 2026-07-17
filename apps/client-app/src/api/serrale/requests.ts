@@ -119,3 +119,39 @@ export function logProviderContact({ providerId, eventType, sourceFlow, searchQu
     .then((r) => ({ recorded: r?.recorded ?? true }))
     .catch(() => ({ recorded: false }));
 }
+
+/** Reasons accepted by POST /providers/:id/reports. */
+export const PROVIDER_REPORT_REASONS = [
+  'spam',
+  'scam',
+  'inappropriate',
+  'wrong_info',
+  'not_reachable',
+  'other',
+] as const;
+
+export type ProviderReportReason = (typeof PROVIDER_REPORT_REASONS)[number];
+
+/**
+ * Submit a provider report to SERRALE staff (POST /providers/:id/reports).
+ * Optional session is attached automatically by http() when logged in.
+ * Throws on failure so the UI can show an error toast (never a fake "sent").
+ */
+export async function reportProvider(
+  providerId: string,
+  input: { reason: ProviderReportReason; details?: string }
+): Promise<{ recorded: boolean; id?: string }> {
+  const res = await http<{ recorded?: boolean; id?: string }>(
+    `${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reports`,
+    {
+      method: 'POST',
+      body: {
+        reason: input.reason,
+        details: input.details,
+        source_platform: 'mobile_app',
+        source_flow: 'provider_detail',
+      },
+    }
+  );
+  return { recorded: res?.recorded ?? true, id: res?.id };
+}

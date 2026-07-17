@@ -35,6 +35,13 @@ export function logProviderContact(_input: ContactEventInput): Promise<{ recorde
   return delay({ recorded: true }, 120);
 }
 
+export function reportProvider(
+  _providerId: string,
+  _input: { reason: string; details?: string }
+): Promise<{ recorded: boolean; id?: string }> {
+  return delay({ recorded: true, id: '22222222-2222-2222-2222-222222222222' }, 200);
+}
+
 const MOCK_ACTIVITY: CustomerActivityItem[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',

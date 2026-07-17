@@ -259,7 +259,15 @@ export interface Labels {
     staySafe: string;
     safetyText: string;
     reportSent: string;
+    reportFailed: string;
     reportProvider: string;
+    reportChooseReason: string;
+    reportReasonSpam: string;
+    reportReasonScam: string;
+    reportReasonInappropriate: string;
+    reportReasonWrongInfo: string;
+    reportReasonNotReachable: string;
+    reportReasonOther: string;
     linkCopied: string;
     reviewedBadge: string;
     pastWorkBadge: string;
@@ -931,7 +939,15 @@ export function labelsFor(lang: Lang): Labels {
         ? 'ስራ ከመጀመርዎ በፊት ዋጋ፣ ጊዜና የስራ ስፋትን በግልጽ ይስማሙ።'
         : 'Agree on price, time, and work scope clearly before starting work.',
       reportSent: am ? 'ሪፖርት ወደ ሰራሌ ተልኳል' : 'Report sent to SERRALE',
+      reportFailed: am ? 'ሪፖርት አልተላከም። እንደገና ይሞክሩ።' : 'Could not send report. Try again.',
       reportProvider: am ? 'ባለሙያ ሪፖርት አድርግ' : 'Report provider',
+      reportChooseReason: am ? 'ምክንያት ይምረጡ' : 'Why are you reporting?',
+      reportReasonSpam: am ? 'ስፓም' : 'Spam',
+      reportReasonScam: am ? 'ማጭበርበር' : 'Scam / fraud',
+      reportReasonInappropriate: am ? 'አግባብ ያልሆነ' : 'Inappropriate',
+      reportReasonWrongInfo: am ? 'የተሳሳተ መረጃ' : 'Wrong info',
+      reportReasonNotReachable: am ? 'አይደርስም' : 'Not reachable',
+      reportReasonOther: am ? 'ሌላ' : 'Other',
       linkCopied: am ? 'የመገለጫ አገናኝ ተቀድቷል' : 'Profile link copied',
       reviewedBadge: am ? 'ተገምግሟል' : 'Reviewed',
       pastWorkBadge: am ? 'ያለፈ ስራ' : 'Past work',

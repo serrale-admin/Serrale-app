@@ -34,7 +34,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
 
   const metaRow = hasRating ? (
     <View style={styles.ratingRow}>
-      <Icon name="ph-star" size={11} color={colors.green700} weight="fill" />
+      <Icon name="ph-star" size={11} color={colors.gold} weight="fill" />
       <Text style={styles.ratingValue}>{p.rating.toFixed(1)}</Text>
       <Text style={styles.reviews}>({p.reviewCount})</Text>
     </View>

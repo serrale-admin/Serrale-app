@@ -127,7 +127,7 @@ export async function getProviderReviews(providerId: string, limit = 20): Promis
   }
 }
 
-export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'already_rated' | 'need_contact';
+export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'already_rated';
 
 export interface ReviewEligibility {
   status: ReviewEligibilityStatus;
@@ -139,19 +139,17 @@ export interface ReviewEligibility {
  * missing/degraded endpoints so a logged-in UI never flashes "Sign in to rate".
  * The screen CTA MUST still gate on local `loggedIn` via mapRateEligibilityCta —
  * API need_login alone must never drive the Sign in label.
+ * Stale `need_contact` from old backends is mapped to eligible.
  */
 export async function getReviewEligibility(providerId: string): Promise<ReviewEligibility> {
   try {
-    const payload = await http<ReviewEligibility>(
+    const payload = await http<ReviewEligibility & { status?: string }>(
       `${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reviews/eligibility`
     );
     const status = payload?.status;
     return {
       status:
-        status === 'eligible' ||
-        status === 'already_rated' ||
-        status === 'need_login' ||
-        status === 'need_contact'
+        status === 'already_rated' || status === 'need_login' || status === 'eligible'
           ? status
           : 'eligible',
       existing_rating: payload?.existing_rating ?? null,

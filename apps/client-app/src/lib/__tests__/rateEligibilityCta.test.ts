@@ -42,7 +42,7 @@ describe('mapRateEligibilityCta', () => {
     ).toBe('already_rated');
   });
 
-  it('shows need_contact for a logged-in user who has not contacted the provider', () => {
+  it('ignores stale API need_contact when logged in (contact gate removed)', () => {
     expect(
       mapRateEligibilityCta({
         sessionReady: true,
@@ -50,10 +50,10 @@ describe('mapRateEligibilityCta', () => {
         alreadyRated: false,
         apiStatus: 'need_contact',
       }),
-    ).toBe('need_contact');
+    ).toBe('eligible');
   });
 
-  it('never lets need_contact override or be confused with need_login for a guest', () => {
+  it('still shows Sign in for guests even if API says need_contact', () => {
     expect(
       mapRateEligibilityCta({
         sessionReady: true,
@@ -62,18 +62,6 @@ describe('mapRateEligibilityCta', () => {
         apiStatus: 'need_contact',
       }),
     ).toBe('need_login');
-  });
-
-  it('lets need_contact apply for a provider-only session (same as customer)', () => {
-    expect(
-      mapRateEligibilityCta({
-        sessionReady: true,
-        loggedIn: true,
-        alreadyRated: false,
-        providerOnlySession: true,
-        apiStatus: 'need_contact',
-      }),
-    ).toBe('need_contact');
   });
 
   it('ignores a stale API need_login when a session is live', () => {

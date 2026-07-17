@@ -159,10 +159,6 @@ export default function ProviderDetailScreen() {
       goSignIn();
       return;
     }
-    if (eligibilityStatus === 'need_contact') {
-      showToast(labels.rating.needContactHint, 'ph-phone-call');
-      return;
-    }
     if (eligibilityStatus === 'already_rated') {
       const n = localMyRating ?? eligibility.data?.existing_rating ?? displayRating;
       showToast(fill(labels.rating.ctaAlready, { n: n || '' }), 'ph-star');
@@ -180,8 +176,6 @@ export default function ProviderDetailScreen() {
     errorRateLimited: labels.rating.errorRateLimited,
     errorAlready: labels.rating.errorAlready,
     errorUnavailable: labels.rating.errorUnavailable,
-    errorNeedContact: labels.rating.errorNeedContact,
-    errorReviewTooSoon: labels.rating.errorReviewTooSoon,
     errorSelfRating: labels.rating.errorSelfRating,
     connectionMessage: labels.errors.connectionMessage,
   };

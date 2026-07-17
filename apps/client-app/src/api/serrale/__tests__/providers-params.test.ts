@@ -149,14 +149,22 @@ describe('rails and detail-embedded resources', () => {
 });
 
 describe('getReviewEligibility — status whitelist', () => {
-  it('passes through eligible / need_login / already_rated / need_contact', async () => {
-    for (const status of ['eligible', 'need_login', 'already_rated', 'need_contact'] as const) {
+  it('passes through eligible / need_login / already_rated', async () => {
+    for (const status of ['eligible', 'need_login', 'already_rated'] as const) {
       mockHttp.mockResolvedValueOnce({ status, existing_rating: null } as never);
       await expect(getReviewEligibility('p1')).resolves.toEqual({
         status,
         existing_rating: null,
       });
     }
+  });
+
+  it('maps stale need_contact to eligible (contact gate removed)', async () => {
+    mockHttp.mockResolvedValueOnce({ status: 'need_contact', existing_rating: null } as never);
+    await expect(getReviewEligibility('p1')).resolves.toEqual({
+      status: 'eligible',
+      existing_rating: null,
+    });
   });
 
   it('collapses an unrecognized status to eligible rather than discarding it silently as need_login', async () => {

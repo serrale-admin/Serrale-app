@@ -9,8 +9,6 @@ const labels = {
   errorRateLimited: 'Slow down.',
   errorAlready: 'Already rated.',
   errorUnavailable: 'Ratings are temporarily unavailable.',
-  errorNeedContact: 'Contact this provider by phone or WhatsApp before rating.',
-  errorReviewTooSoon: 'You just contacted them — wait a few seconds before rating.',
   errorSelfRating: 'You cannot rate your own listing.',
   connectionMessage: 'Connection problem.',
 };
@@ -45,15 +43,6 @@ describe('reviewErrorMessage', () => {
         activeSession: 'customer',
       }),
     ).toBe(labels.ctaSignIn);
-  });
-
-  it('maps the restored contact-gate codes to their own copy (not generic)', () => {
-    expect(
-      reviewErrorMessage(new HttpError(403, 'x', 'NEED_CONTACT'), labels),
-    ).toBe(labels.errorNeedContact);
-    expect(
-      reviewErrorMessage(new HttpError(429, 'x', 'REVIEW_TOO_SOON'), labels),
-    ).toBe(labels.errorReviewTooSoon);
   });
 
   it('maps production catch-all 404 / NOT_FOUND to unavailable (not generic)', () => {

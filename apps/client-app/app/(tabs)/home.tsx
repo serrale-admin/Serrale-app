@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
 import EngagementFilterChip from '../../src/components/EngagementFilterChip';
@@ -12,7 +12,7 @@ import ProviderMini from '../../src/components/ProviderMini';
 import SafetyCard from '../../src/components/SafetyCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import { AREA_ALL, CATS, PASTWORK, PROV } from '../../src/data/mock';
-import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
+import { keys, useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
 import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
 import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
@@ -40,10 +40,10 @@ export default function HomeScreen() {
   const recent = useRecentWork();
   const categories = useCategories();
   const { refreshing, onRefresh } = usePullToRefresh(
-    () => nearby.refetch(),
-    () => verified.refetch(),
-    () => recent.refetch(),
-    () => categories.refetch(),
+    keys.categories,
+    keys.nearby(area, engagement),
+    keys.verified(engagement),
+    keys.recentWork,
   );
 
   const liveCats = categories.data?.length ? categories.data : CATS;
@@ -86,6 +86,8 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
+        style={styles.scroll}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
@@ -116,14 +118,20 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
-              onPress={onRefresh}
+              onPress={() => {
+                void onRefresh();
+              }}
               disabled={refreshing}
               hitSlop={2}
               accessibilityRole="button"
               accessibilityLabel={labels.a11y.refresh}
               accessibilityState={{ busy: refreshing }}
             >
-              <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.green900} />
+              ) : (
+                <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
@@ -298,6 +306,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   scrollContent: { alignItems: 'center', paddingBottom: 20 },
   content: { width: '100%', maxWidth: layout.contentMaxWidth },
   pressed: { opacity: 0.64 },

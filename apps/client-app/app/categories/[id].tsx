@@ -11,7 +11,7 @@ import FilterSheet from '../../src/components/FilterSheet';
 import ProviderRow from '../../src/components/ProviderRow';
 import ScreenHeader from '../../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../../src/components/Skeleton';
-import { useCategory, useProviders } from '../../src/hooks/queries';
+import { keys, useCategory, useProviders } from '../../src/hooks/queries';
 import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
 import { fmt } from '../../src/lib/format';
 import { Icon } from '../../src/lib/icons';
@@ -37,10 +37,7 @@ export default function CategoryDetailScreen() {
   // param (contract matrix M-4), so the UI does not offer illusory sorting.
   const query = useMemo(() => ({ categoryId: id, area, filters }), [id, area, filters]);
   const providers = useProviders(query);
-  const { refreshing, onRefresh } = usePullToRefresh(
-    () => category.refetch(),
-    () => providers.refetch(),
-  );
+  const { refreshing, onRefresh } = usePullToRefresh(keys.category(id ?? ''), keys.providers(query));
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? results.length;
 
@@ -86,6 +83,8 @@ export default function CategoryDetailScreen() {
         />
       ) : (
         <ScrollView
+          style={{ flex: 1 }}
+          nestedScrollEnabled
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={

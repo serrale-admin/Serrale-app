@@ -14,7 +14,7 @@ import FilterSheet from '../src/components/FilterSheet';
 import LocationSheet from '../src/components/LocationSheet';
 import ProviderRow from '../src/components/ProviderRow';
 import { SkeletonProviderList } from '../src/components/Skeleton';
-import { useProviders } from '../src/hooks/queries';
+import { keys, useProviders } from '../src/hooks/queries';
 import { useSearchSuggest } from '../src/hooks/useSearchSuggest';
 import { AREA_ALL } from '../src/data/mock';
 import { directoryRefreshProps, usePullToRefresh } from '../src/lib/directory-refresh';
@@ -58,7 +58,7 @@ export default function ProvidersScreen() {
     [submitted, categoryId, area, filters],
   );
   const providers = useProviders(query);
-  const { refreshing, onRefresh } = usePullToRefresh(() => providers.refetch());
+  const { refreshing, onRefresh } = usePullToRefresh(keys.providers(query));
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? 0;
   const suffix = submitted
@@ -203,6 +203,8 @@ export default function ProvidersScreen() {
         />
       ) : (
         <ScrollView
+          style={{ flex: 1 }}
+          nestedScrollEnabled
           contentContainerStyle={styles.results}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

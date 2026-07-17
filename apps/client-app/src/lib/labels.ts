@@ -83,6 +83,10 @@ export interface Labels {
     loginWithPhone: string;
     welcomeToSerrale: string;
     requestService: string;
+    /** Toast after a successful directory pull-to-refresh / header refresh. */
+    refreshed: string;
+    /** Toast when directory refresh finished with query errors. */
+    refreshFailed: string;
   };
   /** Screen-reader-only strings (accessibilityLabel) with no on-screen text. */
   a11y: {
@@ -685,6 +689,8 @@ export function labelsFor(lang: Lang): Labels {
       loginWithPhone: am ? 'በስልክ ይግቡ' : 'Log in with phone',
       welcomeToSerrale: am ? 'ወደ ሰራሌ እንኳን በደህና መጡ' : 'Welcome to SERRALE',
       requestService: am ? 'አገልግሎት ይጠይቁ' : 'Request service',
+      refreshed: am ? 'ተዘምኗል' : 'Updated',
+      refreshFailed: am ? 'ማደስ አልተቻለም' : "Couldn't refresh",
     },
     a11y: {
       digit: am ? 'አሃዝ {n}' : 'Digit {n}',

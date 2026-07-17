@@ -75,17 +75,16 @@ describe('provider reviews API', () => {
   });
 
   it('maps eligibility', async () => {
-    mockHttp.mockResolvedValue({ status: 'eligible', contact_event_id: 'c1' } as never);
+    mockHttp.mockResolvedValue({ status: 'eligible' } as never);
     await expect(getReviewEligibility('prov-1')).resolves.toEqual({
       status: 'eligible',
       existing_rating: null,
-      contact_event_id: 'c1',
     });
   });
 
-  it('soft-fails eligibility 404 to need_contact (not need_login)', async () => {
+  it('soft-fails eligibility 404 to eligible (not need_login)', async () => {
     mockHttp.mockRejectedValue(new HttpError(404, 'missing'));
-    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'need_contact' });
+    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'eligible' });
   });
 
   it('soft-fails eligibility 401 to need_login', async () => {

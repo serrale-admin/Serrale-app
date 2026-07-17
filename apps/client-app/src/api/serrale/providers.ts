@@ -119,40 +119,43 @@ export async function getProviderReviews(providerId: string, limit = 20): Promis
   }
 }
 
-export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'need_contact' | 'already_rated';
+export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'already_rated';
 
 export interface ReviewEligibility {
   status: ReviewEligibilityStatus;
   existing_rating?: number | null;
-  contact_event_id?: string | null;
 }
 
 /**
- * Contact-gated rating eligibility.
+ * Login-only rating eligibility.
  * Soft-fails carefully: only real 401 → need_login. Missing endpoint / network
- * must NOT pretend the user needs to sign in (that was a false CTA bug).
+ * must NOT pretend the user needs to sign in (that was a false CTA bug) —
+ * callers with a customer session should treat degraded as eligible.
  */
 export async function getReviewEligibility(providerId: string): Promise<ReviewEligibility> {
   try {
     const payload = await http<ReviewEligibility>(
       `${DIRECTORY}/providers/${encodeURIComponent(providerId)}/reviews/eligibility`
     );
+    const status = payload?.status;
     return {
-      status: payload?.status || 'need_login',
+      status:
+        status === 'eligible' || status === 'already_rated' || status === 'need_login'
+          ? status
+          : 'need_login',
       existing_rating: payload?.existing_rating ?? null,
-      contact_event_id: payload?.contact_event_id ?? null,
     };
   } catch (err) {
     if (err instanceof HttpError && err.status === 401) {
       return { status: 'need_login' };
     }
     // 404/501 = endpoint not deployed yet; 429/5xx/offline = degraded.
-    // Prefer need_contact so a logged-in user is not told to "Sign in".
+    // Prefer eligible so a logged-in user can still open Rate (POST enforces auth).
     if (
       err instanceof NetworkError ||
       (err instanceof HttpError && (err.status === 404 || err.status === 501 || err.status === 429 || err.status >= 500))
     ) {
-      return { status: 'need_contact' };
+      return { status: 'eligible' };
     }
     throw err;
   }
@@ -164,10 +167,10 @@ export interface SubmitReviewResult {
   review_count: number;
 }
 
-/** Submit a contact-gated customer review (instant publish). */
+/** Submit a customer review (instant publish). Requires customer login. */
 export async function submitProviderReview(
   providerId: string,
-  input: { rating: number; comment?: string; contactEventId?: string | null; idempotencyKey?: string }
+  input: { rating: number; comment?: string; idempotencyKey?: string }
 ): Promise<SubmitReviewResult> {
   const idem =
     input.idempotencyKey ||
@@ -187,7 +190,6 @@ export async function submitProviderReview(
     body: {
       rating: input.rating,
       comment: input.comment,
-      contact_event_id: input.contactEventId || undefined,
     },
     headers: {
       'Idempotency-Key': idem.slice(0, 128),

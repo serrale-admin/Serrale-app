@@ -21,13 +21,12 @@ export function getReviewEligibility(providerId: string): Promise<ReviewEligibil
       existing_rating: submitted.get(providerId)!.rating,
     });
   }
-  // Mock: treat as eligible after "contact" (always eligible when logged in path used).
-  return delay({ status: 'eligible', contact_event_id: 'mock-contact-1' });
+  return delay({ status: 'eligible' });
 }
 
 export function submitProviderReview(
   providerId: string,
-  input: { rating: number; comment?: string; contactEventId?: string | null }
+  input: { rating: number; comment?: string }
 ): Promise<SubmitReviewResult> {
   const review: Review = {
     providerId,

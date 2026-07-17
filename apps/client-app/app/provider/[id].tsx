@@ -104,28 +104,20 @@ export default function ProviderDetailScreen() {
   const hasRating = displayReviewCount > 0 && displayRating > 0;
   const reviewList = localReviews ?? reviews.data ?? [];
 
-  // Prefer server eligibility once loaded. Never force "Sign in" for an active
-  // customer session (false positive when the query raced ahead of hydrate, or
-  // the ratings API soft-failed). Provider-only sessions still need customer login.
+  // Conventional: guests see Sign in; signed-in customers see Rate / Already rated.
+  // Never show a contact gate. Soft-fail / token race must not force Sign in on a
+  // customer session (false positive). Provider-only sessions still need customer login.
   const rawEligibility = eligibility.data?.status;
   const eligibilityStatus =
-    rawEligibility === 'eligible' ||
-    rawEligibility === 'already_rated' ||
-    rawEligibility === 'need_contact'
-      ? rawEligibility
-      : rawEligibility === 'need_login' && isCustomerSession
-        ? 'need_contact'
-        : isCustomerSession
-          ? (eligibility.isLoading || !sessionReady ? 'need_contact' : rawEligibility || 'need_contact')
-          : 'need_login';
+    !isCustomerSession
+      ? 'need_login'
+      : rawEligibility === 'already_rated'
+        ? 'already_rated'
+        : 'eligible';
 
   const onRateCta = () => {
     if (eligibilityStatus === 'need_login') {
       router.push({ pathname: '/auth/login', params: { next: `/provider/${id}` } });
-      return;
-    }
-    if (eligibilityStatus === 'need_contact') {
-      showToast(labels.rating.ctaNeedContact, 'ph-phone-call');
       return;
     }
     if (eligibilityStatus === 'already_rated') {
@@ -142,7 +134,6 @@ export default function ProviderDetailScreen() {
       const result = await api.submitProviderReview(pv.id, {
         rating: input.rating,
         comment: input.comment || undefined,
-        contactEventId: eligibility.data?.contact_event_id,
       });
       setLocalReviews([result.review, ...reviewList]);
       setLocalRating({
@@ -158,12 +149,13 @@ export default function ProviderDetailScreen() {
       const code = err instanceof HttpError ? String(err.code || '') : '';
       const status = err instanceof HttpError ? err.status : 0;
       if (code === 'ALREADY_RATED') showToast(labels.rating.errorAlready, 'ph-star');
-      else if (code === 'NEED_CONTACT') showToast(labels.rating.errorNeedContact, 'ph-phone-call');
-      else if (code === 'REVIEW_TOO_SOON') showToast(labels.rating.errorTooSoon, 'ph-clock');
       else if (code === 'REVIEW_VELOCITY_LIMITED') showToast(labels.rating.errorVelocity, 'ph-warning-circle');
       else if (code === 'COMMENT_REJECTED') showToast(labels.rating.errorComment, 'ph-warning-circle');
       else if (status === 429 || code.includes('RATE_LIMITED')) showToast(labels.rating.errorRateLimited, 'ph-warning-circle');
-      else showToast(labels.rating.errorGeneric, 'ph-warning-circle');
+      else if (status === 401) {
+        showToast(labels.rating.ctaSignIn, 'ph-user');
+        router.push({ pathname: '/auth/login', params: { next: `/provider/${id}` } });
+      } else showToast(labels.rating.errorGeneric, 'ph-warning-circle');
     } finally {
       setSubmitting(false);
     }
@@ -182,11 +174,9 @@ export default function ProviderDetailScreen() {
   const rateCtaLabel =
     eligibilityStatus === 'need_login'
       ? labels.rating.ctaSignIn
-      : eligibilityStatus === 'need_contact'
-        ? labels.rating.ctaNeedContact
-        : eligibilityStatus === 'already_rated'
-          ? fill(labels.rating.ctaAlready, { n: eligibility.data?.existing_rating ?? '' })
-          : labels.rating.ctaRate;
+      : eligibilityStatus === 'already_rated'
+        ? fill(labels.rating.ctaAlready, { n: eligibility.data?.existing_rating ?? '' })
+        : labels.rating.ctaRate;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

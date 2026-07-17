@@ -1,4 +1,4 @@
-import { http, isUnauthenticatedPublicRead, setTokenProvider, __resetNetworkReliability } from '../http';
+import { HttpError, http, isUnauthenticatedPublicRead, setTokenProvider, __resetNetworkReliability } from '../http';
 
 describe('isUnauthenticatedPublicRead', () => {
   it('marks catalog GETs as public (no Bearer should attach)', () => {
@@ -73,5 +73,44 @@ describe('public catalog GETs never attach customer Bearer', () => {
 
     await http('/public-directory/customers/me');
     expect(auth).toBe('Bearer customer-access-token');
+  });
+});
+
+describe('http catch-all 404 envelope parsing', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    __resetNetworkReliability();
+    setTokenProvider(null);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    __resetNetworkReliability();
+  });
+
+  it('extracts NOT_FOUND code + human message from legacy catch-all shape', async () => {
+    global.fetch = jest.fn(async () => {
+      return {
+        status: 404,
+        ok: false,
+        text: async () =>
+          JSON.stringify({
+            error: 'NOT_FOUND',
+            message: 'Endpoint /api/public-directory/providers/x/reviews does not exist on this server.',
+            hint: 'Ensure you are using the correct HTTP method and path.',
+          }),
+        headers: { get: () => null },
+      } as unknown as Response;
+    }) as typeof fetch;
+
+    await expect(
+      http('/public-directory/providers/x/reviews', { method: 'POST', body: { rating: 5 } }),
+    ).rejects.toMatchObject({
+      name: 'HttpError',
+      status: 404,
+      code: 'NOT_FOUND',
+      message: 'Endpoint /api/public-directory/providers/x/reviews does not exist on this server.',
+    } satisfies Partial<HttpError>);
   });
 });

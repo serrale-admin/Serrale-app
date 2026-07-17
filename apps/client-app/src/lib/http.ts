@@ -301,9 +301,22 @@ export function isUnauthenticatedPublicRead(method: string, path: string): boole
   return false;
 }
 
-function errorMessage(e: Envelope<unknown>): { message: string; code?: string } {
-  if (e.error && typeof e.error === 'object') return { message: e.error.message || 'Request failed', code: e.error.code };
-  if (typeof e.error === 'string') return { message: e.error };
+/**
+ * Unwrap API error payloads. Supports both the standard envelope
+ * `{ success:false, error:{ code, message } }` and the catch-all 404 shape
+ * `{ error:"NOT_FOUND", message:"Endpoint … does not exist…" }` from app.ts.
+ */
+export function errorMessage(e: Envelope<unknown>): { message: string; code?: string } {
+  if (e.error && typeof e.error === 'object') {
+    return {
+      message: e.error.message || e.message || 'Request failed',
+      code: e.error.code,
+    };
+  }
+  if (typeof e.error === 'string') {
+    // Catch-all routes put the code in `error` and the human text in `message`.
+    return { message: e.message || e.error, code: e.error };
+  }
   if (e.message) return { message: e.message };
   return { message: 'Something went wrong' };
 }

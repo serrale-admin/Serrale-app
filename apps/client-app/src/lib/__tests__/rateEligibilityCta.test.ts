@@ -7,10 +7,21 @@ describe('mapRateEligibilityCta', () => {
     ).toBe('need_login');
   });
 
-  it('never shows Sign in when loggedIn (customer or provider)', () => {
+  it('shows Rate when a customer session is logged in', () => {
     expect(
       mapRateEligibilityCta({ sessionReady: true, loggedIn: true, alreadyRated: false }),
     ).toBe('eligible');
+  });
+
+  it('asks for customer login when only a provider session exists', () => {
+    expect(
+      mapRateEligibilityCta({
+        sessionReady: true,
+        loggedIn: true,
+        alreadyRated: false,
+        providerOnlySession: true,
+      }),
+    ).toBe('need_customer');
   });
 
   it('does not flash Sign in while session hydrates', () => {

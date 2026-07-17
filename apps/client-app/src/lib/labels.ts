@@ -327,6 +327,10 @@ export interface Labels {
     errorComment: string;
     errorRateLimited: string;
     errorAlready: string;
+    /** Ratings API missing / not deployed / 501. */
+    errorUnavailable: string;
+    /** Provider JWT only — ratings require a customer Bearer. */
+    errorCustomerRequired: string;
   };
   settings: {
     accountInfo: string;
@@ -1003,6 +1007,12 @@ export function labelsFor(lang: Lang): Labels {
         : 'Please write a short review without links or phone numbers.',
       errorRateLimited: am ? 'በጣም ብዙ ሙከራ። ትንሽ ቆይተው ይሞክሩ።' : 'Too many attempts. Please slow down and try again.',
       errorAlready: am ? 'ይህን ባለሙያ አስቀድመው ደረጃ ሰጥተዋል።' : 'You have already rated this provider.',
+      errorUnavailable: am
+        ? 'ደረጃ መስጠት ለጊዜው አይገኝም። ትንሽ ቆይተው ይሞክሩ።'
+        : 'Ratings are temporarily unavailable. Please try again later.',
+      errorCustomerRequired: am
+        ? 'ለመደረጃ መስጠት በደንበኛ መለያ ይግቡ'
+        : 'Sign in with your customer account to rate',
     },
     settings: {
       accountInfo: am ? 'የመለያ መረጃ' : 'Account information',

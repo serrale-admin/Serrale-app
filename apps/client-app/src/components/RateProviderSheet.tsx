@@ -63,6 +63,7 @@ export default function RateProviderSheet({
   };
 
   const active = hover || rating;
+  const canSubmit = rating >= 1 && !submitting;
 
   return (
     <BottomSheet
@@ -78,7 +79,7 @@ export default function RateProviderSheet({
           contentContainerStyle={[styles.pad, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}
         >
           <LinearGradient
-            colors={[colors.surface, colors.frost, colors.soft]}
+            colors={[colors.glassWhiteHi, colors.glassWhite, colors.glassWhiteDeep]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.glassCard}
@@ -113,7 +114,7 @@ export default function RateProviderSheet({
                     <Icon
                       name="ph-star"
                       size={30}
-                      color={filled ? colors.gold : 'rgba(6,71,52,0.18)'}
+                      color={filled ? colors.gold : colors.starEmpty}
                       weight={filled ? 'fill' : 'regular'}
                     />
                   </Pressable>
@@ -143,31 +144,24 @@ export default function RateProviderSheet({
 
             <Pressable
               onPress={handleSubmit}
-              disabled={rating < 1 || submitting}
+              disabled={!canSubmit}
               accessibilityRole="button"
               accessibilityLabel={submitting ? t.submitting : t.submit}
-              accessibilityState={{ disabled: rating < 1 || submitting, busy: submitting }}
+              accessibilityState={{ disabled: !canSubmit, busy: submitting }}
               style={({ pressed }) => [
                 styles.submit,
-                (rating < 1 || submitting) && styles.submitInert,
-                pressed && rating >= 1 && !submitting && { opacity: 0.88 },
+                canSubmit ? styles.submitReady : styles.submitInert,
+                pressed && canSubmit && { opacity: 0.9 },
               ]}
             >
-              <LinearGradient
-                colors={rating < 1 || submitting ? ['#7a9a8c', '#6d8f80'] : [colors.green700, colors.green800]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.submitGrad}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Icon name="ph-paper-plane-tilt" size={16} color="#fff" weight="fill" />
-                    <Text style={styles.submitLabel}>{t.submit}</Text>
-                  </>
-                )}
-              </LinearGradient>
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Icon name="ph-paper-plane-tilt" size={16} color="#fff" weight="fill" />
+                  <Text style={styles.submitLabel}>{t.submit}</Text>
+                </>
+              )}
             </Pressable>
 
             {!submitting && (
@@ -184,7 +178,7 @@ export default function RateProviderSheet({
 
 const styles = StyleSheet.create({
   sheetFlush: {
-    backgroundColor: colors.frost,
+    backgroundColor: colors.glassWhite,
     paddingBottom: 0,
   },
   pad: {
@@ -194,8 +188,8 @@ const styles = StyleSheet.create({
   glassCard: {
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: colors.frostBorder,
-    backgroundColor: colors.surface,
+    borderColor: colors.glassWhiteBorder,
+    backgroundColor: colors.glassWhiteHi,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
@@ -251,8 +245,8 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 72,
     maxHeight: 120,
-    borderWidth: 1,
-    borderColor: colors.borderField,
+    borderWidth: 1.5,
+    borderColor: colors.borderInput,
     borderRadius: radius.lg,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -289,17 +283,18 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   submit: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  submitInert: { opacity: 0.72 },
-  submitGrad: {
     height: 46,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
+  },
+  submitReady: {
+    backgroundColor: colors.green800,
+  },
+  submitInert: {
+    backgroundColor: '#9AABA3',
   },
   submitLabel: {
     fontFamily: fonts.bold,

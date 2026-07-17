@@ -127,7 +127,7 @@ export async function getProviderReviews(providerId: string, limit = 20): Promis
   }
 }
 
-export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'already_rated';
+export type ReviewEligibilityStatus = 'eligible' | 'need_login' | 'already_rated' | 'need_contact';
 
 export interface ReviewEligibility {
   status: ReviewEligibilityStatus;
@@ -148,7 +148,10 @@ export async function getReviewEligibility(providerId: string): Promise<ReviewEl
     const status = payload?.status;
     return {
       status:
-        status === 'eligible' || status === 'already_rated' || status === 'need_login'
+        status === 'eligible' ||
+        status === 'already_rated' ||
+        status === 'need_login' ||
+        status === 'need_contact'
           ? status
           : 'eligible',
       existing_rating: payload?.existing_rating ?? null,
@@ -177,7 +180,7 @@ export interface SubmitReviewResult {
   review_count: number;
 }
 
-/** Submit a customer review (instant publish). Requires customer login. */
+/** Submit a review (instant publish). Requires any app login (customer or provider JWT). */
 export async function submitProviderReview(
   providerId: string,
   input: { rating: number; comment?: string; idempotencyKey?: string }

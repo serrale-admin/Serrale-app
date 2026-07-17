@@ -8,19 +8,22 @@ export type ReviewErrorLabels = {
   errorRateLimited: string;
   errorAlready: string;
   errorUnavailable: string;
-  errorCustomerRequired: string;
+  errorNeedContact: string;
+  errorReviewTooSoon: string;
+  errorSelfRating: string;
   connectionMessage: string;
 };
 
 /**
  * Map submit-review failures to actionable copy.
  * Prefer known business codes; fall back to a safe server message; never leave
- * users with only a generic toast when we know the cause (401 / 404 / role).
+ * users with only a generic toast when we know the cause (401 / 404).
+ * Never tell a logged-in user they need a separate "customer account".
  */
 export function reviewErrorMessage(
   err: unknown,
   labels: ReviewErrorLabels,
-  opts?: { activeSession?: 'customer' | 'provider' | null },
+  _opts?: { activeSession?: 'customer' | 'provider' | null },
 ): string {
   const code =
     err instanceof HttpError || err instanceof ApiBusinessError ? String(err.code || '') : '';
@@ -33,10 +36,14 @@ export function reviewErrorMessage(
   if (code === 'ALREADY_RATED') return labels.errorAlready;
   if (code === 'REVIEW_VELOCITY_LIMITED') return labels.errorVelocity;
   if (code === 'COMMENT_REJECTED') return labels.errorComment;
+  if (code === 'SELF_RATING_FORBIDDEN') return labels.errorSelfRating;
+  // Contact gate (restored server-side): checked before the generic 429
+  // branch below, since REVIEW_TOO_SOON is itself a 429 and needs its own copy.
+  if (code === 'NEED_CONTACT') return labels.errorNeedContact;
+  if (code === 'REVIEW_TOO_SOON') return labels.errorReviewTooSoon;
   if (status === 429 || code.includes('RATE_LIMITED')) return labels.errorRateLimited;
 
   if (status === 401 || code === 'UNAUTHORIZED' || code === 'SESSION_EXPIRED') {
-    if (opts?.activeSession === 'provider') return labels.errorCustomerRequired;
     return labels.ctaSignIn;
   }
 

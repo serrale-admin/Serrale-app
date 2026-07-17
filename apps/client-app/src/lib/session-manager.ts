@@ -294,13 +294,25 @@ export async function initializeSessionManager(): Promise<void> {
   useAppStore.getState().setSessionReady(false);
   await checkInstallation();
 
+  // Prefer customer access token; fall back to provider JWT so review /
+  // contact-event / eligibility calls work in a provider-only session without
+  // a second "customer account" login. Backend accepts either scope.
   setTokenProvider(async () => {
     const tokens = await secureSession.read();
-    if (!tokens) return null;
-    return tokens.accessToken;
+    if (tokens?.accessToken) return tokens.accessToken;
+    const provider = await providerSession.read();
+    return provider?.sessionToken ?? null;
   });
 
   setUnauthorizedHandler(async (replay, isSafe) => {
+    // Provider JWT has no refresh path. Only attempt customer refresh when a
+    // customer refresh token exists — otherwise a 401 on a provider Bearer
+    // would call handleCustomerLogout and wipe the active session role.
+    const tokens = await secureSession.read();
+    if (!tokens?.refreshToken) {
+      throw new HttpError(401, 'Session expired');
+    }
+
     const refreshed = await doRefresh();
     if (!refreshed) {
       throw new HttpError(401, 'Session expired');

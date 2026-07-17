@@ -9,7 +9,9 @@ const labels = {
   errorRateLimited: 'Slow down.',
   errorAlready: 'Already rated.',
   errorUnavailable: 'Ratings are temporarily unavailable.',
-  errorCustomerRequired: 'Sign in with your customer account to rate',
+  errorNeedContact: 'Contact this provider by phone or WhatsApp before rating.',
+  errorReviewTooSoon: 'You just contacted them — wait a few seconds before rating.',
+  errorSelfRating: 'You cannot rate your own listing.',
   connectionMessage: 'Connection problem.',
 };
 
@@ -27,19 +29,31 @@ describe('reviewErrorMessage', () => {
     expect(reviewErrorMessage(new HttpError(429, 'x', 'IP_RATE_LIMITED'), labels)).toBe(
       labels.errorRateLimited,
     );
+    expect(reviewErrorMessage(new HttpError(403, 'x', 'SELF_RATING_FORBIDDEN'), labels)).toBe(
+      labels.errorSelfRating,
+    );
   });
 
-  it('maps 401 to customer-required when provider session is active', () => {
+  it('maps 401 to Sign in for any session (never customer-account prompt)', () => {
     expect(
       reviewErrorMessage(new HttpError(401, 'Verify your phone', 'UNAUTHORIZED'), labels, {
         activeSession: 'provider',
       }),
-    ).toBe(labels.errorCustomerRequired);
+    ).toBe(labels.ctaSignIn);
     expect(
       reviewErrorMessage(new HttpError(401, 'Verify your phone', 'UNAUTHORIZED'), labels, {
         activeSession: 'customer',
       }),
     ).toBe(labels.ctaSignIn);
+  });
+
+  it('maps the restored contact-gate codes to their own copy (not generic)', () => {
+    expect(
+      reviewErrorMessage(new HttpError(403, 'x', 'NEED_CONTACT'), labels),
+    ).toBe(labels.errorNeedContact);
+    expect(
+      reviewErrorMessage(new HttpError(429, 'x', 'REVIEW_TOO_SOON'), labels),
+    ).toBe(labels.errorReviewTooSoon);
   });
 
   it('maps production catch-all 404 / NOT_FOUND to unavailable (not generic)', () => {

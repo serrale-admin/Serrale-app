@@ -329,8 +329,14 @@ export interface Labels {
     errorAlready: string;
     /** Ratings API missing / not deployed / 501. */
     errorUnavailable: string;
-    /** Provider JWT only — ratings require a customer Bearer. */
-    errorCustomerRequired: string;
+    /** Proactive toast when tapping Rate before the contact gate is met. */
+    needContactHint: string;
+    /** Submit-time backstop: server 403 NEED_CONTACT (stale cached eligibility). */
+    errorNeedContact: string;
+    /** Submit-time backstop: server 429 REVIEW_TOO_SOON (contacted just now). */
+    errorReviewTooSoon: string;
+    /** Submit-time: provider cannot rate their own listing. */
+    errorSelfRating: string;
   };
   settings: {
     accountInfo: string;
@@ -1010,9 +1016,18 @@ export function labelsFor(lang: Lang): Labels {
       errorUnavailable: am
         ? 'ደረጃ መስጠት ለጊዜው አይገኝም። ትንሽ ቆይተው ይሞክሩ።'
         : 'Ratings are temporarily unavailable. Please try again later.',
-      errorCustomerRequired: am
-        ? 'ለመደረጃ መስጠት በደንበኛ መለያ ይግቡ'
-        : 'Sign in with your customer account to rate',
+      needContactHint: am
+        ? 'ደረጃ ለመስጠት ባለሙያውን በስልክ ወይም በዋትስአፕ ያግኙ።'
+        : 'Contact this provider by phone or WhatsApp to rate them.',
+      errorNeedContact: am
+        ? 'ደረጃ ከመስጠትዎ በፊት ባለሙያውን በስልክ ወይም በዋትስአፕ ያግኙ።'
+        : 'Contact this provider by phone or WhatsApp before rating.',
+      errorReviewTooSoon: am
+        ? 'አሁን አግኝተውታል — ደረጃ ከመስጠትዎ በፊት ትንሽ ይጠብቁ።'
+        : 'You just contacted them — wait a few seconds before rating.',
+      errorSelfRating: am
+        ? 'የራስዎን ዝርዝር ደረጃ መስጠት አይችሉም።'
+        : 'You cannot rate your own listing.',
     },
     settings: {
       accountInfo: am ? 'የመለያ መረጃ' : 'Account information',

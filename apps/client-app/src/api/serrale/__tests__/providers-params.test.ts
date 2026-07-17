@@ -1,10 +1,18 @@
-import { getNearbyProviders, getProviderPastWork, getProviderReviews, getProviders, getVerifiedProviders } from '../providers';
+import {
+  getNearbyProviders,
+  getProviderPastWork,
+  getProviderReviews,
+  getProviders,
+  getReviewEligibility,
+  getVerifiedProviders,
+} from '../providers';
 import { getCategories } from '../categories';
-import { http } from '../../../lib/http';
+import { http, HttpError } from '../../../lib/http';
 import { AREA_ALL } from '../../../data/mock';
 import type { Filters } from '../../../types';
 
 jest.mock('../../../lib/http', () => ({
+  ...jest.requireActual('../../../lib/http'),
   http: jest.fn(),
   __esModule: true,
 }));
@@ -137,6 +145,37 @@ describe('rails and detail-embedded resources', () => {
       '/public-directory/providers/some-id/reviews',
       expect.objectContaining({ query: { limit: 20, offset: 0 } }),
     );
+  });
+});
+
+describe('getReviewEligibility — status whitelist', () => {
+  it('passes through eligible / need_login / already_rated / need_contact', async () => {
+    for (const status of ['eligible', 'need_login', 'already_rated', 'need_contact'] as const) {
+      mockHttp.mockResolvedValueOnce({ status, existing_rating: null } as never);
+      await expect(getReviewEligibility('p1')).resolves.toEqual({
+        status,
+        existing_rating: null,
+      });
+    }
+  });
+
+  it('collapses an unrecognized status to eligible rather than discarding it silently as need_login', async () => {
+    mockHttp.mockResolvedValueOnce({ status: 'some_future_status' } as never);
+    await expect(getReviewEligibility('p1')).resolves.toEqual({
+      status: 'eligible',
+      existing_rating: null,
+    });
+  });
+
+  it('soft-fails to eligible (never need_login) on network/5xx/404/429', async () => {
+    mockHttp.mockRejectedValueOnce(new HttpError(500, 'boom'));
+    await expect(getReviewEligibility('p1')).resolves.toEqual({ status: 'eligible' });
+
+    mockHttp.mockRejectedValueOnce(new HttpError(404, 'missing'));
+    await expect(getReviewEligibility('p1')).resolves.toEqual({ status: 'eligible' });
+
+    mockHttp.mockRejectedValueOnce(new HttpError(429, 'slow down'));
+    await expect(getReviewEligibility('p1')).resolves.toEqual({ status: 'eligible' });
   });
 });
 

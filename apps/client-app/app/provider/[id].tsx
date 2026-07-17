@@ -17,7 +17,6 @@ import { colors, fonts, radius } from '../../src/lib/theme';
 import { ApiBusinessError, HttpError } from '../../src/lib/http';
 import { mapRateEligibilityCta } from '../../src/lib/rateEligibilityCta';
 import { reviewErrorMessage } from '../../src/lib/reviewSubmitErrors';
-import { secureSession } from '../../src/lib/secure-session';
 import { useAppStore } from '../../src/store/appStore';
 import type { Review } from '../../src/types';
 
@@ -48,19 +47,6 @@ export default function ProviderDetailScreen() {
   const [localReviews, setLocalReviews] = useState<Review[] | null>(null);
   const [localRating, setLocalRating] = useState<{ rating: number; reviewCount: number } | null>(null);
   const [localMyRating, setLocalMyRating] = useState<number | null>(null);
-  // Ratings POST needs a customer Bearer. Provider-only sessions look "logged in"
-  // but cannot submit — detect missing customer tokens for CTA + submit gating.
-  const [hasCustomerToken, setHasCustomerToken] = useState(true);
-  useEffect(() => {
-    if (!sessionReady) return;
-    let cancelled = false;
-    void secureSession.read().then((tokens) => {
-      if (!cancelled) setHasCustomerToken(!!tokens?.accessToken);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionReady, loggedIn, activeSession]);
 
   // Log a profile_view once the provider loads (once per id). Fire-and-forget —
   // logProviderContact never throws and is never awaited. (Contract matrix M-6.)
@@ -121,30 +107,29 @@ export default function ProviderDetailScreen() {
   const hasRating = displayReviewCount > 0 && displayRating > 0;
   const reviewList = localReviews ?? reviews.data ?? [];
 
-  // Guests → Sign in. Provider-only → customer login. Soft-fail never overrides local session.
-  const providerOnlySession = loggedIn && activeSession === 'provider' && !hasCustomerToken;
+  // Guests → Sign in. Any logged-in session (customer or provider) can rate.
+  // Soft-fail never overrides local session.
   const eligibilityStatus = mapRateEligibilityCta({
     sessionReady,
     loggedIn,
     alreadyRated: localMyRating != null || eligibility.data?.status === 'already_rated',
-    providerOnlySession,
+    apiStatus: eligibility.data?.status,
   });
 
-  const goCustomerLogin = () => {
+  const goSignIn = () => {
     router.push({
       pathname: '/auth/login',
-      params: { next: `/provider/${id}`, role: 'customer' },
+      params: { next: `/provider/${id}` },
     });
   };
 
   const onRateCta = () => {
     if (eligibilityStatus === 'need_login') {
-      goCustomerLogin();
+      goSignIn();
       return;
     }
-    if (eligibilityStatus === 'need_customer') {
-      showToast(labels.rating.errorCustomerRequired, 'ph-user');
-      goCustomerLogin();
+    if (eligibilityStatus === 'need_contact') {
+      showToast(labels.rating.needContactHint, 'ph-phone-call');
       return;
     }
     if (eligibilityStatus === 'already_rated') {
@@ -164,7 +149,9 @@ export default function ProviderDetailScreen() {
     errorRateLimited: labels.rating.errorRateLimited,
     errorAlready: labels.rating.errorAlready,
     errorUnavailable: labels.rating.errorUnavailable,
-    errorCustomerRequired: labels.rating.errorCustomerRequired,
+    errorNeedContact: labels.rating.errorNeedContact,
+    errorReviewTooSoon: labels.rating.errorReviewTooSoon,
+    errorSelfRating: labels.rating.errorSelfRating,
     connectionMessage: labels.errors.connectionMessage,
   };
 
@@ -172,23 +159,6 @@ export default function ProviderDetailScreen() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Fail fast when there is no customer Bearer (provider-only / logged-out edge).
-      const tokens = await secureSession.read();
-      if (!tokens?.accessToken) {
-        const message =
-          activeSession === 'provider'
-            ? labels.rating.errorCustomerRequired
-            : labels.rating.ctaSignIn;
-        setHasCustomerToken(false);
-        setSubmitError(message);
-        setRateOpen(false);
-        setTimeout(() => {
-          showToast(message, 'ph-user');
-          goCustomerLogin();
-        }, 120);
-        return;
-      }
-
       const result = await api.submitProviderReview(pv.id, {
         rating: input.rating,
         comment: input.comment || undefined,
@@ -218,12 +188,15 @@ export default function ProviderDetailScreen() {
         setRateOpen(false);
         setTimeout(() => {
           showToast(message, 'ph-user');
-          goCustomerLogin();
+          goSignIn();
         }, 120);
       } else if (code === 'ALREADY_RATED') {
         setLocalMyRating(input.rating);
         setRateOpen(false);
         setTimeout(() => showToast(message, 'ph-star'), 120);
+      } else if (code === 'SELF_RATING_FORBIDDEN') {
+        setRateOpen(false);
+        setTimeout(() => showToast(message, 'ph-warning-circle'), 120);
       }
     } finally {
       setSubmitting(false);
@@ -243,13 +216,11 @@ export default function ProviderDetailScreen() {
   const rateCtaLabel =
     eligibilityStatus === 'need_login'
       ? labels.rating.ctaSignIn
-      : eligibilityStatus === 'need_customer'
-        ? labels.rating.errorCustomerRequired
-        : eligibilityStatus === 'already_rated'
-          ? fill(labels.rating.ctaAlready, {
-              n: localMyRating ?? eligibility.data?.existing_rating ?? '',
-            })
-          : labels.rating.ctaRate;
+      : eligibilityStatus === 'already_rated'
+        ? fill(labels.rating.ctaAlready, {
+            n: localMyRating ?? eligibility.data?.existing_rating ?? '',
+          })
+        : labels.rating.ctaRate;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

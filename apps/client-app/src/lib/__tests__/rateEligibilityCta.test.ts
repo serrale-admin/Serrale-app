@@ -13,7 +13,7 @@ describe('mapRateEligibilityCta', () => {
     ).toBe('eligible');
   });
 
-  it('asks for customer login when only a provider session exists', () => {
+  it('shows Rate for a provider-only session (no separate customer account)', () => {
     expect(
       mapRateEligibilityCta({
         sessionReady: true,
@@ -21,7 +21,7 @@ describe('mapRateEligibilityCta', () => {
         alreadyRated: false,
         providerOnlySession: true,
       }),
-    ).toBe('need_customer');
+    ).toBe('eligible');
   });
 
   it('does not flash Sign in while session hydrates', () => {
@@ -40,5 +40,50 @@ describe('mapRateEligibilityCta', () => {
     expect(
       mapRateEligibilityCta({ sessionReady: true, loggedIn: false, alreadyRated: true }),
     ).toBe('already_rated');
+  });
+
+  it('shows need_contact for a logged-in user who has not contacted the provider', () => {
+    expect(
+      mapRateEligibilityCta({
+        sessionReady: true,
+        loggedIn: true,
+        alreadyRated: false,
+        apiStatus: 'need_contact',
+      }),
+    ).toBe('need_contact');
+  });
+
+  it('never lets need_contact override or be confused with need_login for a guest', () => {
+    expect(
+      mapRateEligibilityCta({
+        sessionReady: true,
+        loggedIn: false,
+        alreadyRated: false,
+        apiStatus: 'need_contact',
+      }),
+    ).toBe('need_login');
+  });
+
+  it('lets need_contact apply for a provider-only session (same as customer)', () => {
+    expect(
+      mapRateEligibilityCta({
+        sessionReady: true,
+        loggedIn: true,
+        alreadyRated: false,
+        providerOnlySession: true,
+        apiStatus: 'need_contact',
+      }),
+    ).toBe('need_contact');
+  });
+
+  it('ignores a stale API need_login when a session is live', () => {
+    expect(
+      mapRateEligibilityCta({
+        sessionReady: true,
+        loggedIn: true,
+        alreadyRated: false,
+        apiStatus: 'need_login',
+      }),
+    ).toBe('eligible');
   });
 });

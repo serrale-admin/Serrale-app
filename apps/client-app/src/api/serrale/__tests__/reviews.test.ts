@@ -73,6 +73,16 @@ describe('provider reviews API', () => {
     });
   });
 
+  it('soft-fails eligibility 404 to need_contact (not need_login)', async () => {
+    mockHttp.mockRejectedValue(new HttpError(404, 'missing'));
+    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'need_contact' });
+  });
+
+  it('soft-fails eligibility 401 to need_login', async () => {
+    mockHttp.mockRejectedValue(new HttpError(401, 'unauthorized', 'UNAUTHORIZED'));
+    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'need_login' });
+  });
+
   it('submits a review', async () => {
     mockHttp.mockResolvedValue({
       review: { rating: 4, comment: 'ok', display_name: 'You' },

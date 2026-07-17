@@ -28,6 +28,9 @@ export default function ProviderDetailScreen() {
   const saved = useAppStore((s) => !!s.saved[id]);
   const showToast = useAppStore((s) => s.showToast);
   const loggedIn = useAppStore((s) => s.loggedIn);
+  const sessionReady = useAppStore((s) => s.sessionReady);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const isCustomerSession = loggedIn && activeSession !== 'provider';
 
   const userArea = useAppStore((s) => s.area);
   const provider = useProvider(id);
@@ -35,7 +38,8 @@ export default function ProviderDetailScreen() {
   const category = useCategory(pv?.categoryId ?? '');
   const work = useProviderWork(id);
   const reviews = useProviderReviews(id);
-  const eligibility = useReviewEligibility(id, !!id);
+  // Wait for session hydrate so we don't cache a need_login result without Bearer.
+  const eligibility = useReviewEligibility(id, !!id && sessionReady);
   const [rateOpen, setRateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [localReviews, setLocalReviews] = useState<Review[] | null>(null);
@@ -100,9 +104,20 @@ export default function ProviderDetailScreen() {
   const hasRating = displayReviewCount > 0 && displayRating > 0;
   const reviewList = localReviews ?? reviews.data ?? [];
 
-  const eligibilityStatus = !loggedIn
-    ? 'need_login'
-    : eligibility.data?.status ?? 'need_login';
+  // Prefer server eligibility once loaded. Never force "Sign in" for an active
+  // customer session (false positive when the query raced ahead of hydrate, or
+  // the ratings API soft-failed). Provider-only sessions still need customer login.
+  const rawEligibility = eligibility.data?.status;
+  const eligibilityStatus =
+    rawEligibility === 'eligible' ||
+    rawEligibility === 'already_rated' ||
+    rawEligibility === 'need_contact'
+      ? rawEligibility
+      : rawEligibility === 'need_login' && isCustomerSession
+        ? 'need_contact'
+        : isCustomerSession
+          ? (eligibility.isLoading || !sessionReady ? 'need_contact' : rawEligibility || 'need_contact')
+          : 'need_login';
 
   const onRateCta = () => {
     if (eligibilityStatus === 'need_login') {

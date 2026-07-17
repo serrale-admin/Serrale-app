@@ -129,7 +129,8 @@ export interface ReviewEligibility {
 
 /**
  * Contact-gated rating eligibility.
- * Soft-fails: 401/404 → need_login; network/circuit/5xx → need_contact (safe CTA).
+ * Soft-fails carefully: only real 401 → need_login. Missing endpoint / network
+ * must NOT pretend the user needs to sign in (that was a false CTA bug).
  */
 export async function getReviewEligibility(providerId: string): Promise<ReviewEligibility> {
   try {
@@ -142,13 +143,17 @@ export async function getReviewEligibility(providerId: string): Promise<ReviewEl
       contact_event_id: payload?.contact_event_id ?? null,
     };
   } catch (err) {
-    if (err instanceof HttpError && (err.status === 401 || err.status === 404 || err.status === 501)) {
+    if (err instanceof HttpError && err.status === 401) {
       return { status: 'need_login' };
     }
-    if (err instanceof HttpError && (err.status === 429 || err.status >= 500)) {
+    // 404/501 = endpoint not deployed yet; 429/5xx/offline = degraded.
+    // Prefer need_contact so a logged-in user is not told to "Sign in".
+    if (
+      err instanceof NetworkError ||
+      (err instanceof HttpError && (err.status === 404 || err.status === 501 || err.status === 429 || err.status >= 500))
+    ) {
       return { status: 'need_contact' };
     }
-    if (err instanceof NetworkError) return { status: 'need_contact' };
     throw err;
   }
 }

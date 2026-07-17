@@ -55,6 +55,7 @@ export const useReviewEligibility = (id: string, enabled = true) =>
     queryKey: ['reviews', 'eligibility', id] as const,
     queryFn: () => api.getReviewEligibility(id),
     enabled: !!id && enabled,
+    staleTime: 30_000,
   });
 
 /**

@@ -75,13 +75,40 @@ describe('createServiceRequest — authenticated + idempotent (M-1)', () => {
     expect((mockHttp.mock.calls[0][1]?.body as Record<string, unknown>).timing).toBe('today');
   });
 
-  it('returns the HONEST backend shape — never a synthesized id/status/created_at', async () => {
+  it('always sends a non-empty serviceNeed — falls back to categoryId when description is blank', async () => {
+    mockHttp.mockResolvedValue({ ok: true, duplicate: false } as never);
+    await createServiceRequest({ ...INPUT, description: '   ' }, 'empty-desc');
+    const body = mockHttp.mock.calls[0][1]?.body as Record<string, unknown>;
+    expect(body.serviceNeed).toBe('plumbers');
+    expect(body.serviceCategory).toBe('plumbers');
+  });
+
+  it('returns backend identity fields when present (additive)', async () => {
+    mockHttp.mockResolvedValue({
+      ok: true,
+      duplicate: false,
+      id: '11111111-1111-1111-1111-111111111111',
+      status: 'new',
+      created_at: '2026-07-16T00:00:00.000Z',
+      kind: 'request',
+    } as never);
+    const created = await createServiceRequest(INPUT, 'key-123');
+    expect(created).toEqual({
+      ok: true,
+      duplicate: false,
+      idempotentReplay: false,
+      id: '11111111-1111-1111-1111-111111111111',
+      status: 'new',
+      created_at: '2026-07-16T00:00:00.000Z',
+      kind: 'request',
+    });
+  });
+
+  it('returns the base shape when backend omits identity fields', async () => {
     mockHttp.mockResolvedValue({ ok: true, duplicate: false } as never);
     const created = await createServiceRequest(INPUT, 'key-123');
     expect(created).toEqual({ ok: true, duplicate: false, idempotentReplay: false });
-    expect((created as unknown as Record<string, unknown>).id).toBeUndefined();
-    expect((created as unknown as Record<string, unknown>).status).toBeUndefined();
-    expect((created as unknown as Record<string, unknown>).createdAt).toBeUndefined();
+    expect(created.id).toBeUndefined();
   });
 
   it('surfaces duplicate and idempotent_replay flags', async () => {

@@ -21,7 +21,9 @@ import CategorySheet from '../../src/components/CategorySheet';
 import Chip from '../../src/components/Chip';
 import {
   EthiopianPhoneField,
+  FieldErrorText,
   FieldLabel,
+  FormTextArea,
   FormTextInput,
   SelectField,
 } from '../../src/components/Field';
@@ -42,6 +44,7 @@ import { colors, fonts, layout, radius, shadowCard } from '../../src/lib/theme';
 import { useAppStore } from '../../src/store/appStore';
 
 type Step = 'form' | 'otp' | 'success';
+type JoinField = 'fullName' | 'phone' | 'whatsapp' | 'categorySlug' | 'engagementTypes' | 'termsAccepted';
 
 const TERMS_URL = 'https://serrale.com/terms';
 const DEAD_CHALLENGE_CODES = new Set(['OTP_EXPIRED', 'OTP_INVALID_STATUS', 'OTP_MAX_ATTEMPTS', 'OTP_NOT_FOUND']);
@@ -79,7 +82,9 @@ export default function ProviderJoinScreen() {
     categorySlug: '',
     area: '',
     experience: '',
+    description: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<JoinField, string>>>({});
   const [providerType, setProviderType] = useState<'individual' | 'business'>('individual');
   const [engagementTypes, setEngagementTypes] = useState<('temporary' | 'permanent')[]>(['temporary', 'permanent']);
   const toggleEngagement = (value: 'temporary' | 'permanent') => {
@@ -117,6 +122,7 @@ export default function ProviderJoinScreen() {
         area: form.area || undefined,
         whatsappNumber: whatsapp || undefined,
         experience: form.experience || undefined,
+        description: form.description || undefined,
         providerType,
         engagementTypes,
       });
@@ -153,7 +159,19 @@ export default function ProviderJoinScreen() {
       const info = retryInfoFromError(e);
       if (info.seconds != null) onRateLimit?.(info.seconds);
     }
+    const code = e instanceof api.HttpError || e instanceof api.ApiBusinessError ? e.code : undefined;
+    if (code === 'INVALID_WHATSAPP') setFieldErrors((current) => ({ ...current, whatsapp: t.whatsappInvalid }));
+    if (code === 'PHONE_ALREADY_REGISTERED') setFieldErrors((current) => ({ ...current, phone: labels.apiErrors.PHONE_ALREADY_REGISTERED }));
     showToast(presentError(e, labels).message, 'ph-warning-circle');
+  };
+
+  const clearFieldError = (field: JoinField) => {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
   };
 
   const handleBack = () => {
@@ -172,31 +190,18 @@ export default function ProviderJoinScreen() {
   };
 
   const validateForm = (): boolean => {
-    if (!form.fullName.trim()) {
-      showToast(t.requiredFields, 'ph-warning-circle');
-      return false;
-    }
-    if (!normalizeEthiopianPhone(form.phone)) {
-      showToast(labels.auth.invalidPhone, 'ph-warning-circle');
-      return false;
-    }
-    if (form.whatsapp.trim() && !normalizeEthiopianPhone(form.whatsapp)) {
-      showToast(labels.apiErrors.INVALID_WHATSAPP, 'ph-warning-circle');
-      return false;
-    }
-    if (!form.categorySlug) {
-      showToast(t.categoryRequired, 'ph-warning-circle');
-      return false;
-    }
-    if (engagementTypes.length === 0) {
-      showToast(t.engagementRequired, 'ph-warning-circle');
-      return false;
-    }
-    if (!termsAccepted) {
-      showToast(t.termsRequired, 'ph-warning-circle');
-      return false;
-    }
-    return true;
+    const next: Partial<Record<JoinField, string>> = {};
+    if (!form.fullName.trim()) next.fullName = t.fullNameRequired;
+    if (!form.phone.trim()) next.phone = t.phoneRequired;
+    else if (!normalizeEthiopianPhone(form.phone)) next.phone = labels.auth.invalidPhone;
+    if (form.whatsapp.trim() && !normalizeEthiopianPhone(form.whatsapp)) next.whatsapp = t.whatsappInvalid;
+    if (!form.categorySlug) next.categorySlug = t.categoryRequired;
+    if (engagementTypes.length === 0) next.engagementTypes = t.engagementRequired;
+    if (!termsAccepted) next.termsAccepted = t.termsRequired;
+    setFieldErrors(next);
+    const firstError = Object.values(next)[0];
+    if (firstError) showToast(firstError, 'ph-warning-circle');
+    return Object.keys(next).length === 0;
   };
 
   const phoneForOtpCopy = form.phone
@@ -403,20 +408,35 @@ export default function ProviderJoinScreen() {
                   compact
                   label={t.fullName}
                   value={form.fullName}
-                  onChangeText={(v) => setForm((s) => ({ ...s, fullName: v }))}
+                  errored={!!fieldErrors.fullName}
+                  error={fieldErrors.fullName}
+                  onChangeText={(v) => {
+                    setForm((s) => ({ ...s, fullName: v }));
+                    clearFieldError('fullName');
+                  }}
                 />
                 <EthiopianPhoneField
                   compact
                   label={t.phone}
                   value={form.phone}
-                  onChangeText={(v) => setForm((s) => ({ ...s, phone: v }))}
+                  errored={!!fieldErrors.phone}
+                  error={fieldErrors.phone}
+                  onChangeText={(v) => {
+                    setForm((s) => ({ ...s, phone: v }));
+                    clearFieldError('phone');
+                  }}
                 />
                 <EthiopianPhoneField
                   compact
                   optional
                   label={t.whatsapp}
                   value={form.whatsapp}
-                  onChangeText={(v) => setForm((s) => ({ ...s, whatsapp: v }))}
+                  errored={!!fieldErrors.whatsapp}
+                  error={fieldErrors.whatsapp}
+                  onChangeText={(v) => {
+                    setForm((s) => ({ ...s, whatsapp: v }));
+                    clearFieldError('whatsapp');
+                  }}
                 />
 
                 <FieldLabel compact>{t.providerType}</FieldLabel>
@@ -451,24 +471,33 @@ export default function ProviderJoinScreen() {
                   value={categoryLabelText}
                   placeholder={t.selectCategory}
                   caret="down"
+                  errored={!!fieldErrors.categorySlug}
+                  error={fieldErrors.categorySlug}
                   accessibilityLabel={labels.a11y.selectService}
                 />
 
                 <FieldLabel compact>{t.engagementLabel}</FieldLabel>
-                <View style={styles.chipWrap}>
+                <View style={[styles.chipWrap, fieldErrors.engagementTypes && styles.chipWrapErrored]}>
                   <Chip
                     label={t.engagement.temporary}
                     active={engagementTypes.includes('temporary')}
                     height={32}
-                    onPress={() => toggleEngagement('temporary')}
+                    onPress={() => {
+                      toggleEngagement('temporary');
+                      clearFieldError('engagementTypes');
+                    }}
                   />
                   <Chip
                     label={t.engagement.permanent}
                     active={engagementTypes.includes('permanent')}
                     height={32}
-                    onPress={() => toggleEngagement('permanent')}
+                    onPress={() => {
+                      toggleEngagement('permanent');
+                      clearFieldError('engagementTypes');
+                    }}
                   />
                 </View>
+                {fieldErrors.engagementTypes ? <FieldErrorText message={fieldErrors.engagementTypes} /> : null}
                 <Text style={styles.engagementHint}>{t.engagementHint}</Text>
 
                 <FieldLabel compact optional>
@@ -493,6 +522,15 @@ export default function ProviderJoinScreen() {
                   placeholder={t.experienceExample}
                   value={form.experience}
                   onChangeText={(v) => setForm((s) => ({ ...s, experience: v }))}
+                />
+
+                <FormTextArea
+                  compact
+                  optional
+                  label={t.description}
+                  placeholder={t.descriptionPlaceholder}
+                  value={form.description}
+                  onChangeText={(v) => setForm((s) => ({ ...s, description: v.slice(0, 1200) }))}
                 />
 
                 <View style={styles.photoPlaceholder} accessibilityLabel={t.photoTitle}>
@@ -553,7 +591,10 @@ export default function ProviderJoinScreen() {
             <View style={styles.termsCenter}>
               <View style={styles.termsRow}>
                 <Pressable
-                  onPress={() => setTermsAccepted((v) => !v)}
+                  onPress={() => {
+                    setTermsAccepted((v) => !v);
+                    clearFieldError('termsAccepted');
+                  }}
                   hitSlop={6}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: termsAccepted }}
@@ -573,6 +614,7 @@ export default function ProviderJoinScreen() {
                   {!!t.termsSuffix && <Text style={styles.termsText}>{t.termsSuffix}</Text>}
                 </View>
               </View>
+              {fieldErrors.termsAccepted ? <FieldErrorText message={fieldErrors.termsAccepted} /> : null}
             </View>
             <Button
               label={otpRequestMutation.isPending ? t.sendingOtp : t.submit}
@@ -611,7 +653,10 @@ export default function ProviderJoinScreen() {
         value={form.categorySlug}
         title={t.selectCategory}
         excludeIds={['more-services']}
-        onSelect={(id) => setForm((s) => ({ ...s, categorySlug: id }))}
+        onSelect={(id) => {
+          setForm((s) => ({ ...s, categorySlug: id }));
+          clearFieldError('categorySlug');
+        }}
       />
       <LocationSheet
         visible={showArea}
@@ -703,6 +748,7 @@ const styles = StyleSheet.create({
   typeBtnText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.green800, textAlign: 'center' },
   typeBtnTextActive: { color: colors.green900 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  chipWrapErrored: { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.md, padding: 5 },
   engagementHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
   photoPlaceholder: {
     borderWidth: 1,

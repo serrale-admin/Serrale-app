@@ -208,6 +208,7 @@ export interface Labels {
     submit: string;
     submitting: string;
     chooseService: string;
+    chooseArea: string;
     describeWork: string;
     successTitle: string;
     successText: string; // {area}
@@ -287,6 +288,28 @@ export interface Labels {
   bookmarks: {
     emptyTitle: string;
     emptyText: string;
+  };
+  activity: {
+    screenTitle: string;
+    tabRequests: string;
+    tabSaved: string;
+    emptyTitle: string;
+    emptyText: string;
+    postRequest: string;
+    loginTitle: string;
+    loginText: string;
+    detailTitle: string;
+    timeline: string;
+    postAnother: string;
+    temporary: string;
+    permanent: string;
+    viewMyRequests: string;
+    displayStatus: {
+      submitted: string;
+      in_progress: string;
+      closed: string;
+      unavailable: string;
+    };
   };
   settings: {
     accountInfo: string;
@@ -396,6 +419,8 @@ export interface Labels {
     experienceExample: string;
     photoTitle: string;
     photoDesc: string;
+    description: string;
+    descriptionPlaceholder: string;
     selectedCategory: string; // {category}
     termsPrefix: string;
     termsLink: string;
@@ -404,6 +429,9 @@ export interface Labels {
     submit: string;
     submitHint: string;
     requiredFields: string;
+    fullNameRequired: string;
+    phoneRequired: string;
+    whatsappInvalid: string;
     categoryRequired: string;
     engagementRequired: string;
     sendingOtp: string;
@@ -797,6 +825,7 @@ export function labelsFor(lang: Lang): Labels {
       submit: am ? 'ጥያቄ ላክ' : 'Send request',
       submitting: am ? 'በመላክ ላይ…' : 'Sending…',
       chooseService: am ? 'አገልግሎት ይምረጡ' : 'Choose a service',
+      chooseArea: am ? 'አካባቢ ይምረጡ' : 'Choose an area',
       describeWork: am ? 'ስራውን በአጭሩ ይግለጹ' : 'Describe the work briefly',
       successTitle: am ? 'ጥያቄዎ በምርመራ ላይ ነው' : 'Under review',
       successText: am
@@ -908,6 +937,32 @@ export function labelsFor(lang: Lang): Labels {
       emptyText: am
         ? 'እዚህ ለማስቀመጥ በማንኛውም ባለሙያ ላይ ያለውን የዕልባት ምልክት ይንኩ።'
         : 'Tap the bookmark icon on any provider to save them here.',
+    },
+    activity: {
+      screenTitle: am ? 'ጥያቄዎቼ' : 'My requests',
+      tabRequests: am ? 'ጥያቄዎች' : 'Requests',
+      tabSaved: am ? 'የተቀመጡ' : 'Saved',
+      emptyTitle: am ? 'እስካሁን ጥያቄ የለም' : 'No requests yet',
+      emptyText: am
+        ? 'ጥያቄ ሲልኩ እዚህ ሁኔታውን እና ታሪኩን ማየት ይችላሉ።'
+        : 'When you send a request, you can track its status and history here.',
+      postRequest: am ? 'ጥያቄ ላክ' : 'Post a request',
+      loginTitle: am ? 'ጥያቄዎችዎን ለማየት ይግቡ' : 'Log in to see your requests',
+      loginText: am
+        ? 'የተላኩ ጥያቄዎችዎን እና ሁኔታቸውን ለማየት በስልክ ይግቡ።'
+        : 'Sign in with your phone to view submitted requests and their status.',
+      detailTitle: am ? 'የጥያቄ ዝርዝር' : 'Request details',
+      timeline: am ? 'ታሪክ' : 'Timeline',
+      postAnother: am ? 'ሌላ ጥያቄ ላክ' : 'Post another',
+      temporary: am ? 'ጊዜያዊ' : 'Temporary',
+      permanent: am ? 'ቋሚ' : 'Permanent',
+      viewMyRequests: am ? 'ጥያቄዎቼን ተመልከት' : 'View my requests',
+      displayStatus: {
+        submitted: am ? 'ተልኳል' : 'Submitted',
+        in_progress: am ? 'በሂደት ላይ' : 'In progress',
+        closed: am ? 'ተዘግቷል' : 'Closed',
+        unavailable: am ? 'አልተገኘም' : 'Unavailable',
+      },
     },
     settings: {
       accountInfo: am ? 'የመለያ መረጃ' : 'Account information',
@@ -1042,6 +1097,8 @@ export function labelsFor(lang: Lang): Labels {
       experienceExample: am ? 'ለምሳሌ፡ 5 ዓመት' : 'Example: 5 years',
       photoTitle: am ? 'የስራ ፎቶ መጫን (አማራጭ፣ በቅርብ ይመጣል)' : 'Work photo upload (optional, coming soon)',
       photoDesc: am ? 'ፎቶዎች በኋላ በስርዓቱ በኩል ይገናኛሉ።' : 'Photos will be connected later through a backend endpoint.',
+      description: am ? 'አጭር መግለጫ' : 'Short description',
+      descriptionPlaceholder: am ? 'ስለ አገልግሎትዎ በአጭሩ ይንገሩን።' : 'Tell customers briefly about your service.',
       selectedCategory: am ? 'የተመረጠ፡ {category}' : 'Selected: {category}',
       termsPrefix: am ? 'እኔ ' : 'I agree to the ',
       termsLink: am ? 'ውሎች እና ፖሊሲዎች' : 'Terms & Conditions',
@@ -1056,6 +1113,9 @@ export function labelsFor(lang: Lang): Labels {
       requiredFields: am
         ? 'መጀመሪያ ሙሉ ስም፣ ስልክ ቁጥር እና የአገልግሎት ዘርፍ ያስገቡ።'
         : 'Enter your full name, phone number, and service category first.',
+      fullNameRequired: am ? 'ሙሉ ስምዎን ያስገቡ።' : 'Enter your full name.',
+      phoneRequired: am ? 'የስልክ ቁጥርዎን ያስገቡ።' : 'Enter your phone number.',
+      whatsappInvalid: am ? 'የዋትስአፕ ቁጥሩን ያረጋግጡ።' : 'Check the WhatsApp number.',
       categoryRequired: am ? 'የአገልግሎት ዘርፍዎን ይምረጡ።' : 'Choose your service category.',
       engagementRequired: am ? 'ቢያንስ አንድ የስራ ዓይነት ይምረጡ።' : 'Select at least one work type.',
       sendingOtp: am ? 'የማረጋገጫ ኮድ በመላክ ላይ…' : 'Sending verification code…',

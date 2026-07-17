@@ -62,15 +62,16 @@ export interface VerifyResult {
 }
 
 /**
- * The HONEST result of POST /leads/request. The backend returns
- * `{ ok, duplicate, customer, session_token? }` — it never returns an `id`,
- * `status`, or `created_at` (contract matrix M-1), so we do not synthesize them.
- * `duplicate` is true when the same request was already recorded; on the
- * authenticated Bearer + Idempotency-Key path a replayed submission additionally
- * sets `idempotentReplay`.
+ * Result of POST /leads/request. Always includes ok/duplicate. Newer backends
+ * also return additive identity fields (id/status/created_at/kind) so clients
+ * can deep-link into activity history. Old clients ignore unknown keys.
  */
 export interface CreatedRequest {
   ok: true;
   duplicate: boolean;
   idempotentReplay?: boolean;
+  id?: string;
+  status?: string;
+  created_at?: string;
+  kind?: 'request';
 }

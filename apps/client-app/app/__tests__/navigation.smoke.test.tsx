@@ -82,6 +82,8 @@ jest.mock('../../src/api', () => {
     searchSuggest: jest.fn(),
     logProviderContact: jest.fn(),
     createServiceRequest: jest.fn(),
+    fetchMyActivity: jest.fn(),
+    fetchActivityDetail: jest.fn(),
   };
 });
 
@@ -183,6 +185,8 @@ beforeEach(() => {
   (api.searchSuggest as jest.Mock).mockResolvedValue([]);
   (api.logProviderContact as jest.Mock).mockResolvedValue(undefined);
   (api.createServiceRequest as jest.Mock).mockResolvedValue({ ok: true, duplicate: false });
+  (api.fetchMyActivity as jest.Mock).mockResolvedValue({ items: [], total: 0 });
+  (api.fetchActivityDetail as jest.Mock).mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -309,6 +313,8 @@ describe('stack + utility routes mount and render', () => {
 
   it('bookmarks renders the empty state with no saved providers', () => {
     renderScreen(<BookmarksScreen />);
+    expect(screen.getByText(en.activity.tabRequests)).toBeTruthy();
+    expect(screen.getByText(en.activity.tabSaved)).toBeTruthy();
     expect(screen.getByText(en.common.savedProviders)).toBeTruthy();
     expect(screen.getByText(en.bookmarks.emptyTitle)).toBeTruthy();
   });

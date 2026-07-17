@@ -36,16 +36,15 @@ function engagementTypeFor(engagement: string): 'temporary' | 'permanent' | unde
 /**
  * Submits a customer service request (POST /leads/request).
  *
- * Authenticated + idempotent: the request goes out under the customer's Bearer
- * session (auto-attached by the http layer's token provider — no verify_token in
- * the body, so the backend takes its session branch) with an `Idempotency-Key`
- * header. `idempotencyKey` MUST be stable across retries of one logical
- * submission so an offline/timeout retry-tap replays server-side instead of
- * creating a duplicate lead. The caller (useCreateRequest) generates one key per
- * submit action and reuses it on retry.
+ * Authenticated + idempotent: Bearer session + Idempotency-Key. Returns
+ * `{ ok, duplicate, idempotentReplay? }` plus additive identity fields when the
+ * backend provides them (`id`, `status`, `created_at`, `kind`).
  *
- * Returns the HONEST backend shape `{ ok, duplicate, idempotentReplay? }` — no
- * synthesized id/status/created_at (contract matrix M-1).
+ * `serviceNeed` is ALWAYS sent as a non-empty string. Production
+ * (`SERRALE-Main`) still validates `serviceNeed: z.string().min(1)`. The form
+ * treats the description as optional, so when it is blank we fall back to the
+ * selected category slug — never omit the field or Zod returns VALIDATION_ERROR
+ * ("Some details don't look right").
  */
 export async function createServiceRequest(input: ServiceRequest, idempotencyKey?: string): Promise<CreatedRequest> {
   const phone = useAppStore.getState().user?.phone;
@@ -56,24 +55,45 @@ export async function createServiceRequest(input: ServiceRequest, idempotencyKey
       .filter(Boolean)
       .join(' · ') || undefined;
 
-  const res = await http<{ ok?: boolean; duplicate?: boolean; idempotent_replay?: boolean }>(`${DIRECTORY}/leads/request`, {
+  const description = input.description.trim();
+  const serviceNeed = description || input.categoryId.trim();
+  if (!serviceNeed) {
+    throw Object.assign(new Error('Choose a service'), { name: 'ValidationError' });
+  }
+
+  const body: Record<string, unknown> = {
+    phone,
+    serviceNeed,
+    serviceCategory: input.categoryId,
+    location: input.area,
+    timing: timingFor(input.when),
+    note,
+  };
+  const engagementType = engagementTypeFor(input.engagement);
+  if (engagementType) body.engagementType = engagementType;
+
+  const res = await http<{
+    ok?: boolean;
+    duplicate?: boolean;
+    idempotent_replay?: boolean;
+    id?: string;
+    status?: string;
+    created_at?: string;
+    kind?: 'request';
+  }>(`${DIRECTORY}/leads/request`, {
     method: 'POST',
     headers: { 'Idempotency-Key': key },
-    body: {
-      phone,
-      serviceNeed: input.description,
-      serviceCategory: input.categoryId,
-      location: input.area,
-      timing: timingFor(input.when),
-      engagementType: engagementTypeFor(input.engagement),
-      note,
-    },
+    body,
   });
 
   return {
     ok: true,
     duplicate: res?.duplicate ?? false,
     idempotentReplay: res?.idempotent_replay ?? false,
+    id: res?.id,
+    status: res?.status,
+    created_at: res?.created_at,
+    kind: res?.kind,
   };
 }
 

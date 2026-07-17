@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import type { FieldErrors } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import {
   Image,
@@ -124,11 +125,22 @@ export default function RequestScreen() {
     '3,000–7,000 ETB': t.budget.between2,
     '7,000+ ETB': t.budget.over7000,
   };
-  const { handleSubmit, watch, setValue, reset } = useForm<RequestForm>({
+  const { handleSubmit, watch, setValue, reset, clearErrors, formState: { errors } } = useForm<RequestForm>({
     resolver: zodResolver(requestSchema),
     defaultValues: defaultRequest(area),
   });
   const values = watch();
+
+  const fieldError = (name: keyof RequestForm) => {
+    if (name === 'categoryId' && errors.categoryId) return t.chooseService;
+    if (name === 'area' && errors.area) return t.chooseArea;
+    return undefined;
+  };
+
+  const mutationErrorText = mutation.error ? presentError(mutation.error, labels).message : null;
+  useEffect(() => {
+    if (mutationErrorText) showToast(mutationErrorText, 'ph-warning-circle');
+  }, [mutationErrorText, showToast]);
 
   const [showCat, setShowCat] = useState(false);
   const [showArea, setShowArea] = useState(false);
@@ -150,7 +162,8 @@ export default function RequestScreen() {
           text={wasDuplicate ? t.successDupText : fill(t.successText, { area: successArea })}
           subtext={t.successBody}
         >
-          <Button label={labels.common.browseProviders} variant="gold" size="md" fullWidth onPress={() => router.push('/providers')} />
+          <Button label={labels.activity.viewMyRequests} variant="gold" size="md" fullWidth onPress={() => router.push('/bookmarks?tab=requests')} />
+          <Button label={labels.common.browseProviders} variant="secondary" size="md" fullWidth onPress={() => router.push('/providers')} />
           <Button label={t.postAnother} variant="secondary" size="md" fullWidth onPress={startOver} />
         </ResultCard>
       </SafeAreaView>
@@ -181,7 +194,11 @@ export default function RequestScreen() {
   const cat = CATS.find((c) => c.id === values.categoryId);
   const categoryLabelText = cat ? categoryLabel(cat, am) : '';
   const areaDisplay = values.area ? areaLabel(values.area, am) : areaLabel(area, am);
-  const onInvalid = () => showToast(!values.categoryId ? t.chooseService : t.describeWork, 'ph-warning-circle');
+  const onInvalid = (formErrors: FieldErrors<RequestForm>) => {
+    if (formErrors.categoryId) return showToast(t.chooseService, 'ph-warning-circle');
+    if (formErrors.area) return showToast(t.chooseArea, 'ph-warning-circle');
+    showToast(t.chooseService, 'ph-warning-circle');
+  };
   const submit = handleSubmit((v) => mutation.mutate(v), onInvalid);
 
   return (
@@ -235,6 +252,8 @@ export default function RequestScreen() {
                 value={categoryLabelText}
                 placeholder={t.servicePlaceholder}
                 caret="down"
+                errored={!!errors.categoryId}
+                error={fieldError('categoryId')}
                 accessibilityLabel={labels.a11y.selectService}
               />
 
@@ -248,6 +267,8 @@ export default function RequestScreen() {
                 value={values.area ? areaLabel(values.area, am) : ''}
                 placeholder={t.areaLabel}
                 caret="down"
+                errored={!!errors.area}
+                error={fieldError('area')}
                 accessibilityLabel={labels.a11y.selectArea}
               />
 
@@ -271,9 +292,10 @@ export default function RequestScreen() {
 
               <FormTextArea
                 compact
+                optional
                 label={t.describeLabel}
                 value={values.description}
-                onChangeText={(text) => setValue('description', text.slice(0, 300))}
+                onChangeText={(text) => setValue('description', text.slice(0, 300), { shouldValidate: true })}
                 placeholder={t.descPlaceholder}
               />
               <Text style={styles.counter}>{values.description.length}/300</Text>
@@ -340,14 +362,6 @@ export default function RequestScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          {mutation.isError && (
-            <View style={styles.errorRow}>
-              <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-              <Text style={styles.errorText} numberOfLines={2}>
-                {errorView?.message}
-              </Text>
-            </View>
-          )}
           <Button
             label={
               mutation.isPending
@@ -377,9 +391,20 @@ export default function RequestScreen() {
         visible={showCat}
         onClose={() => setShowCat(false)}
         value={values.categoryId}
-        onSelect={(id) => setValue('categoryId', id)}
+        onSelect={(id) => {
+          setValue('categoryId', id, { shouldValidate: true });
+          clearErrors('categoryId');
+        }}
       />
-      <LocationSheet visible={showArea} onClose={() => setShowArea(false)} value={values.area} onSelect={(a) => setValue('area', a)} />
+      <LocationSheet
+        visible={showArea}
+        onClose={() => setShowArea(false)}
+        value={values.area}
+        onSelect={(a) => {
+          setValue('area', a, { shouldValidate: true });
+          clearErrors('area');
+        }}
+      />
     </SafeAreaView>
   );
 }

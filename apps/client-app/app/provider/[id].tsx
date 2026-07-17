@@ -341,34 +341,59 @@ export default function ProviderDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.reviewHead}>
-            <Text style={styles.sectionTitle}>
-              {labels.provider.reviews}
-              {displayReviewCount > 0 ? ` · ${displayReviewCount}` : ''}
-            </Text>
-            {hasRating ? (
-              <View style={styles.ratingPill}>
-                <Icon name="ph-star" size={11} color={colors.gold} weight="fill" />
-                <Text style={styles.ratingText}>{displayRating.toFixed(1)}</Text>
-              </View>
-            ) : null}
-          </View>
-          {reviewList.length > 0 ? (
-            reviewList.map((r, i) => (
-              <View key={`${r.userName}-${i}`} style={[styles.reviewCard, i > 0 && { marginTop: 10 }]}>
-                <View style={styles.reviewTop}>
-                  <View style={styles.reviewAvatar}>
-                    <Text style={styles.reviewInitial}>{(r.userName || '?')[0]}</Text>
-                  </View>
-                  <Text style={styles.reviewName}>{r.userName}</Text>
-                  {!!r.area && <Text style={styles.reviewArea}>· {r.area}</Text>}
-                  <View style={{ flex: 1 }} />
-                  <Icon name="ph-star" size={12} color={colors.gold} weight="fill" />
-                  <Text style={styles.reviewRating}>{r.rating}</Text>
+          <Text style={styles.sectionTitle}>{labels.provider.reviews}</Text>
+
+          {hasRating ? (
+            <View style={styles.reviewSummary}>
+              <View style={styles.reviewSummaryScore}>
+                <Text style={styles.reviewSummaryAvg}>{displayRating.toFixed(1)}</Text>
+                <View style={styles.reviewSummaryStars}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Icon
+                      key={n}
+                      name="ph-star"
+                      size={13}
+                      color={n <= Math.round(displayRating) ? colors.gold : colors.starEmpty}
+                      weight={n <= Math.round(displayRating) ? 'fill' : 'regular'}
+                    />
+                  ))}
                 </View>
-                {!!r.text && <Text style={styles.reviewText}>{r.text}</Text>}
+                <Text style={styles.reviewSummaryCount}>
+                  {displayReviewCount} {labels.provider.reviews}
+                </Text>
               </View>
-            ))
+            </View>
+          ) : null}
+
+          {reviewList.length > 0 ? (
+            <View style={styles.reviewList}>
+              {reviewList.map((r, i) => (
+                <View
+                  key={`${r.userName}-${i}`}
+                  style={[styles.reviewItem, i > 0 && styles.reviewItemDivider]}
+                >
+                  <View style={styles.reviewItemTop}>
+                    <Text style={styles.reviewName} numberOfLines={1}>
+                      {r.userName}
+                    </Text>
+                    <View style={styles.reviewItemStars} accessibilityLabel={`${r.rating}`}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Icon
+                          key={n}
+                          name="ph-star"
+                          size={11}
+                          color={n <= r.rating ? colors.gold : colors.starEmpty}
+                          weight={n <= r.rating ? 'fill' : 'regular'}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                  {!!r.text ? (
+                    <Text style={styles.reviewText}>{r.text}</Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
           ) : (
             <Text style={styles.noData}>{labels.provider.noReviews}</Text>
           )}
@@ -462,16 +487,65 @@ const styles = StyleSheet.create({
   workTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.text },
   workNote: { fontSize: 11, color: colors.muted, marginTop: 3, fontFamily: fonts.regular },
   noData: { fontSize: 12.5, color: colors.faint, fontFamily: fonts.regular },
-  reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  viewAll: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.success },
-  reviewCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 12, paddingHorizontal: 14 },
-  reviewTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reviewAvatar: { width: 30, height: 30, borderRadius: 999, backgroundColor: colors.soft, alignItems: 'center', justifyContent: 'center' },
-  reviewInitial: { color: colors.green800, fontSize: 12, fontFamily: fonts.bold },
-  reviewName: { fontSize: 13, fontFamily: fonts.bold, color: colors.text },
-  reviewArea: { fontSize: 11, color: colors.faint, fontFamily: fonts.regular },
-  reviewRating: { fontSize: 12, fontFamily: fonts.bold, color: colors.text, marginLeft: 2 },
-  reviewText: { fontSize: 13, color: colors.muted, lineHeight: 20, marginTop: 8, fontFamily: fonts.regular },
+  reviewSummary: {
+    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  reviewSummaryScore: { alignItems: 'flex-start', gap: 4 },
+  reviewSummaryAvg: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    lineHeight: 32,
+    color: colors.text,
+    letterSpacing: -0.5,
+  },
+  reviewSummaryStars: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  reviewSummaryCount: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.muted,
+  },
+  reviewList: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  reviewItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  reviewItemDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+  },
+  reviewItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  reviewItemStars: { flexDirection: 'row', alignItems: 'center', gap: 1, flexShrink: 0 },
+  reviewName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  reviewText: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.muted,
+    fontFamily: fonts.regular,
+  },
   safetyCard: { marginTop: 20, backgroundColor: colors.ivory, borderWidth: 1, borderColor: 'rgba(246,185,59,0.32)', borderRadius: radius.lg + 1, padding: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   safetyTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.text },
   safetyText: { fontSize: 12, color: colors.muted, lineHeight: 18, marginTop: 3, fontFamily: fonts.regular },

@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, shadowSheet } from '../lib/theme';
 
 interface Props {
@@ -9,18 +10,36 @@ interface Props {
   /** Extra style for the sheet container (e.g. fixed height, background). */
   contentStyle?: ViewStyle;
   showHandle?: boolean;
+  /** Frosted liquid-glass sheet — opaque frost fill, not see-through. */
+  glass?: boolean;
 }
 
 /** Bottom-anchored sheet with a dim backdrop. */
-export default function BottomSheet({ visible, onClose, children, contentStyle, showHandle = true }: Props) {
+export default function BottomSheet({
+  visible,
+  onClose,
+  children,
+  contentStyle,
+  showHandle = true,
+  glass = false,
+}: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.fill}>
-        <Pressable style={styles.scrim} onPress={onClose} />
-        <View style={[styles.sheet, contentStyle]}>
+        <Pressable style={[styles.scrim, glass && styles.scrimGlass]} onPress={onClose} />
+        <View style={[glass ? styles.sheetGlass : styles.sheet, contentStyle]}>
+          {glass ? (
+            <LinearGradient
+              colors={[colors.frostHi, colors.frost, colors.soft]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+          ) : null}
           {showHandle && (
             <View style={styles.handleRow}>
-              <View style={styles.handle} />
+              <View style={[styles.handle, glass && styles.handleGlass]} />
             </View>
           )}
           {children}
@@ -33,6 +52,7 @@ export default function BottomSheet({ visible, onClose, children, contentStyle, 
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: 'flex-end' },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,30,22,0.48)' },
+  scrimGlass: { backgroundColor: 'rgba(3,53,40,0.55)' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xxl,
@@ -40,6 +60,19 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     ...shadowSheet,
   },
-  handleRow: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  sheetGlass: {
+    // Nearly opaque frost so content behind does not wash through.
+    backgroundColor: colors.frost,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.frostBorder,
+    overflow: 'hidden',
+    ...shadowSheet,
+  },
+  handleRow: { alignItems: 'center', paddingTop: 10, paddingBottom: 4, zIndex: 1 },
   handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: 'rgba(6,71,52,0.16)' },
+  handleGlass: { backgroundColor: 'rgba(6,71,52,0.28)', width: 42 },
 });

@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet from './BottomSheet';
-import Button from './Button';
 import { Icon } from '../lib/icons';
 import { fill, useLabels } from '../lib/labels';
 import { colors, fonts, radius } from '../lib/theme';
@@ -16,134 +21,291 @@ interface Props {
   visible: boolean;
   providerName: string;
   submitting?: boolean;
+  errorText?: string | null;
   onClose(): void;
-  onSubmit(input: { rating: number; comment: string }): void;
+  onSubmit(input: { rating: number; comment: string }): void | Promise<void>;
 }
 
-/** Production-style rate sheet: stars + optional comment + single submit. */
+/** Compact liquid-glass rate sheet: stars + optional comment + submit. */
 export default function RateProviderSheet({
   visible,
   providerName,
   submitting = false,
+  errorText = null,
   onClose,
   onSubmit,
 }: Props) {
   const labels = useLabels();
   const t = labels.rating;
+  const insets = useSafeAreaInsets();
   const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
 
-  const resetAndClose = () => {
+  useEffect(() => {
+    if (!visible) return;
     setRating(0);
+    setHover(0);
+    setComment('');
+  }, [visible]);
+
+  const resetAndClose = () => {
+    if (submitting) return;
+    setRating(0);
+    setHover(0);
     setComment('');
     onClose();
   };
 
   const handleSubmit = () => {
     if (rating < 1 || submitting) return;
-    onSubmit({ rating, comment: comment.trim() });
+    void onSubmit({ rating, comment: comment.trim() });
   };
 
+  const active = hover || rating;
+
   return (
-    <BottomSheet visible={visible} onClose={resetAndClose} contentStyle={styles.pad}>
-      <Text style={styles.title}>{t.sheetTitle}</Text>
-      <Text style={styles.sub}>{fill(t.sheetSub, { name: providerName })}</Text>
+    <BottomSheet
+      visible={visible}
+      onClose={resetAndClose}
+      contentStyle={styles.sheetFlush}
+      glass
+    >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          contentContainerStyle={[styles.pad, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}
+        >
+          <LinearGradient
+            colors={[colors.surface, colors.frost, colors.soft]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glassCard}
+          >
+            <View style={styles.headerRow}>
+              <View style={styles.starBadge}>
+                <Icon name="ph-star" size={16} color={colors.gold} weight="fill" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.title}>{t.sheetTitle}</Text>
+                <Text style={styles.sub} numberOfLines={2}>
+                  {fill(t.sheetSub, { name: providerName })}
+                </Text>
+              </View>
+            </View>
 
-      <View style={styles.stars} accessibilityRole="adjustable" accessibilityLabel={t.starsA11y}>
-        {[1, 2, 3, 4, 5].map((n) => {
-          const filled = n <= rating;
-          return (
+            <View style={styles.stars} accessibilityRole="adjustable" accessibilityLabel={t.starsA11y}>
+              {[1, 2, 3, 4, 5].map((n) => {
+                const filled = n <= active;
+                return (
+                  <Pressable
+                    key={n}
+                    onPress={() => setRating(n)}
+                    onPressIn={() => setHover(n)}
+                    onPressOut={() => setHover(0)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${n}`}
+                    accessibilityState={{ selected: n <= rating }}
+                    style={({ pressed }) => [styles.starHit, pressed && { transform: [{ scale: 0.92 }] }]}
+                  >
+                    <Icon
+                      name="ph-star"
+                      size={30}
+                      color={filled ? colors.gold : 'rgba(6,71,52,0.18)'}
+                      weight={filled ? 'fill' : 'regular'}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <TextInput
+              style={styles.input}
+              value={comment}
+              onChangeText={setComment}
+              placeholder={t.commentPlaceholder}
+              placeholderTextColor={colors.muted}
+              multiline
+              maxLength={400}
+              textAlignVertical="top"
+              editable={!submitting}
+            />
+            <Text style={styles.hint}>{comment.length}/400</Text>
+
+            {!!errorText && (
+              <View style={styles.errorBox} accessibilityLiveRegion="polite">
+                <Icon name="ph-warning-circle" size={15} color={colors.danger} weight="fill" />
+                <Text style={styles.errorText}>{errorText}</Text>
+              </View>
+            )}
+
             <Pressable
-              key={n}
-              onPress={() => setRating(n)}
-              hitSlop={8}
+              onPress={handleSubmit}
+              disabled={rating < 1 || submitting}
               accessibilityRole="button"
-              accessibilityLabel={`${n}`}
-              accessibilityState={{ selected: filled }}
+              accessibilityLabel={submitting ? t.submitting : t.submit}
+              accessibilityState={{ disabled: rating < 1 || submitting, busy: submitting }}
+              style={({ pressed }) => [
+                styles.submit,
+                (rating < 1 || submitting) && styles.submitInert,
+                pressed && rating >= 1 && !submitting && { opacity: 0.88 },
+              ]}
             >
-              <Icon
-                name="ph-star"
-                size={36}
-                color={filled ? colors.gold : 'rgba(6,71,52,0.22)'}
-                weight={filled ? 'fill' : 'regular'}
-              />
+              <LinearGradient
+                colors={rating < 1 || submitting ? ['#7a9a8c', '#6d8f80'] : [colors.green700, colors.green800]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitGrad}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="ph-paper-plane-tilt" size={16} color="#fff" weight="fill" />
+                    <Text style={styles.submitLabel}>{t.submit}</Text>
+                  </>
+                )}
+              </LinearGradient>
             </Pressable>
-          );
-        })}
-      </View>
 
-      <TextInput
-        style={styles.input}
-        value={comment}
-        onChangeText={setComment}
-        placeholder={t.commentPlaceholder}
-        placeholderTextColor={colors.muted}
-        multiline
-        maxLength={400}
-        textAlignVertical="top"
-        editable={!submitting}
-      />
-      <Text style={styles.hint}>{comment.length}/400</Text>
-
-      <Button
-        label={submitting ? t.submitting : t.submit}
-        onPress={handleSubmit}
-        disabled={rating < 1 || submitting}
-        loading={submitting}
-        fullWidth
-        size="md"
-      />
-      {!submitting && (
-        <Pressable style={styles.cancel} onPress={resetAndClose} hitSlop={8}>
-          <Text style={styles.cancelText}>{labels.common.cancel}</Text>
-        </Pressable>
-      )}
+            {!submitting && (
+              <Pressable style={styles.cancel} onPress={resetAndClose} hitSlop={8}>
+                <Text style={styles.cancelText}>{labels.common.cancel}</Text>
+              </Pressable>
+            )}
+          </LinearGradient>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  pad: { paddingHorizontal: 20, paddingTop: 4 },
+  sheetFlush: {
+    backgroundColor: colors.frost,
+    paddingBottom: 0,
+  },
+  pad: {
+    paddingHorizontal: 14,
+    paddingTop: 2,
+  },
+  glassCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.frostBorder,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#033528',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  starBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(246,185,59,0.4)',
+  },
   title: {
     fontFamily: fonts.bold,
-    fontSize: 20,
+    fontSize: 17,
     color: colors.text,
-    marginTop: 4,
+    letterSpacing: -0.2,
   },
   sub: {
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 12.5,
     color: colors.muted,
-    marginTop: 6,
-    marginBottom: 18,
-    lineHeight: 20,
+    marginTop: 3,
+    lineHeight: 17,
   },
   stars: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 10,
-    marginBottom: 18,
+    gap: 6,
+    marginBottom: 14,
+    paddingVertical: 4,
+  },
+  starHit: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
-    minHeight: 96,
+    minHeight: 72,
+    maxHeight: 120,
     borderWidth: 1,
-    borderColor: 'rgba(6,71,52,0.12)',
+    borderColor: colors.borderField,
     borderRadius: radius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontFamily: fonts.regular,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.surface,
   },
   hint: {
     alignSelf: 'flex-end',
-    marginTop: 6,
-    marginBottom: 14,
+    marginTop: 5,
+    marginBottom: 10,
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.muted,
   },
-  cancel: { alignItems: 'center', paddingVertical: 14 },
-  cancelText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.muted },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(192,80,58,0.22)',
+  },
+  errorText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12.5,
+    color: colors.danger,
+    lineHeight: 17,
+  },
+  submit: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  submitInert: { opacity: 0.72 },
+  submitGrad: {
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  submitLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: '#fff',
+  },
+  cancel: { alignItems: 'center', paddingVertical: 12 },
+  cancelText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.muted },
 });

@@ -87,9 +87,9 @@ describe('provider reviews API', () => {
     await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'eligible' });
   });
 
-  it('soft-fails eligibility 401 to need_login', async () => {
+  it('soft-fails eligibility 401 to eligible (CTA gated by local session)', async () => {
     mockHttp.mockRejectedValue(new HttpError(401, 'unauthorized', 'UNAUTHORIZED'));
-    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'need_login' });
+    await expect(getReviewEligibility('prov-1')).resolves.toEqual({ status: 'eligible' });
   });
 
   it('submits a review', async () => {

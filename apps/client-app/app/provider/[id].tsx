@@ -14,9 +14,23 @@ import { keys, useCategory, useProvider, useProviderReviews, useProviderWork, us
 import { Icon } from '../../src/lib/icons';
 import { fill, useLabels } from '../../src/lib/labels';
 import { colors, fonts, radius } from '../../src/lib/theme';
-import { HttpError } from '../../src/lib/http';
+import { ApiBusinessError, HttpError, NetworkError } from '../../src/lib/http';
+import { mapRateEligibilityCta } from '../../src/lib/rateEligibilityCta';
 import { useAppStore } from '../../src/store/appStore';
 import type { Review } from '../../src/types';
+
+function reviewErrorMessage(err: unknown, labels: ReturnType<typeof useLabels>): string {
+  const code =
+    err instanceof HttpError || err instanceof ApiBusinessError ? String(err.code || '') : '';
+  const status = err instanceof HttpError ? err.status : 0;
+  if (code === 'ALREADY_RATED') return labels.rating.errorAlready;
+  if (code === 'REVIEW_VELOCITY_LIMITED') return labels.rating.errorVelocity;
+  if (code === 'COMMENT_REJECTED') return labels.rating.errorComment;
+  if (status === 429 || code.includes('RATE_LIMITED')) return labels.rating.errorRateLimited;
+  if (status === 401 || code === 'UNAUTHORIZED') return labels.rating.ctaSignIn;
+  if (err instanceof NetworkError) return labels.errors.connectionMessage;
+  return labels.rating.errorGeneric;
+}
 
 export default function ProviderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,8 +54,10 @@ export default function ProviderDetailScreen() {
   const eligibility = useReviewEligibility(id, !!id && sessionReady);
   const [rateOpen, setRateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [localReviews, setLocalReviews] = useState<Review[] | null>(null);
   const [localRating, setLocalRating] = useState<{ rating: number; reviewCount: number } | null>(null);
+  const [localMyRating, setLocalMyRating] = useState<number | null>(null);
 
   // Log a profile_view once the provider loads (once per id). Fire-and-forget —
   // logProviderContact never throws and is never awaited. (Contract matrix M-6.)
@@ -102,16 +118,13 @@ export default function ProviderDetailScreen() {
   const hasRating = displayReviewCount > 0 && displayRating > 0;
   const reviewList = localReviews ?? reviews.data ?? [];
 
-  // Sign in to rate ONLY for guests. Any logged-in session (customer or provider)
-  // gets Rate / Already rated — never a false "Sign in" CTA. While session is
-  // still hydrating, prefer Rate so we don't flash Sign in ahead of login state.
-  const rawEligibility = eligibility.data?.status;
-  const eligibilityStatus =
-    !sessionReady || loggedIn
-      ? rawEligibility === 'already_rated'
-        ? 'already_rated'
-        : 'eligible'
-      : 'need_login';
+  // Sign in ONLY for true guests. API need_login / soft-fail never overrides loggedIn.
+  // See mapRateEligibilityCta — do not inline alternate rules here.
+  const eligibilityStatus = mapRateEligibilityCta({
+    sessionReady,
+    loggedIn,
+    alreadyRated: localMyRating != null || eligibility.data?.status === 'already_rated',
+  });
 
   const onRateCta = () => {
     if (eligibilityStatus === 'need_login') {
@@ -119,41 +132,55 @@ export default function ProviderDetailScreen() {
       return;
     }
     if (eligibilityStatus === 'already_rated') {
-      const n = eligibility.data?.existing_rating ?? displayRating;
+      const n = localMyRating ?? eligibility.data?.existing_rating ?? displayRating;
       showToast(fill(labels.rating.ctaAlready, { n: n || '' }), 'ph-star');
       return;
     }
+    // Open sheet for any logged-in session. Auth for POST is enforced on submit (401 → login).
+    setSubmitError(null);
     setRateOpen(true);
   };
 
   const onSubmitReview = async (input: { rating: number; comment: string }) => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const result = await api.submitProviderReview(pv.id, {
         rating: input.rating,
         comment: input.comment || undefined,
       });
-      setLocalReviews([result.review, ...reviewList]);
-      setLocalRating({
-        rating: result.avg_rating ?? result.review.rating,
-        reviewCount: result.review_count,
-      });
+      const nextCount = Math.max(1, Number(result.review_count) || (displayReviewCount || 0) + 1);
+      const nextAvg = result.avg_rating != null && Number.isFinite(result.avg_rating)
+        ? Number(result.avg_rating)
+        : result.review.rating;
+      setLocalReviews([result.review, ...reviewList.filter((r) => r.userName !== result.review.userName || r.text !== result.review.text)]);
+      setLocalRating({ rating: nextAvg, reviewCount: nextCount });
+      setLocalMyRating(result.review.rating);
       setRateOpen(false);
-      showToast(labels.rating.success, 'ph-star');
+      setSubmitError(null);
+      // Toast after close so it is not trapped under the sheet Modal.
+      setTimeout(() => showToast(labels.rating.success, 'ph-star'), 120);
       void queryClient.invalidateQueries({ queryKey: keys.reviews(pv.id) });
       void queryClient.invalidateQueries({ queryKey: keys.provider(pv.id) });
       void queryClient.invalidateQueries({ queryKey: ['reviews', 'eligibility', pv.id] });
+      void queryClient.invalidateQueries({ queryKey: ['providers'] });
     } catch (err) {
-      const code = err instanceof HttpError ? String(err.code || '') : '';
+      const message = reviewErrorMessage(err, labels);
+      setSubmitError(message);
       const status = err instanceof HttpError ? err.status : 0;
-      if (code === 'ALREADY_RATED') showToast(labels.rating.errorAlready, 'ph-star');
-      else if (code === 'REVIEW_VELOCITY_LIMITED') showToast(labels.rating.errorVelocity, 'ph-warning-circle');
-      else if (code === 'COMMENT_REJECTED') showToast(labels.rating.errorComment, 'ph-warning-circle');
-      else if (status === 429 || code.includes('RATE_LIMITED')) showToast(labels.rating.errorRateLimited, 'ph-warning-circle');
-      else if (status === 401) {
-        showToast(labels.rating.ctaSignIn, 'ph-user');
-        router.push({ pathname: '/auth/login', params: { next: `/provider/${id}` } });
-      } else showToast(labels.rating.errorGeneric, 'ph-warning-circle');
+      const code =
+        err instanceof HttpError || err instanceof ApiBusinessError ? String(err.code || '') : '';
+      if (status === 401 || code === 'UNAUTHORIZED') {
+        setRateOpen(false);
+        setTimeout(() => {
+          showToast(message, 'ph-user');
+          router.push({ pathname: '/auth/login', params: { next: `/provider/${id}` } });
+        }, 120);
+      } else if (code === 'ALREADY_RATED') {
+        setLocalMyRating(input.rating);
+        setRateOpen(false);
+        setTimeout(() => showToast(message, 'ph-star'), 120);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -173,7 +200,9 @@ export default function ProviderDetailScreen() {
     eligibilityStatus === 'need_login'
       ? labels.rating.ctaSignIn
       : eligibilityStatus === 'already_rated'
-        ? fill(labels.rating.ctaAlready, { n: eligibility.data?.existing_rating ?? '' })
+        ? fill(labels.rating.ctaAlready, {
+            n: localMyRating ?? eligibility.data?.existing_rating ?? '',
+          })
         : labels.rating.ctaRate;
 
   return (
@@ -201,13 +230,13 @@ export default function ProviderDetailScreen() {
               {pv.verified && <Badge label={labels.common.verified} tone="trust" icon="ph-seal-check" />}
             </View>
             <View style={styles.ratingRow}>
-              {hasRating && (
-                <>
-                  <Icon name="ph-star" size={13} color={colors.gold} weight="fill" />
+              {hasRating ? (
+                <View style={styles.ratingPill}>
+                  <Icon name="ph-star" size={12} color={colors.gold} weight="fill" />
                   <Text style={styles.ratingText}>{displayRating.toFixed(1)}</Text>
-                  <Text style={styles.metaMuted}>{fill(labels.provider.reviewsMeta, { n: displayReviewCount })}</Text>
-                </>
-              )}
+                  <Text style={styles.ratingCount}>({displayReviewCount})</Text>
+                </View>
+              ) : null}
               <Icon name="ph-map-pin" size={12} color={colors.muted} />
               <Text style={styles.metaMuted}>{pv.area}</Text>
             </View>
@@ -271,12 +300,16 @@ export default function ProviderDetailScreen() {
 
         <View style={styles.section}>
           <View style={styles.reviewHead}>
-            <Text style={styles.sectionTitle}>{labels.provider.reviews}</Text>
-            {reviewList.length > 0 && (
-              <Pressable onPress={() => showToast(labels.provider.showingReviews, 'ph-chats')} hitSlop={8} accessibilityRole="button" accessibilityLabel={labels.a11y.viewAllReviews}>
-                <Text style={styles.viewAll}>{labels.viewAll}</Text>
-              </Pressable>
-            )}
+            <Text style={styles.sectionTitle}>
+              {labels.provider.reviews}
+              {displayReviewCount > 0 ? ` · ${displayReviewCount}` : ''}
+            </Text>
+            {hasRating ? (
+              <View style={styles.ratingPill}>
+                <Icon name="ph-star" size={11} color={colors.gold} weight="fill" />
+                <Text style={styles.ratingText}>{displayRating.toFixed(1)}</Text>
+              </View>
+            ) : null}
           </View>
           {reviewList.length > 0 ? (
             reviewList.map((r, i) => (
@@ -322,7 +355,12 @@ export default function ProviderDetailScreen() {
         visible={rateOpen}
         providerName={pv.name}
         submitting={submitting}
-        onClose={() => setRateOpen(false)}
+        errorText={submitError}
+        onClose={() => {
+          if (submitting) return;
+          setRateOpen(false);
+          setSubmitError(null);
+        }}
         onSubmit={onSubmitReview}
       />
     </SafeAreaView>
@@ -339,8 +377,20 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.heading, fontSize: 22, color: colors.text },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   service: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' },
+  ratingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(246,185,59,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(246,185,59,0.28)',
+  },
   ratingText: { color: colors.text, fontFamily: fonts.bold, fontSize: 12.5 },
+  ratingCount: { color: colors.muted, fontFamily: fonts.medium, fontSize: 11.5 },
   metaMuted: { color: colors.muted, fontSize: 12.5, fontFamily: fonts.regular },
   facts: { gap: 7, marginTop: 16 },
   fact: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
@@ -350,14 +400,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    backgroundColor: 'rgba(241,251,245,0.9)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(6,71,52,0.10)',
   },
-  rateCtaText: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, color: colors.text },
+  rateCtaText: { flex: 1, fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text },
   section: { marginTop: 20 },
   sectionTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, marginBottom: 9 },
   about: { fontSize: 13.5, color: colors.muted, lineHeight: 22, fontFamily: fonts.regular },

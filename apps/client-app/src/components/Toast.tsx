@@ -1,26 +1,33 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../lib/icons';
 import { colors, fonts } from '../lib/theme';
 import { useAppStore } from '../store/appStore';
 
-/** Global toast pinned near the bottom of the screen. */
+/** Global toast — Modal so it sits above sheets/dialogs. */
 export default function Toast() {
   const toast = useAppStore((s) => s.toast);
   if (!toast) return null;
   return (
-    <View pointerEvents="none" style={styles.wrap}>
-      <View style={styles.toast}>
-        <Icon name={toast.icon} size={17} color={colors.gold} weight="fill" />
-        <Text style={styles.text} numberOfLines={3}>
-          {toast.text}
-        </Text>
+    <Modal visible transparent animationType="fade" statusBarTranslucent>
+      <View pointerEvents="none" style={styles.wrap}>
+        <View style={styles.toast}>
+          <Icon name={toast.icon} size={17} color={colors.gold} weight="fill" />
+          <Text style={styles.text} numberOfLines={3}>
+            {toast.text}
+          </Text>
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: 0, right: 0, bottom: 96, alignItems: 'center', zIndex: 60 },
+  wrap: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 110,
+  },
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -30,11 +37,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 11,
     borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     shadowColor: '#000',
     shadowOpacity: 0.28,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
   },
-  text: { color: '#fff', fontSize: 13, fontFamily: fonts.semibold },
+  text: { color: '#fff', fontSize: 13, fontFamily: fonts.semibold, flexShrink: 1 },
 });

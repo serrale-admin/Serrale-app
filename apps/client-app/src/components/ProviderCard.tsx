@@ -21,9 +21,7 @@ export default function ProviderCard({ provider: p, variant = 'nearby', style }:
   const { open, call, whatsapp } = useProviderActions();
   const labels = useLabels();
   const trusted = p.verified || p.adminReviewed;
-  // Rating chrome renders only when review data actually exists (demo/mock).
-  // Live rows carry no ratings (contract matrix M-3) — show the provider's area
-  // instead, keeping the meta row informative without fabricating stars.
+  // Rating chrome only when live avg_rating / review_count exist on the profile.
   const hasRating = p.reviewCount > 0 && p.rating > 0;
   const a11y = hasRating
     ? fill(labels.provider.a11yRated, { name: p.name, service: p.service, rating: p.rating.toFixed(1) })

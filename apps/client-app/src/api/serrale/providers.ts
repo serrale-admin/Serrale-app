@@ -135,10 +135,10 @@ export interface ReviewEligibility {
 }
 
 /**
- * Login-only rating eligibility.
- * Soft-fails carefully: only real 401 → need_login. Missing endpoint / network
- * must NOT pretend the user needs to sign in (that was a false CTA bug) —
- * callers with a customer session should treat degraded as eligible.
+ * Advisory eligibility. Soft-fails to `eligible` (never need_login) on
+ * missing/degraded endpoints so a logged-in UI never flashes "Sign in to rate".
+ * The screen CTA MUST still gate on local `loggedIn` via mapRateEligibilityCta —
+ * API need_login alone must never drive the Sign in label.
  */
 export async function getReviewEligibility(providerId: string): Promise<ReviewEligibility> {
   try {
@@ -150,18 +150,20 @@ export async function getReviewEligibility(providerId: string): Promise<ReviewEl
       status:
         status === 'eligible' || status === 'already_rated' || status === 'need_login'
           ? status
-          : 'need_login',
+          : 'eligible',
       existing_rating: payload?.existing_rating ?? null,
     };
   } catch (err) {
-    if (err instanceof HttpError && err.status === 401) {
-      return { status: 'need_login' };
-    }
-    // 404/501 = endpoint not deployed yet; 429/5xx/offline = degraded.
-    // Prefer eligible so a logged-in user can still open Rate (POST enforces auth).
+    // Never soft-fail to need_login — that caused false "Sign in to rate" CTAs.
+    // Real guests are gated by local session state on the detail screen.
     if (
       err instanceof NetworkError ||
-      (err instanceof HttpError && (err.status === 404 || err.status === 501 || err.status === 429 || err.status >= 500))
+      (err instanceof HttpError &&
+        (err.status === 401 ||
+          err.status === 404 ||
+          err.status === 501 ||
+          err.status === 429 ||
+          err.status >= 500))
     ) {
       return { status: 'eligible' };
     }

@@ -2,7 +2,7 @@ import { secureSession, BasicSessionTokens } from './secure-session';
 import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { checkInstallation } from './installation';
-import { setTokenProvider, setUnauthorizedHandler, HttpError } from './http';
+import { setTokenProvider, setUnauthorizedHandler, HttpError, isCustomerScopedPath } from './http';
 import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe } from '../api';
 import type { ApiCustomerProfile, ApiSessionCustomer } from '../api/serrale/types';
 import { customerDisplayName, isCustomerProfileComplete } from './customer-profile';
@@ -294,12 +294,28 @@ export async function initializeSessionManager(): Promise<void> {
   useAppStore.getState().setSessionReady(false);
   await checkInstallation();
 
-  // Prefer customer access token; fall back to provider JWT so review /
-  // contact-event / eligibility calls work in a provider-only session without
-  // a second "customer account" login. Backend accepts either scope.
-  setTokenProvider(async () => {
+  // Prefer customer access token. Fall back to provider JWT only on routes that
+  // accept either scope (reviews, contact events). Never send a provider JWT to
+  // customer-scoped paths — that caused false "session expired" on requests /
+  // bookmarks while the UI still showed the user as logged in.
+  setTokenProvider(async (ctx) => {
     const tokens = await secureSession.read();
-    if (tokens?.accessToken) return tokens.accessToken;
+    if (tokens?.accessToken) {
+      const expiresAt = Date.parse(tokens.accessExpiresAt);
+      // Proactively rotate a near-expired access token before customer writes
+      // (requests) so we don't 401 → false "session expired" after refresh.
+      if (
+        Number.isFinite(expiresAt) &&
+        Date.now() >= expiresAt - 15_000 &&
+        tokens.refreshToken
+      ) {
+        const refreshed = await doRefresh().catch(() => null);
+        if (refreshed?.accessToken) return refreshed.accessToken;
+      }
+      return tokens.accessToken;
+    }
+    const path = ctx?.path || '';
+    if (path && isCustomerScopedPath(path)) return null;
     const provider = await providerSession.read();
     return provider?.sessionToken ?? null;
   });
@@ -310,19 +326,25 @@ export async function initializeSessionManager(): Promise<void> {
     // would call handleCustomerLogout and wipe the active session role.
     const tokens = await secureSession.read();
     if (!tokens?.refreshToken) {
-      throw new HttpError(401, 'Session expired');
+      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
     }
 
     const refreshed = await doRefresh();
     if (!refreshed) {
-      throw new HttpError(401, 'Session expired');
+      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
     }
 
+    // Replay GETs and Idempotency-Key writes (service requests, OTP, reviews).
+    // Non-idempotent writes still skip auto-replay to avoid duplicate side effects.
     if (isSafe) {
       return await replay();
     }
 
-    throw new HttpError(401, 'Session expired. Write request skipped.');
+    throw new HttpError(
+      409,
+      'Please try again.',
+      'AUTH_REFRESHED_RETRY',
+    );
   });
 
   try {

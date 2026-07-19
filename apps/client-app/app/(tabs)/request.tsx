@@ -96,6 +96,8 @@ export default function RequestScreen() {
   const area = useAppStore((s) => s.area);
   const lang = useAppStore((s) => s.lang);
   const loggedIn = useAppStore((s) => s.loggedIn);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const isCustomerSession = loggedIn && activeSession === 'customer';
   const showToast = useAppStore((s) => s.showToast);
   const am = lang === 'am';
 
@@ -170,7 +172,7 @@ export default function RequestScreen() {
     );
   }
 
-  if (!loggedIn) {
+  if (!isCustomerSession) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ResultCard icon="ph-hand-heart" title={t.gateTitle} text={t.gateText}>

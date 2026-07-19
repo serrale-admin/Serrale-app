@@ -153,6 +153,9 @@ function presentationFor(kind: FailureKind): ErrorPresentation {
 function classifyHttp(err: HttpError): FailureKind {
   const { status } = err;
   if (status === 400 || status === 422) return 'validation';
+  // After a successful refresh, non-idempotent writes ask the user to retry —
+  // never treat that as a signed-out session.
+  if (err.code === 'AUTH_REFRESHED_RETRY') return 'server';
   if (status === 401) return 'session-expired';
   if (status === 403) return 'forbidden';
   if (status === 404 || status === 410) return 'not-found';

@@ -143,7 +143,59 @@ describe('http 401 refresh interceptor (single-flight + replay policy)', () => {
     expect(dataGetCalls).toContain('Bearer access-new');
   });
 
-  it('does NOT auto-replay a non-idempotent write; surfaces the error after refresh', async () => {
+  it('replays an Idempotency-Key write after a successful refresh', async () => {
+    let refreshCalls = 0;
+    let writeAttempts = 0;
+
+    global.fetch = jest.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes(REFRESH_PATH)) {
+        refreshCalls += 1;
+        return jsonResponse(
+          200,
+          envelope({
+            access_token: 'access-new',
+            refresh_token: 'refresh-new',
+            access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+          }),
+        );
+      }
+      if (u.includes('/public-directory/customers/me')) {
+        return jsonResponse(
+          200,
+          envelope({ customer: { id: 'cust-1', phone: '+251****5678', display_name: 'Abebe', profile_complete: true } }),
+        );
+      }
+      writeAttempts += 1;
+      const auth = (init?.headers as Record<string, string>)?.Authorization;
+      if (auth === 'Bearer access-old') {
+        return jsonResponse(401, { success: false, error: { code: 'SESSION_EXPIRED' } });
+      }
+      return jsonResponse(200, envelope({ ok: true, id: 'lead-1' }));
+    }) as unknown as typeof fetch;
+
+    // Wire production-like handler that replays when isSafe (incl. Idempotency-Key).
+    const { isAuthReplaySafe } = require('../http') as typeof import('../http');
+    setUnauthorizedHandler(async (replay, isSafe) => {
+      const refreshed = await doRefresh();
+      if (!refreshed) throw new Error('logged out');
+      if (isSafe) return await replay();
+      throw new Error('write not replayed');
+    });
+
+    const result = await http('/public-directory/leads/request', {
+      method: 'POST',
+      body: { service: 'x' },
+      headers: { 'Idempotency-Key': 'idem-1' },
+    });
+
+    expect(result).toEqual({ ok: true, id: 'lead-1' });
+    expect(refreshCalls).toBe(1);
+    expect(writeAttempts).toBe(2);
+    expect(isAuthReplaySafe('POST', { 'Idempotency-Key': 'idem-1' })).toBe(true);
+  });
+
+  it('does NOT auto-replay a non-idempotent write; surfaces retry after refresh', async () => {
     let refreshCalls = 0;
     let writeAttempts = 0;
     let customerMeFetches = 0;

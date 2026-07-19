@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../../src/components/Button';
+import EmptyState from '../../../src/components/EmptyState';
 import ErrorBlock from '../../../src/components/ErrorBlock';
 import ScreenHeader from '../../../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../../../src/components/Skeleton';
@@ -10,6 +11,7 @@ import * as api from '../../../src/api';
 import type { ActivityType, DisplayStatus } from '../../../src/api/serrale/activity';
 import { useLabels } from '../../../src/lib/labels';
 import { colors, fonts, radius } from '../../../src/lib/theme';
+import { useAppStore } from '../../../src/store/appStore';
 
 function formatDateTime(iso: string) {
   try {
@@ -29,6 +31,9 @@ export default function ActivityDetailScreen() {
   const router = useRouter();
   const labels = useLabels();
   const a = labels.activity;
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const isCustomerSession = loggedIn && activeSession === 'customer';
   const params = useLocalSearchParams<{ type?: string; id?: string }>();
   const type = (params.type === 'job' ? 'job' : 'request') as ActivityType;
   const id = String(params.id || '');
@@ -36,19 +41,48 @@ export default function ActivityDetailScreen() {
   const query = useQuery({
     queryKey: ['customer-activity', type, id],
     queryFn: () => api.fetchActivityDetail(type, id),
-    enabled: !!id,
+    enabled: isCustomerSession && !!id,
   });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title={a.detailTitle} onBack={() => router.back()} />
-      {query.isLoading ? (
+      {!isCustomerSession ? (
+        <View style={styles.pad}>
+          <EmptyState
+            icon="ph-tray"
+            circle={colors.goldSoft}
+            iconColor={colors.goldText}
+            title={a.loginTitle}
+            text={a.loginText}
+          >
+            <Button
+              label={labels.common.loginWithPhone}
+              onPress={() =>
+                router.replace({
+                  pathname: '/auth/login',
+                  params: { next: `/activity/${type}/${id}`, reason: labels.auth.reasonRequest },
+                })
+              }
+            />
+          </EmptyState>
+        </View>
+      ) : query.isLoading ? (
         <View style={styles.pad}>
           <SkeletonProviderList count={3} />
         </View>
       ) : query.isError || !query.data ? (
         <View style={styles.pad}>
-          <ErrorBlock error={query.error} onRetry={() => query.refetch()} />
+          <ErrorBlock
+            error={query.error}
+            onRetry={() => query.refetch()}
+            onAction={() =>
+              router.replace({
+                pathname: '/auth/login',
+                params: { next: `/activity/${type}/${id}`, reason: labels.auth.reasonRequest },
+              })
+            }
+          />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>

@@ -214,6 +214,17 @@ describe('no internal leakage (requirement 3)', () => {
     // The safe-restart / recovery action for a session expiry routes to sign-in.
     expect(view.action).toBe(en2.errors.signIn);
   });
+
+  it('presents AUTH_REFRESHED_RETRY as a retryable server error, not session expired', () => {
+    const en2 = labelsFor('en');
+    const view = presentError(
+      new HttpError(409, 'Please try again.', 'AUTH_REFRESHED_RETRY'),
+      en2,
+    );
+    expect(view.kind).toBe('server');
+    expect(view.kind).not.toBe('session-expired');
+    expect(view.title).toBe(en2.errors.serverTitle);
+  });
 });
 
 describe('429 wait substitution', () => {

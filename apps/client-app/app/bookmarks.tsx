@@ -117,15 +117,19 @@ function RequestsPane() {
   const router = useRouter();
   const labels = useLabels();
   const loggedIn = useAppStore((s) => s.loggedIn);
+  const activeSession = useAppStore((s) => s.activeSession);
+  // Requests/activity require a customer Bearer — provider-only login must not
+  // hit /customers/me/activity (that 401 was shown as "session expired").
+  const isCustomerSession = loggedIn && activeSession === 'customer';
   const a = labels.activity;
 
   const query = useQuery({
     queryKey: ['customer-activity'],
     queryFn: () => api.fetchMyActivity({ limit: 50 }),
-    enabled: loggedIn,
+    enabled: isCustomerSession,
   });
 
-  if (!loggedIn) {
+  if (!isCustomerSession) {
     return (
       <View style={styles.emptyWrap}>
         <EmptyState
@@ -161,7 +165,16 @@ function RequestsPane() {
   if (query.isError) {
     return (
       <View style={styles.emptyWrap}>
-        <ErrorBlock error={query.error} onRetry={() => query.refetch()} />
+        <ErrorBlock
+          error={query.error}
+          onRetry={() => query.refetch()}
+          onAction={() =>
+            router.replace({
+              pathname: '/auth/login',
+              params: { next: '/bookmarks?tab=requests', reason: labels.auth.reasonRequest },
+            })
+          }
+        />
       </View>
     );
   }

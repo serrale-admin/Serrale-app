@@ -106,6 +106,12 @@ export async function createServiceRequest(input: ServiceRequest, idempotencyKey
  * opening tel:/wa.me. A failure here can never block a contact action.
  */
 export function logProviderContact({ providerId, eventType, sourceFlow, searchQuery, userArea }: ContactEventInput): Promise<{ recorded: boolean }> {
+  const isClick = eventType === 'phone_click' || eventType === 'whatsapp_click';
+  const clientEventId =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
   return http<{ recorded?: boolean }>(`${DIRECTORY}/providers/${encodeURIComponent(providerId)}/contact-events`, {
     method: 'POST',
     body: {
@@ -114,6 +120,7 @@ export function logProviderContact({ providerId, eventType, sourceFlow, searchQu
       source_flow: sourceFlow,
       search_query: searchQuery,
       user_area: userArea,
+      ...(isClick ? { client_event_id: clientEventId } : {}),
     },
   })
     .then((r) => ({ recorded: r?.recorded ?? true }))

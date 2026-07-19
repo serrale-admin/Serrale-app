@@ -70,7 +70,7 @@ export default function SettingsScreen() {
         ],
         [
           { label: labels.common.language, value: lang === 'am' ? 'አማርኛ' : 'English', onPress: () => router.push('/language') },
-          { label: labels.common.notifications, value: t.on, onPress: () => showToast(t.notificationsToast, 'ph-bell') },
+          { label: labels.common.notifications, value: t.on, onPress: () => router.push('/notifications') },
           { label: t.privacy, onPress: () => openUrl(PRIVACY_URL) },
         ],
         [

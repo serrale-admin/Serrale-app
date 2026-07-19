@@ -29,6 +29,8 @@ import { logger } from '../src/lib/logger';
 import { queryClient } from '../src/lib/queryClient';
 import { colors } from '../src/lib/theme';
 import { initializeSessionManager } from '../src/lib/session-manager';
+import { registerDirectoryPushIfPossible } from '../src/lib/push-registration';
+import { useAppStore } from '../src/store/appStore';
 
 const APP_VERSION =
   (Constants.expoConfig?.version as string | undefined) ??
@@ -64,6 +66,14 @@ export default function RootLayout() {
   useEffect(() => {
     initializeSessionManager().catch(() => {});
   }, []);
+
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  const sessionReady = useAppStore((s) => s.sessionReady);
+  useEffect(() => {
+    if (sessionReady && loggedIn) {
+      void registerDirectoryPushIfPossible();
+    }
+  }, [sessionReady, loggedIn]);
 
   // Tag outgoing requests with the current route template (PII-free) so the
   // network layer can attach it as diagnostic metadata, AND drop a release-health

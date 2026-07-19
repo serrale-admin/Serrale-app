@@ -146,6 +146,7 @@ describe('logProviderContact — public contact-events endpoint (M-2/M-6)', () =
       source_flow: 'contact_sheet',
       user_area: 'Bole',
     });
+    expect(typeof (opts?.body as Record<string, unknown>).client_event_id).toBe('string');
     expect((opts?.body as Record<string, unknown>).verify_token).toBeUndefined();
     expect(res).toEqual({ recorded: true });
   });

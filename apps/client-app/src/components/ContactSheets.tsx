@@ -28,10 +28,12 @@ export default function ContactSheets() {
   const t = labels.contact;
   const showToast = useAppStore((s) => s.showToast);
   const userArea = useAppStore((s) => s.area);
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  const activeSession = useAppStore((s) => s.activeSession);
 
-  // Best-effort contact analytics via the public contact-events endpoint. This is
-  // fire-and-forget by design (never awaited, never throws) so a logging failure
-  // can never delay or block the tel:/whatsapp action. (Contract matrix M-2/M-6.)
+  // Soft-gate: guests can still call, but identity won't unlock trust/notify.
+  const identityKnown = loggedIn && activeSession === 'customer';
+
   const logContact = (eventType: 'phone_click' | 'whatsapp_click') => {
     if (!provider) return;
     void api.logProviderContact({ providerId: provider.id, eventType, sourceFlow: 'contact_sheet', userArea });
@@ -39,6 +41,9 @@ export default function ContactSheets() {
 
   const onCall = () => {
     if (!provider) return;
+    if (!identityKnown) {
+      showToast('Sign in so the provider knows who contacted them', 'ph-user');
+    }
     logContact('phone_click');
     Linking.openURL(`tel:${telNumber(provider.phone)}`).catch(() => {});
     close();
@@ -47,6 +52,9 @@ export default function ContactSheets() {
 
   const onWhatsapp = () => {
     if (!provider) return;
+    if (!identityKnown) {
+      showToast('Sign in so the provider knows who contacted them', 'ph-user');
+    }
     logContact('whatsapp_click');
     const msg = fill(t.waMessage, { service: provider.service.toLowerCase() });
     const url = `whatsapp://send?phone=${waDigits(provider.phone)}&text=${encodeURIComponent(msg)}`;

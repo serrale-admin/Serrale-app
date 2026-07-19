@@ -5,3 +5,4 @@ export * from './requests';
 export * from './auth';
 export * from './provider-account';
 export * from './activity';
+export * from './trust';

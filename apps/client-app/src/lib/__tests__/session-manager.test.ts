@@ -388,5 +388,44 @@ describe('session-manager', () => {
       expect(store.phoneHasProvider).toBe(true);
       expect(store.loggedIn).toBe(true);
     });
+
+    it('never attaches a provider JWT to customer-scoped activity/request paths', async () => {
+      (providerSession.read as jest.Mock).mockResolvedValue({
+        sessionToken: 'provider-jwt',
+        provider: {
+          id: 'prov-1',
+          full_name: 'Natnael Asnake',
+          phone: '+251938064841',
+          category_slug: 'plumbers',
+          area: 'Bole',
+        },
+        savedAt: new Date().toISOString(),
+      });
+      await initializeSessionManager();
+
+      const { http, setUnauthorizedHandler } = require('../http') as typeof import('../http');
+      setUnauthorizedHandler(null);
+
+      const auths: string[] = [];
+      global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+        const headers = init?.headers as Record<string, string> | undefined;
+        auths.push(headers?.Authorization || '');
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ success: true, data: { items: [], total: 0 } }),
+          headers: { get: () => null },
+        } as unknown as Response;
+      }) as unknown as typeof fetch;
+
+      await http('/public-directory/customers/me/activity');
+      await http('/public-directory/leads/request', {
+        method: 'POST',
+        body: { service: 'x' },
+        headers: { 'Idempotency-Key': 'k1' },
+      });
+
+      expect(auths).toEqual(['', '']);
+    });
   });
 });

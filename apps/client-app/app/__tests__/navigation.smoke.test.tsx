@@ -79,6 +79,7 @@ jest.mock('../../src/api', () => {
     getRecentWork: jest.fn(),
     getProviderPastWork: jest.fn(),
     getProviderReviews: jest.fn(),
+    getReviewEligibility: jest.fn(),
     searchSuggest: jest.fn(),
     logProviderContact: jest.fn(),
     createServiceRequest: jest.fn(),
@@ -182,6 +183,7 @@ beforeEach(() => {
   (api.getRecentWork as jest.Mock).mockResolvedValue([]);
   (api.getProviderPastWork as jest.Mock).mockResolvedValue([]);
   (api.getProviderReviews as jest.Mock).mockResolvedValue([]);
+  (api.getReviewEligibility as jest.Mock).mockResolvedValue({ status: 'eligible' });
   (api.searchSuggest as jest.Mock).mockResolvedValue([]);
   (api.logProviderContact as jest.Mock).mockResolvedValue(undefined);
   (api.createServiceRequest as jest.Mock).mockResolvedValue({ ok: true, duplicate: false });
@@ -218,10 +220,21 @@ describe('bottom-tab routes mount and render', () => {
   });
 
   it('request renders the submission form when signed in', () => {
-    useAppStore.setState({ loggedIn: true });
+    useAppStore.setState({ loggedIn: true, activeSession: 'customer' });
     renderScreen(<RequestScreen />);
     expect(screen.getByText(en.request.title)).toBeTruthy();
     expect(screen.getByText(en.request.serviceLabel)).toBeTruthy();
+  });
+
+  it('request keeps the guest gate for provider-only sessions', () => {
+    useAppStore.setState({
+      loggedIn: true,
+      activeSession: 'provider',
+      user: { name: 'Abebe', phone: '+251911000000', profileComplete: true },
+    });
+    renderScreen(<RequestScreen />);
+    expect(screen.getByText(en.request.gateTitle)).toBeTruthy();
+    expect(screen.queryByText(en.request.serviceLabel)).toBeNull();
   });
 
   it('profile renders the guest card when signed out', () => {

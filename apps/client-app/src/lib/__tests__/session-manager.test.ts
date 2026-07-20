@@ -1,4 +1,4 @@
-import { doRefresh, handleExchange, handleLogout, initializeSessionManager } from '../session-manager';
+import { doRefresh, handleCustomerLogout, handleExchange, handleLogout, initializeSessionManager } from '../session-manager';
 import { secureSession } from '../secure-session';
 import { providerSession } from '../provider-session';
 import { useAppStore } from '../../store/appStore';
@@ -120,6 +120,7 @@ describe('session-manager', () => {
       });
       expect(storeState.activeSession).toBe('customer');
       expect(storeState.providerProfile).toBeNull();
+      expect(storeState.hasCustomerSession).toBe(true);
     });
 
     it('sets customer session even when the phone has a linked provider listing', async () => {
@@ -269,6 +270,39 @@ describe('session-manager', () => {
     });
   });
 
+  describe('handleCustomerLogout', () => {
+    it('restores provider UI when customer tokens are cleared but provider JWT remains', async () => {
+      await secureSession.write({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        accessExpiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      });
+      (providerSession.read as jest.Mock).mockResolvedValue({
+        sessionToken: 'provider-jwt',
+        provider: {
+          id: 'prov-1',
+          full_name: 'Natnael Asnake',
+          phone: '+251938064841',
+          category_slug: 'plumbers',
+          area: 'Bole',
+        },
+        savedAt: new Date().toISOString(),
+      });
+      (api.logoutSession as jest.Mock).mockResolvedValue({ ok: true });
+      useAppStore.getState().setHasCustomerSession(true);
+      useAppStore.getState().login({ id: 'c1', phone: '+251938064841', name: 'Natnael' });
+
+      await handleCustomerLogout();
+
+      const store = useAppStore.getState();
+      expect(await secureSession.read()).toBeNull();
+      expect(store.hasCustomerSession).toBe(false);
+      expect(store.loggedIn).toBe(true);
+      expect(store.activeSession).toBe('provider');
+      expect(store.providerProfile?.id).toBe('prov-1');
+    });
+  });
+
   describe('bootstrap restore', () => {
     beforeEach(async () => {
       await AsyncStorage.setItem('serrale_install_marker', 'installed');
@@ -288,6 +322,7 @@ describe('session-manager', () => {
 
       const storeState = useAppStore.getState();
       expect(storeState.loggedIn).toBe(true);
+      expect(storeState.hasCustomerSession).toBe(true);
       expect(storeState.user?.phone).toBe('+251912345678');
       expect(api.refreshSession).not.toHaveBeenCalled();
     });
@@ -346,6 +381,7 @@ describe('session-manager', () => {
       const store = useAppStore.getState();
       expect(store.sessionReady).toBe(true);
       expect(store.loggedIn).toBe(true);
+      expect(store.hasCustomerSession).toBe(false);
       expect(store.user?.name).toBe('Natnael Asnake');
       expect(store.providerProfile?.full_name).toBe('Natnael Asnake');
       expect(store.activeSession).toBe('provider');
@@ -387,6 +423,76 @@ describe('session-manager', () => {
       expect(store.providerProfile).toBeNull();
       expect(store.phoneHasProvider).toBe(true);
       expect(store.loggedIn).toBe(true);
+      expect(store.hasCustomerSession).toBe(true);
+    });
+
+    it('keeps hasCustomerSession when active role is provider but customer tokens exist', async () => {
+      const mockTokens = {
+        accessToken: makeFakeJwt({ customer_id: 'cust-1', phone: '+251938064841' }),
+        refreshToken: 'refresh',
+        accessExpiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      };
+      await secureSession.write(mockTokens);
+      await AsyncStorage.setItem('serrale_active_session', 'provider');
+      (providerSession.read as jest.Mock).mockResolvedValue({
+        sessionToken: 'provider-jwt',
+        provider: {
+          id: 'prov-1',
+          full_name: 'Natnael Asnake',
+          phone: '+251938064841',
+          category_slug: 'plumbers',
+          area: 'Bole',
+        },
+        savedAt: new Date().toISOString(),
+      });
+
+      await initializeSessionManager();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const store = useAppStore.getState();
+      expect(store.activeSession).toBe('provider');
+      expect(store.loggedIn).toBe(true);
+      expect(store.hasCustomerSession).toBe(true);
+      expect(store.providerProfile?.id).toBe('prov-1');
+    });
+
+    it('attaches a provider JWT to request/activity paths when no customer token exists', async () => {
+      (providerSession.read as jest.Mock).mockResolvedValue({
+        sessionToken: 'provider-jwt',
+        provider: {
+          id: 'prov-1',
+          full_name: 'Natnael Asnake',
+          phone: '+251938064841',
+          category_slug: 'plumbers',
+          area: 'Bole',
+        },
+        savedAt: new Date().toISOString(),
+      });
+      await initializeSessionManager();
+
+      const { http, setUnauthorizedHandler } = require('../http') as typeof import('../http');
+      setUnauthorizedHandler(null);
+
+      const auths: string[] = [];
+      global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+        const headers = init?.headers as Record<string, string> | undefined;
+        auths.push(headers?.Authorization || '');
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ success: true, data: { items: [], total: 0 } }),
+          headers: { get: () => null },
+        } as unknown as Response;
+      }) as unknown as typeof fetch;
+
+      await http('/public-directory/customers/me/activity');
+      await http('/public-directory/leads/request', {
+        method: 'POST',
+        body: { service: 'x' },
+        headers: { 'Idempotency-Key': 'k1' },
+      });
+
+      expect(auths).toEqual(['Bearer provider-jwt', 'Bearer provider-jwt']);
     });
   });
 });

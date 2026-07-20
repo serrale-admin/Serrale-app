@@ -25,8 +25,7 @@ export default function ProviderRow({ provider: p }: { provider: Provider }) {
       : p.hasPastWork
         ? labels.provider.pastWorkBadge
         : '';
-  // Rating renders only when review data exists (demo/mock). Live rows have no
-  // ratings (contract matrix M-3), so the meta row leads with the service.
+  // Rating when live avg_rating / review_count exist on the profile.
   const hasRating = p.reviewCount > 0 && p.rating > 0;
   // Availability shows only when we positively know it — no fabricated
   // "This week" claim when availability is simply unknown (always, in live mode).

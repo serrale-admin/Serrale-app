@@ -202,6 +202,8 @@ export interface RegisterProviderPayload {
   whatsappNumber?: string;
   experience?: string;
   description?: string;
+  providerType?: 'individual' | 'business';
+  engagementTypes?: ('temporary' | 'permanent')[];
 }
 
 /** Mock provider register endpoint parity with real API. */
@@ -221,6 +223,8 @@ export function registerProvider(payload: RegisterProviderPayload): Promise<ApiP
         bio: payload.description || null,
         status: 'active',
         created_at: new Date().toISOString(),
+        provider_type: payload.providerType || 'individual',
+        engagement_types: payload.engagementTypes || ['temporary', 'permanent'],
       },
     },
     450,
@@ -241,6 +245,8 @@ let mockProviderAccount: ApiProviderAccount = {
   phone_verified: true,
   kyc_status: 'pending',
   created_at: new Date().toISOString(),
+  provider_type: 'individual',
+  engagement_types: ['temporary', 'permanent'],
 };
 
 export function fetchProviderMe(): Promise<ApiProviderAccount> {
@@ -256,6 +262,8 @@ export function updateProviderProfile(patch: ProviderProfilePatch): Promise<ApiP
     experience: patch.experience ?? mockProviderAccount.experience,
     bio: patch.description ?? mockProviderAccount.bio,
     category_slug: patch.categorySlug ?? mockProviderAccount.category_slug,
+    provider_type: patch.providerType ?? mockProviderAccount.provider_type,
+    engagement_types: patch.engagementTypes ?? mockProviderAccount.engagement_types,
     updated_at: new Date().toISOString(),
   } as ApiProviderAccount;
   return delay({ ...mockProviderAccount }, 300);

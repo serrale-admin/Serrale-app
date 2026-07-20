@@ -79,9 +79,12 @@ jest.mock('../../src/api', () => {
     getRecentWork: jest.fn(),
     getProviderPastWork: jest.fn(),
     getProviderReviews: jest.fn(),
+    getReviewEligibility: jest.fn(),
     searchSuggest: jest.fn(),
     logProviderContact: jest.fn(),
     createServiceRequest: jest.fn(),
+    fetchMyActivity: jest.fn(),
+    fetchActivityDetail: jest.fn(),
   };
 });
 
@@ -166,7 +169,7 @@ async function expectMappedError(error: unknown) {
 
 beforeEach(() => {
   mockRouteParams = {};
-  useAppStore.setState({ lang: 'en', loggedIn: false, user: null, saved: {}, area: 'Addis Ababa', sessionReady: true, providerProfile: null, activeSession: null });
+  useAppStore.setState({ lang: 'en', loggedIn: false, hasCustomerSession: false, user: null, saved: {}, area: 'Addis Ababa', sessionReady: true, providerProfile: null, activeSession: null });
   useAppStore.getState().resetFilters();
   useAppStore.setState({ pendingPhone: '', pendingChallengeId: '' });
 
@@ -180,9 +183,12 @@ beforeEach(() => {
   (api.getRecentWork as jest.Mock).mockResolvedValue([]);
   (api.getProviderPastWork as jest.Mock).mockResolvedValue([]);
   (api.getProviderReviews as jest.Mock).mockResolvedValue([]);
+  (api.getReviewEligibility as jest.Mock).mockResolvedValue({ status: 'eligible' });
   (api.searchSuggest as jest.Mock).mockResolvedValue([]);
   (api.logProviderContact as jest.Mock).mockResolvedValue(undefined);
   (api.createServiceRequest as jest.Mock).mockResolvedValue({ ok: true, duplicate: false });
+  (api.fetchMyActivity as jest.Mock).mockResolvedValue({ items: [], total: 0 });
+  (api.fetchActivityDetail as jest.Mock).mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -208,13 +214,60 @@ describe('bottom-tab routes mount and render', () => {
     await settle(client);
   });
 
+  it('request shows loading skeleton while session is hydrating', () => {
+    useAppStore.setState({ sessionReady: false, hasCustomerSession: false, loggedIn: true });
+    renderScreen(<RequestScreen />);
+    expect(screen.queryByText(en.request.gateTitle)).toBeNull();
+    expect(screen.getByText(en.request.title)).toBeTruthy();
+  });
+
   it('request renders the guest gate when signed out', () => {
+    useAppStore.setState({ sessionReady: true, hasCustomerSession: false, loggedIn: false });
     renderScreen(<RequestScreen />);
     expect(screen.getByText(en.request.gateTitle)).toBeTruthy();
   });
 
   it('request renders the submission form when signed in', () => {
-    useAppStore.setState({ loggedIn: true });
+    useAppStore.setState({ loggedIn: true, hasCustomerSession: true, sessionReady: true, activeSession: 'customer' });
+    renderScreen(<RequestScreen />);
+    expect(screen.getByText(en.request.title)).toBeTruthy();
+    expect(screen.getByText(en.request.serviceLabel)).toBeTruthy();
+  });
+
+  it('request allows hybrid provider sessions to submit requests', () => {
+    useAppStore.setState({
+      loggedIn: true,
+      hasCustomerSession: true,
+      sessionReady: true,
+      activeSession: 'provider',
+      user: { name: 'Abebe', phone: '+251911000000', profileComplete: true },
+    });
+    renderScreen(<RequestScreen />);
+    expect(screen.getByText(en.request.title)).toBeTruthy();
+    expect(screen.getByText(en.request.serviceLabel)).toBeTruthy();
+  });
+
+  it('request keeps guest gate only when fully signed out', () => {
+    useAppStore.setState({
+      loggedIn: false,
+      hasCustomerSession: false,
+      sessionReady: true,
+      activeSession: null,
+      user: null,
+    });
+    renderScreen(<RequestScreen />);
+    expect(screen.getByText(en.request.gateTitle)).toBeTruthy();
+    expect(screen.queryByText(en.request.serviceLabel)).toBeNull();
+  });
+
+  it('request allows provider-only sessions to submit requests', () => {
+    useAppStore.setState({
+      loggedIn: true,
+      hasCustomerSession: false,
+      sessionReady: true,
+      activeSession: 'provider',
+      user: { name: 'Abebe', phone: '+251911000000', profileComplete: true },
+    });
     renderScreen(<RequestScreen />);
     expect(screen.getByText(en.request.title)).toBeTruthy();
     expect(screen.getByText(en.request.serviceLabel)).toBeTruthy();
@@ -229,6 +282,7 @@ describe('bottom-tab routes mount and render', () => {
   it('profile renders the account rows when signed in', () => {
     useAppStore.setState({
       loggedIn: true,
+      hasCustomerSession: true,
       sessionReady: true,
       activeSession: 'customer',
       user: { name: 'Sara T.', phone: '+251911000000', profileComplete: true },
@@ -309,6 +363,8 @@ describe('stack + utility routes mount and render', () => {
 
   it('bookmarks renders the empty state with no saved providers', () => {
     renderScreen(<BookmarksScreen />);
+    expect(screen.getByText(en.activity.tabRequests)).toBeTruthy();
+    expect(screen.getByText(en.activity.tabSaved)).toBeTruthy();
     expect(screen.getByText(en.common.savedProviders)).toBeTruthy();
     expect(screen.getByText(en.bookmarks.emptyTitle)).toBeTruthy();
   });
@@ -319,6 +375,114 @@ describe('stack + utility routes mount and render', () => {
     await settle(client);
     expect(await screen.findByText(PROVIDER.name)).toBeTruthy();
     expect(api.getProvider).toHaveBeenCalledWith('tekle-plumbing');
+  });
+
+  it('bookmarks requests tab shows skeleton while session is hydrating', () => {
+    mockRouteParams = { tab: 'requests' };
+    useAppStore.setState({ sessionReady: false, hasCustomerSession: false, loggedIn: true });
+    renderScreen(<BookmarksScreen />);
+    expect(screen.queryByText(en.activity.loginTitle)).toBeNull();
+    expect(api.fetchMyActivity).not.toHaveBeenCalled();
+  });
+
+  it('bookmarks requests tab loads history for provider-only sessions', async () => {
+    mockRouteParams = { tab: 'requests' };
+    useAppStore.setState({
+      sessionReady: true,
+      loggedIn: true,
+      hasCustomerSession: false,
+      activeSession: 'provider',
+      providerProfile: {
+        id: 'prov-1',
+        full_name: 'Abebe',
+        phone: '+251911000000',
+        category_slug: 'plumbers',
+      },
+      user: { name: 'Abebe', phone: '+251911000000', profileComplete: true },
+    });
+    (api.fetchMyActivity as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          type: 'request',
+          id: 'req-1',
+          title: 'Plumbing help',
+          display_status: 'submitted',
+          engagement: 'temporary',
+          location: 'Bole',
+          created_at: '2026-07-01T10:00:00.000Z',
+        },
+      ],
+      total: 1,
+    });
+    const { client } = renderScreen(<BookmarksScreen />);
+    await settle(client);
+    expect(api.fetchMyActivity).toHaveBeenCalled();
+    expect(await screen.findByText('Plumbing help')).toBeTruthy();
+  });
+
+  it('bookmarks requests tab allows provider profile even if loggedIn flag lagged', async () => {
+    mockRouteParams = { tab: 'requests' };
+    useAppStore.setState({
+      sessionReady: true,
+      loggedIn: false,
+      hasCustomerSession: false,
+      activeSession: 'provider',
+      providerProfile: {
+        id: 'prov-1',
+        full_name: 'Abebe',
+        phone: '+251911000000',
+        category_slug: 'plumbers',
+      },
+      user: null,
+    });
+    (api.fetchMyActivity as jest.Mock).mockResolvedValue({ items: [], total: 0 });
+    const { client } = renderScreen(<BookmarksScreen />);
+    await settle(client);
+    expect(screen.queryByText(en.activity.loginTitle)).toBeNull();
+    expect(api.fetchMyActivity).toHaveBeenCalled();
+  });
+
+  it('bookmarks requests tab shows login gate when signed out', () => {
+    mockRouteParams = { tab: 'requests' };
+    useAppStore.setState({
+      sessionReady: true,
+      loggedIn: false,
+      hasCustomerSession: false,
+      activeSession: null,
+      user: null,
+    });
+    renderScreen(<BookmarksScreen />);
+    expect(screen.getByText(en.activity.loginTitle)).toBeTruthy();
+    expect(api.fetchMyActivity).not.toHaveBeenCalled();
+  });
+
+  it('bookmarks requests tab loads history for hybrid provider sessions', async () => {
+    mockRouteParams = { tab: 'requests' };
+    useAppStore.setState({
+      sessionReady: true,
+      loggedIn: true,
+      hasCustomerSession: true,
+      activeSession: 'provider',
+      user: { name: 'Abebe', phone: '+251911000000', profileComplete: true },
+    });
+    (api.fetchMyActivity as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          type: 'request',
+          id: 'req-1',
+          title: 'Plumbing help',
+          display_status: 'submitted',
+          engagement: 'temporary',
+          location: 'Bole',
+          created_at: '2026-07-01T10:00:00.000Z',
+        },
+      ],
+      total: 1,
+    });
+    const { client } = renderScreen(<BookmarksScreen />);
+    await settle(client);
+    expect(api.fetchMyActivity).toHaveBeenCalled();
+    expect(await screen.findByText('Plumbing help')).toBeTruthy();
   });
 
   it('settings renders its grouped rows', () => {

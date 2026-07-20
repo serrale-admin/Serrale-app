@@ -83,6 +83,10 @@ export interface Labels {
     loginWithPhone: string;
     welcomeToSerrale: string;
     requestService: string;
+    /** Toast after a successful directory pull-to-refresh / header refresh. */
+    refreshed: string;
+    /** Toast when directory refresh finished with query errors. */
+    refreshFailed: string;
   };
   /** Screen-reader-only strings (accessibilityLabel) with no on-screen text. */
   a11y: {
@@ -201,12 +205,14 @@ export interface Labels {
     areaLabel: string;
     describeLabel: string;
     descPlaceholder: string;
+    engagementLabel: string;
     whenLabel: string;
     budgetLabel: string;
     contactLabel: string;
     submit: string;
     submitting: string;
     chooseService: string;
+    chooseArea: string;
     describeWork: string;
     successTitle: string;
     successText: string; // {area}
@@ -222,6 +228,7 @@ export interface Labels {
     sectionContact: string;
     submitHint: string;
     heroBadge: string;
+    engagement: { temporary: string; permanent: string };
     when: { emergency: string; today: string; thisWeek: string; flexible: string };
     contact: { call: string; whatsapp: string; both: string };
     budget: {
@@ -236,6 +243,9 @@ export interface Labels {
     availableToday: string;
     hasPastWork: string;
     whatsappAvailable: string;
+    temporaryAvailable: string;
+    permanentAvailable: string;
+    businessProvider: string;
     yearsExperience: string; // {n}
     aboutExp: string; // {n} {area}
     aboutServing: string; // {area}
@@ -249,7 +259,15 @@ export interface Labels {
     staySafe: string;
     safetyText: string;
     reportSent: string;
+    reportFailed: string;
     reportProvider: string;
+    reportChooseReason: string;
+    reportReasonSpam: string;
+    reportReasonScam: string;
+    reportReasonInappropriate: string;
+    reportReasonWrongInfo: string;
+    reportReasonNotReachable: string;
+    reportReasonOther: string;
     linkCopied: string;
     reviewedBadge: string;
     pastWorkBadge: string;
@@ -282,6 +300,55 @@ export interface Labels {
   bookmarks: {
     emptyTitle: string;
     emptyText: string;
+  };
+  activity: {
+    screenTitle: string;
+    tabRequests: string;
+    tabSaved: string;
+    emptyTitle: string;
+    emptyText: string;
+    postRequest: string;
+    loginTitle: string;
+    loginText: string;
+    detailTitle: string;
+    timeline: string;
+    postAnother: string;
+    temporary: string;
+    permanent: string;
+    viewMyRequests: string;
+    displayStatus: {
+      submitted: string;
+      in_progress: string;
+      closed: string;
+      unavailable: string;
+    };
+  };
+  rating: {
+    sheetTitle: string;
+    sheetSub: string; // {name}
+    starsA11y: string;
+    commentPlaceholder: string;
+    submit: string;
+    submitting: string;
+    success: string;
+    ctaRate: string;
+    ctaSignIn: string;
+    ctaAlready: string; // {n}
+    errorGeneric: string;
+    errorVelocity: string;
+    errorComment: string;
+    errorRateLimited: string;
+    errorAlready: string;
+    /** Ratings API missing / not deployed / 501. */
+    errorUnavailable: string;
+    /** Proactive toast when tapping Rate before the contact gate is met. */
+    needContactHint: string;
+    /** Submit-time backstop: server 403 NEED_CONTACT (stale cached eligibility). */
+    errorNeedContact: string;
+    /** Submit-time backstop: server 429 REVIEW_TOO_SOON (contacted just now). */
+    errorReviewTooSoon: string;
+    /** Submit-time: provider cannot rate their own listing. */
+    errorSelfRating: string;
   };
   settings: {
     accountInfo: string;
@@ -377,14 +444,22 @@ export interface Labels {
     fullName: string;
     phone: string;
     whatsapp: string;
+    providerType: string;
+    providerTypeIndividual: string;
+    providerTypeBusiness: string;
     serviceCategory: string;
     selectCategory: string;
+    engagementLabel: string;
+    engagementHint: string;
+    engagement: { temporary: string; permanent: string };
     area: string;
     selectArea: string;
     experience: string;
     experienceExample: string;
     photoTitle: string;
     photoDesc: string;
+    description: string;
+    descriptionPlaceholder: string;
     selectedCategory: string; // {category}
     termsPrefix: string;
     termsLink: string;
@@ -393,7 +468,11 @@ export interface Labels {
     submit: string;
     submitHint: string;
     requiredFields: string;
+    fullNameRequired: string;
+    phoneRequired: string;
+    whatsappInvalid: string;
     categoryRequired: string;
+    engagementRequired: string;
     sendingOtp: string;
     otpSentTitle: string;
     otpSentBody: string; // {phone}
@@ -433,6 +512,10 @@ export interface Labels {
   filter: {
     location: string;
     locationHint: string;
+    engagement: string;
+    engagementAll: string;
+    engagementTemporary: string;
+    engagementPermanent: string;
     showCount: string; // {count}
   };
   location: {
@@ -614,6 +697,8 @@ export function labelsFor(lang: Lang): Labels {
       loginWithPhone: am ? 'በስልክ ይግቡ' : 'Log in with phone',
       welcomeToSerrale: am ? 'ወደ ሰራሌ እንኳን በደህና መጡ' : 'Welcome to SERRALE',
       requestService: am ? 'አገልግሎት ይጠይቁ' : 'Request service',
+      refreshed: am ? 'ተዘምኗል' : 'Updated',
+      refreshFailed: am ? 'ማደስ አልተቻለም' : "Couldn't refresh",
     },
     a11y: {
       digit: am ? 'አሃዝ {n}' : 'Digit {n}',
@@ -774,12 +859,14 @@ export function labelsFor(lang: Lang): Labels {
       areaLabel: am ? 'አካባቢ' : 'Area',
       describeLabel: am ? 'ምን ያስፈልግዎታል?' : 'What do you need?',
       descPlaceholder: am ? 'ችግኙን በአጭር ይግለጹ።' : 'Describe the issue briefly.',
-      whenLabel: am ? 'መቼ?' : 'When?',
+      engagementLabel: am ? 'ለምን ያህል ጊዜ ያስፈልግዎታል?' : 'How long do you need help?',
+      whenLabel: am ? 'መቼ ያስፈልግዎታል?' : 'When do you need them?',
       budgetLabel: am ? 'በጀት' : 'Budget',
       contactLabel: am ? 'እንዴት ይገናኙ?' : 'Contact via',
       submit: am ? 'ጥያቄ ላክ' : 'Send request',
       submitting: am ? 'በመላክ ላይ…' : 'Sending…',
       chooseService: am ? 'አገልግሎት ይምረጡ' : 'Choose a service',
+      chooseArea: am ? 'አካባቢ ይምረጡ' : 'Choose an area',
       describeWork: am ? 'ስራውን በአጭሩ ይግለጹ' : 'Describe the work briefly',
       successTitle: am ? 'ጥያቄዎ በምርመራ ላይ ነው' : 'Under review',
       successText: am
@@ -805,6 +892,10 @@ export function labelsFor(lang: Lang): Labels {
         ? 'በአካባቢዎ ባለሙያዎች በስልክ ወይም WhatsApp ሊያግኙዎት ይችላሉ።'
         : 'Providers in your area may contact you by phone or WhatsApp.',
       heroBadge: am ? 'እርዳታ ይጠይቁ' : 'Request help',
+      engagement: {
+        temporary: am ? 'ጊዜያዊ' : 'Temporary',
+        permanent: am ? 'ቋሚ' : 'Permanent',
+      },
       when: {
         emergency: am ? 'አስቸኳይ' : 'Urgent',
         today: am ? 'ዛሬ' : 'Today',
@@ -828,6 +919,9 @@ export function labelsFor(lang: Lang): Labels {
       availableToday: am ? 'ዛሬ ይገኛል' : 'Available today',
       hasPastWork: am ? 'ያለፈ ስራ አለው' : 'Has past work',
       whatsappAvailable: am ? 'WhatsApp አለ' : 'WhatsApp available',
+      temporaryAvailable: am ? 'ለጊዜያዊ ሥራ ዝግጁ' : 'Available for temporary work',
+      permanentAvailable: am ? 'ለቋሚ ሥራ ዝግጁ' : 'Available for permanent work',
+      businessProvider: am ? 'ንግድ' : 'Business',
       yearsExperience: am ? '{n} ዓመት ልምድ' : '{n} years experience',
       aboutExp: am
         ? 'በ{area} በማገልገል {n} ዓመት የተግባር ልምድ።'
@@ -845,7 +939,15 @@ export function labelsFor(lang: Lang): Labels {
         ? 'ስራ ከመጀመርዎ በፊት ዋጋ፣ ጊዜና የስራ ስፋትን በግልጽ ይስማሙ።'
         : 'Agree on price, time, and work scope clearly before starting work.',
       reportSent: am ? 'ሪፖርት ወደ ሰራሌ ተልኳል' : 'Report sent to SERRALE',
+      reportFailed: am ? 'ሪፖርት አልተላከም። እንደገና ይሞክሩ።' : 'Could not send report. Try again.',
       reportProvider: am ? 'ባለሙያ ሪፖርት አድርግ' : 'Report provider',
+      reportChooseReason: am ? 'ምክንያት ይምረጡ' : 'Why are you reporting?',
+      reportReasonSpam: am ? 'ስፓም' : 'Spam',
+      reportReasonScam: am ? 'ማጭበርበር' : 'Scam / fraud',
+      reportReasonInappropriate: am ? 'አግባብ ያልሆነ' : 'Inappropriate',
+      reportReasonWrongInfo: am ? 'የተሳሳተ መረጃ' : 'Wrong info',
+      reportReasonNotReachable: am ? 'አይደርስም' : 'Not reachable',
+      reportReasonOther: am ? 'ሌላ' : 'Other',
       linkCopied: am ? 'የመገለጫ አገናኝ ተቀድቷል' : 'Profile link copied',
       reviewedBadge: am ? 'ተገምግሟል' : 'Reviewed',
       pastWorkBadge: am ? 'ያለፈ ስራ' : 'Past work',
@@ -884,6 +986,70 @@ export function labelsFor(lang: Lang): Labels {
       emptyText: am
         ? 'እዚህ ለማስቀመጥ በማንኛውም ባለሙያ ላይ ያለውን የዕልባት ምልክት ይንኩ።'
         : 'Tap the bookmark icon on any provider to save them here.',
+    },
+    activity: {
+      screenTitle: am ? 'ጥያቄዎቼ' : 'My requests',
+      tabRequests: am ? 'ጥያቄዎች' : 'Requests',
+      tabSaved: am ? 'የተቀመጡ' : 'Saved',
+      emptyTitle: am ? 'እስካሁን ጥያቄ የለም' : 'No requests yet',
+      emptyText: am
+        ? 'ጥያቄ ሲልኩ እዚህ ሁኔታውን እና ታሪኩን ማየት ይችላሉ።'
+        : 'When you send a request, you can track its status and history here.',
+      postRequest: am ? 'ጥያቄ ላክ' : 'Post a request',
+      loginTitle: am ? 'ጥያቄዎችዎን ለማየት ይግቡ' : 'Log in to see your requests',
+      loginText: am
+        ? 'የተላኩ ጥያቄዎችዎን እና ሁኔታቸውን ለማየት በስልክ ይግቡ።'
+        : 'Sign in with your phone to view submitted requests and their status.',
+      detailTitle: am ? 'የጥያቄ ዝርዝር' : 'Request details',
+      timeline: am ? 'ታሪክ' : 'Timeline',
+      postAnother: am ? 'ሌላ ጥያቄ ላክ' : 'Post another',
+      temporary: am ? 'ጊዜያዊ' : 'Temporary',
+      permanent: am ? 'ቋሚ' : 'Permanent',
+      viewMyRequests: am ? 'ጥያቄዎቼን ተመልከት' : 'View my requests',
+      displayStatus: {
+        submitted: am ? 'ተልኳል' : 'Submitted',
+        in_progress: am ? 'በሂደት ላይ' : 'In progress',
+        closed: am ? 'ተዘግቷል' : 'Closed',
+        unavailable: am ? 'አልተገኘም' : 'Unavailable',
+      },
+    },
+    rating: {
+      sheetTitle: am ? 'ባለሙያውን ደረጃ ይስጡ' : 'Rate this provider',
+      sheetSub: am
+        ? 'ከ{name} ጋር ያለዎትን ልምድ ያጋሩ። ግምገማዎ ወዲያውኑ ይታያል።'
+        : 'Share your experience with {name}. Your review goes live right away.',
+      starsA11y: am ? 'ደረጃ ይምረጡ' : 'Choose a star rating',
+      commentPlaceholder: am ? 'አማራጭ አስተያየት (አማራጭ)' : 'Optional comment',
+      submit: am ? 'ግምገማ ላክ' : 'Submit review',
+      submitting: am ? 'በመላክ ላይ…' : 'Submitting…',
+      success: am ? 'አመሰግናለን — ግምገማዎ ቀጥታ ታይቷል።' : 'Thanks — your review is live.',
+      ctaRate: am ? 'ደረጃ ይስጡ' : 'Rate',
+      ctaSignIn: am ? 'ለመደረጃ መስጠት ይግቡ' : 'Sign in to rate',
+      ctaAlready: am ? 'እርስዎ ★{n} ሰጥተዋል' : 'You rated ★{n}',
+      errorGeneric: am ? 'ግምገማ ማስገባት አልተቻለም። እንደገና ይሞክሩ።' : 'Could not submit your review. Try again.',
+      errorVelocity: am
+        ? 'ዛሬ በጣም ብዙ ግምገማዎች ልከዋል። ነገ እንደገና ይሞክሩ።'
+        : 'You have submitted too many reviews today. Try again tomorrow.',
+      errorComment: am
+        ? 'እባክዎ ያለ አገናኝ ወይም ስልክ ቁጥር አጭር ግምገማ ይጻፉ።'
+        : 'Please write a short review without links or phone numbers.',
+      errorRateLimited: am ? 'በጣም ብዙ ሙከራ። ትንሽ ቆይተው ይሞክሩ።' : 'Too many attempts. Please slow down and try again.',
+      errorAlready: am ? 'ይህን ባለሙያ አስቀድመው ደረጃ ሰጥተዋል።' : 'You have already rated this provider.',
+      errorUnavailable: am
+        ? 'ደረጃ መስጠት ለጊዜው አይገኝም። ትንሽ ቆይተው ይሞክሩ።'
+        : 'Ratings are temporarily unavailable. Please try again later.',
+      needContactHint: am
+        ? 'ደረጃ ለመስጠት ባለሙያውን በስልክ ወይም በዋትስአፕ ያግኙ።'
+        : 'Contact this provider by phone or WhatsApp to rate them.',
+      errorNeedContact: am
+        ? 'ደረጃ ከመስጠትዎ በፊት ባለሙያውን በስልክ ወይም በዋትስአፕ ያግኙ።'
+        : 'Contact this provider by phone or WhatsApp before rating.',
+      errorReviewTooSoon: am
+        ? 'አሁን አግኝተውታል — ደረጃ ከመስጠትዎ በፊት ትንሽ ይጠብቁ።'
+        : 'You just contacted them — wait a few seconds before rating.',
+      errorSelfRating: am
+        ? 'የራስዎን ዝርዝር ደረጃ መስጠት አይችሉም።'
+        : 'You cannot rate your own listing.',
     },
     settings: {
       accountInfo: am ? 'የመለያ መረጃ' : 'Account information',
@@ -1001,14 +1167,25 @@ export function labelsFor(lang: Lang): Labels {
       fullName: am ? 'ሙሉ ስም' : 'Full name',
       phone: am ? 'ስልክ ቁጥር' : 'Phone number',
       whatsapp: am ? 'የዋትስአፕ ቁጥር' : 'WhatsApp number',
+      providerType: am ? 'የምዝገባ ዓይነት' : 'Registering as',
+      providerTypeIndividual: am ? 'ግለሰብ ባለሙያ' : 'Individual provider',
+      providerTypeBusiness: am ? 'ንግድ/የአገልግሎት ድርጅት' : 'Business / service company',
       serviceCategory: am ? 'የአገልግሎት ዘርፍ' : 'Service category',
       selectCategory: am ? 'ዘርፍ ይምረጡ' : 'Select a category',
+      engagementLabel: am ? 'ለምን ዓይነት ሥራ ዝግጁ ነዎት?' : 'What work are you available for?',
+      engagementHint: am ? 'ቢያንስ አንዱን ይምረጡ።' : 'Select at least one.',
+      engagement: {
+        temporary: am ? 'ጊዜያዊ' : 'Temporary',
+        permanent: am ? 'ቋሚ' : 'Permanent',
+      },
       area: am ? 'አካባቢ' : 'Area',
       selectArea: am ? 'አካባቢ ይምረጡ' : 'Select an area',
       experience: am ? 'ልምድ' : 'Experience',
       experienceExample: am ? 'ለምሳሌ፡ 5 ዓመት' : 'Example: 5 years',
       photoTitle: am ? 'የስራ ፎቶ መጫን (አማራጭ፣ በቅርብ ይመጣል)' : 'Work photo upload (optional, coming soon)',
       photoDesc: am ? 'ፎቶዎች በኋላ በስርዓቱ በኩል ይገናኛሉ።' : 'Photos will be connected later through a backend endpoint.',
+      description: am ? 'አጭር መግለጫ' : 'Short description',
+      descriptionPlaceholder: am ? 'ስለ አገልግሎትዎ በአጭሩ ይንገሩን።' : 'Tell customers briefly about your service.',
       selectedCategory: am ? 'የተመረጠ፡ {category}' : 'Selected: {category}',
       termsPrefix: am ? 'እኔ ' : 'I agree to the ',
       termsLink: am ? 'ውሎች እና ፖሊሲዎች' : 'Terms & Conditions',
@@ -1023,7 +1200,11 @@ export function labelsFor(lang: Lang): Labels {
       requiredFields: am
         ? 'መጀመሪያ ሙሉ ስም፣ ስልክ ቁጥር እና የአገልግሎት ዘርፍ ያስገቡ።'
         : 'Enter your full name, phone number, and service category first.',
+      fullNameRequired: am ? 'ሙሉ ስምዎን ያስገቡ።' : 'Enter your full name.',
+      phoneRequired: am ? 'የስልክ ቁጥርዎን ያስገቡ።' : 'Enter your phone number.',
+      whatsappInvalid: am ? 'የዋትስአፕ ቁጥሩን ያረጋግጡ።' : 'Check the WhatsApp number.',
       categoryRequired: am ? 'የአገልግሎት ዘርፍዎን ይምረጡ።' : 'Choose your service category.',
+      engagementRequired: am ? 'ቢያንስ አንድ የስራ ዓይነት ይምረጡ።' : 'Select at least one work type.',
       sendingOtp: am ? 'የማረጋገጫ ኮድ በመላክ ላይ…' : 'Sending verification code…',
       otpSentTitle: am ? 'ስልክዎን ያረጋግጡ' : 'Verify your phone',
       otpSentBody: am
@@ -1075,6 +1256,10 @@ export function labelsFor(lang: Lang): Labels {
       locationHint: am
         ? 'አንድ አካባቢ ይምረጡ፣ ወይም ለመላው አዲስ አበባ ምንም አይምረጡ።'
         : 'Pick one area, or none for all of Addis Ababa.',
+      engagement: am ? 'ለምን ያህል ጊዜ' : 'Engagement',
+      engagementAll: am ? 'ሁሉም' : 'All',
+      engagementTemporary: am ? 'ጊዜያዊ' : 'Temporary',
+      engagementPermanent: am ? 'ቋሚ' : 'Permanent',
       showCount: am ? '{count} ባለሙያዎችን አሳይ' : 'Show {count} providers',
     },
     location: {

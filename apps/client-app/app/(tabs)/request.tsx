@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import type { FieldErrors } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import {
   Image,
@@ -22,6 +23,7 @@ import { FieldLabel, FormTextArea, SelectField } from '../../src/components/Fiel
 import LocationSheet from '../../src/components/LocationSheet';
 import { CATS } from '../../src/data/mock';
 import { useCreateRequest } from '../../src/hooks/queries';
+import { resolveCustomerFeatureAccess } from '../../src/lib/customerFeatureAccess';
 import { areaLabel, categoryLabel } from '../../src/lib/directory-display';
 import { presentError } from '../../src/lib/error-presentation';
 import { Icon } from '../../src/lib/icons';
@@ -94,7 +96,16 @@ export default function RequestScreen() {
   const router = useRouter();
   const area = useAppStore((s) => s.area);
   const lang = useAppStore((s) => s.lang);
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const loggedIn = useAppStore((s) => s.loggedIn);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const providerProfile = useAppStore((s) => s.providerProfile);
+  const access = resolveCustomerFeatureAccess({
+    sessionReady,
+    loggedIn,
+    activeSession,
+    hasProviderProfile: !!providerProfile,
+  });
   const showToast = useAppStore((s) => s.showToast);
   const am = lang === 'am';
 
@@ -102,6 +113,10 @@ export default function RequestScreen() {
   const labels = useLabels();
   const t = labels.request;
   const errorView = mutation.isError ? presentError(mutation.error, labels) : null;
+  const engagementLabel: Record<'Temporary' | 'Permanent', string> = {
+    Temporary: t.engagement.temporary,
+    Permanent: t.engagement.permanent,
+  };
   const whenLabel: Record<(typeof WHEN)[number], string> = {
     Emergency: t.when.emergency,
     Today: t.when.today,
@@ -120,11 +135,22 @@ export default function RequestScreen() {
     '3,000–7,000 ETB': t.budget.between2,
     '7,000+ ETB': t.budget.over7000,
   };
-  const { handleSubmit, watch, setValue, reset } = useForm<RequestForm>({
+  const { handleSubmit, watch, setValue, reset, clearErrors, formState: { errors } } = useForm<RequestForm>({
     resolver: zodResolver(requestSchema),
     defaultValues: defaultRequest(area),
   });
   const values = watch();
+
+  const fieldError = (name: keyof RequestForm) => {
+    if (name === 'categoryId' && errors.categoryId) return t.chooseService;
+    if (name === 'area' && errors.area) return t.chooseArea;
+    return undefined;
+  };
+
+  const mutationErrorText = mutation.error ? presentError(mutation.error, labels).message : null;
+  useEffect(() => {
+    if (mutationErrorText) showToast(mutationErrorText, 'ph-warning-circle');
+  }, [mutationErrorText, showToast]);
 
   const [showCat, setShowCat] = useState(false);
   const [showArea, setShowArea] = useState(false);
@@ -146,14 +172,25 @@ export default function RequestScreen() {
           text={wasDuplicate ? t.successDupText : fill(t.successText, { area: successArea })}
           subtext={t.successBody}
         >
-          <Button label={labels.common.browseProviders} variant="gold" size="md" fullWidth onPress={() => router.push('/providers')} />
+          <Button label={labels.activity.viewMyRequests} variant="gold" size="md" fullWidth onPress={() => router.push('/bookmarks?tab=requests')} />
+          <Button label={labels.common.browseProviders} variant="secondary" size="md" fullWidth onPress={() => router.push('/providers')} />
           <Button label={t.postAnother} variant="secondary" size="md" fullWidth onPress={startOver} />
         </ResultCard>
       </SafeAreaView>
     );
   }
 
-  if (!loggedIn) {
+  if (access === 'loading') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ResultCard icon="ph-hand-heart" title={t.title} text={t.subtitle}>
+          <Button label={labels.common.loading} variant="secondary" size="md" fullWidth disabled />
+        </ResultCard>
+      </SafeAreaView>
+    );
+  }
+
+  if (access === 'need_login') {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ResultCard icon="ph-hand-heart" title={t.gateTitle} text={t.gateText}>
@@ -177,7 +214,11 @@ export default function RequestScreen() {
   const cat = CATS.find((c) => c.id === values.categoryId);
   const categoryLabelText = cat ? categoryLabel(cat, am) : '';
   const areaDisplay = values.area ? areaLabel(values.area, am) : areaLabel(area, am);
-  const onInvalid = () => showToast(!values.categoryId ? t.chooseService : t.describeWork, 'ph-warning-circle');
+  const onInvalid = (formErrors: FieldErrors<RequestForm>) => {
+    if (formErrors.categoryId) return showToast(t.chooseService, 'ph-warning-circle');
+    if (formErrors.area) return showToast(t.chooseArea, 'ph-warning-circle');
+    showToast(t.chooseService, 'ph-warning-circle');
+  };
   const submit = handleSubmit((v) => mutation.mutate(v), onInvalid);
 
   return (
@@ -231,6 +272,8 @@ export default function RequestScreen() {
                 value={categoryLabelText}
                 placeholder={t.servicePlaceholder}
                 caret="down"
+                errored={!!errors.categoryId}
+                error={fieldError('categoryId')}
                 accessibilityLabel={labels.a11y.selectService}
               />
 
@@ -244,14 +287,35 @@ export default function RequestScreen() {
                 value={values.area ? areaLabel(values.area, am) : ''}
                 placeholder={t.areaLabel}
                 caret="down"
+                errored={!!errors.area}
+                error={fieldError('area')}
                 accessibilityLabel={labels.a11y.selectArea}
               />
 
+              <FieldLabel compact optional>
+                {t.engagementLabel}
+              </FieldLabel>
+              <View style={styles.chipWrap}>
+                {(['Temporary', 'Permanent'] as const).map((e) => {
+                  const active = values.engagement === e;
+                  return (
+                    <Chip
+                      key={e}
+                      label={engagementLabel[e]}
+                      active={active}
+                      height={32}
+                      onPress={() => setValue('engagement', active ? '' : e)}
+                    />
+                  );
+                })}
+              </View>
+
               <FormTextArea
                 compact
+                optional
                 label={t.describeLabel}
                 value={values.description}
-                onChangeText={(text) => setValue('description', text.slice(0, 300))}
+                onChangeText={(text) => setValue('description', text.slice(0, 300), { shouldValidate: true })}
                 placeholder={t.descPlaceholder}
               />
               <Text style={styles.counter}>{values.description.length}/300</Text>
@@ -318,14 +382,6 @@ export default function RequestScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          {mutation.isError && (
-            <View style={styles.errorRow}>
-              <Icon name="ph-warning-circle" size={14} color={colors.danger} weight="fill" />
-              <Text style={styles.errorText} numberOfLines={2}>
-                {errorView?.message}
-              </Text>
-            </View>
-          )}
           <Button
             label={
               mutation.isPending
@@ -355,9 +411,20 @@ export default function RequestScreen() {
         visible={showCat}
         onClose={() => setShowCat(false)}
         value={values.categoryId}
-        onSelect={(id) => setValue('categoryId', id)}
+        onSelect={(id) => {
+          setValue('categoryId', id, { shouldValidate: true });
+          clearErrors('categoryId');
+        }}
       />
-      <LocationSheet visible={showArea} onClose={() => setShowArea(false)} value={values.area} onSelect={(a) => setValue('area', a)} />
+      <LocationSheet
+        visible={showArea}
+        onClose={() => setShowArea(false)}
+        value={values.area}
+        onSelect={(a) => {
+          setValue('area', a, { shouldValidate: true });
+          clearErrors('area');
+        }}
+      />
     </SafeAreaView>
   );
 }

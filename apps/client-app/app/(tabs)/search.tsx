@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
 import CategoryFilterSheet, { CategorySort } from '../../src/components/CategoryFilterSheet';
@@ -8,7 +8,7 @@ import Chip from '../../src/components/Chip';
 import LocationSheet from '../../src/components/LocationSheet';
 import PromoBanner from '../../src/components/PromoBanner';
 import { CATS, GROUP_NAMES } from '../../src/data/mock';
-import { useCategories } from '../../src/hooks/queries';
+import { keys, useCategories } from '../../src/hooks/queries';
 import { areaLabel, categoryLabel, serviceGroupLabel } from '../../src/lib/directory-display';
 import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
 import { Icon } from '../../src/lib/icons';
@@ -44,7 +44,7 @@ export default function CategoriesScreen() {
   const [showLocation, setShowLocation] = useState(false);
 
   const categories = useCategories();
-  const { refreshing, onRefresh } = usePullToRefresh(() => categories.refetch());
+  const { refreshing, onRefresh } = usePullToRefresh(keys.categories);
   const source: Category[] = categories.data?.length ? categories.data : CATS;
 
   const groupLabel = (group: string): string => serviceGroupLabel(group, labels);
@@ -83,6 +83,8 @@ export default function CategoriesScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
+        style={styles.scroll}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -102,14 +104,20 @@ export default function CategoriesScreen() {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.refreshBtn, pressed && { opacity: 0.64 }]}
-            onPress={onRefresh}
+            onPress={() => {
+              void onRefresh();
+            }}
             disabled={refreshing}
             hitSlop={2}
             accessibilityRole="button"
             accessibilityLabel={labels.a11y.refresh}
             accessibilityState={{ busy: refreshing }}
           >
-            <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+            {refreshing ? (
+              <ActivityIndicator size="small" color={colors.green900} />
+            ) : (
+              <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+            )}
           </Pressable>
         </View>
 
@@ -219,6 +227,7 @@ export default function CategoriesScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   scrollContent: { alignItems: 'center', paddingBottom: 28 },
   content: { width: '100%', maxWidth: layout.contentMaxWidth },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 2, paddingBottom: 6 },

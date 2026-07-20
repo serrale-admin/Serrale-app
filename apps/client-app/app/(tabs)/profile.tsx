@@ -118,12 +118,35 @@ export default function ProfileScreen() {
               {
                 label: p.myRequests,
                 icon: 'ph-tray',
-                onPress: () => router.push('/(tabs)/request'),
+                onPress: () => router.push('/bookmarks?tab=requests'),
               } as Row,
               {
                 label: labels.common.savedProviders,
                 icon: 'ph-bookmark-simple',
-                onPress: () => router.push('/bookmarks'),
+                onPress: () => router.push('/bookmarks?tab=saved'),
+              } as Row,
+            ]
+          : []),
+        ...(isProviderSession
+          ? [
+              {
+                label: labels.common.notifications,
+                icon: 'ph-bell',
+                onPress: () => router.push('/notifications'),
+              } as Row,
+              {
+                label: 'Shared requests',
+                icon: 'ph-phone-call',
+                onPress: () => router.push('/shared-leads'),
+              } as Row,
+            ]
+          : []),
+        ...(isCustomerSession
+          ? [
+              {
+                label: labels.common.notifications,
+                icon: 'ph-bell',
+                onPress: () => router.push('/notifications'),
               } as Row,
             ]
           : []),

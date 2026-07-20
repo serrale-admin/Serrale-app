@@ -117,7 +117,7 @@ interface Envelope<T> {
   message?: string;
 }
 
-type TokenProvider = () => Promise<string | null>;
+type TokenProvider = (ctx?: { path: string; method: string }) => Promise<string | null>;
 type UnauthorizedHandler = (replay: () => Promise<any>, isSafe: boolean) => Promise<any>;
 
 let tokenProvider: TokenProvider | null = null;
@@ -129,6 +129,32 @@ export function setTokenProvider(provider: TokenProvider | null) {
 
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
   unauthorizedHandler = handler;
+}
+
+/**
+ * Customer-scoped routes must never send a provider JWT. A provider Bearer on
+ * /customers/* or /leads/request returns 401 and was incorrectly shown as
+ * "session expired" while the user still appeared logged in.
+ */
+export function isCustomerScopedPath(path: string): boolean {
+  const normalized = path.split('?')[0].replace(/\/+$/, '');
+  const marker = '/public-directory';
+  const idx = normalized.indexOf(marker);
+  const route = idx >= 0 ? normalized.slice(idx + marker.length) || '/' : normalized;
+  if (route.startsWith('/customers')) return true;
+  if (route === '/leads/request' || route.startsWith('/leads/request/')) return true;
+  return false;
+}
+
+/** GET or Idempotency-Key writes are safe to replay after a token refresh. */
+export function isAuthReplaySafe(method: string, headers?: Record<string, string>): boolean {
+  if (method.toUpperCase() === 'GET') return true;
+  if (!headers) return false;
+  const key =
+    headers['Idempotency-Key'] ||
+    headers['idempotency-key'] ||
+    headers['Idempotency-key'];
+  return typeof key === 'string' && key.trim().length > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,6 +315,10 @@ export function isUnauthenticatedPublicRead(method: string, path: string): boole
   if (route === '/search' || route.startsWith('/search/')) return true;
   if (route === '/providers') return true;
   // /providers/:id is public; /providers/me* is authenticated.
+  // Rating eligibility needs the customer Bearer when present — do not strip it.
+  if (route.includes('/reviews/eligibility')) return false;
+  // Published review lists are public reads.
+  if (/\/providers\/[^/]+\/reviews$/.test(route)) return true;
   if (route.startsWith('/providers/')) {
     const rest = route.slice('/providers/'.length);
     const segment = rest.split('/')[0];
@@ -297,9 +327,22 @@ export function isUnauthenticatedPublicRead(method: string, path: string): boole
   return false;
 }
 
-function errorMessage(e: Envelope<unknown>): { message: string; code?: string } {
-  if (e.error && typeof e.error === 'object') return { message: e.error.message || 'Request failed', code: e.error.code };
-  if (typeof e.error === 'string') return { message: e.error };
+/**
+ * Unwrap API error payloads. Supports both the standard envelope
+ * `{ success:false, error:{ code, message } }` and the catch-all 404 shape
+ * `{ error:"NOT_FOUND", message:"Endpoint … does not exist…" }` from app.ts.
+ */
+export function errorMessage(e: Envelope<unknown>): { message: string; code?: string } {
+  if (e.error && typeof e.error === 'object') {
+    return {
+      message: e.error.message || e.message || 'Request failed',
+      code: e.error.code,
+    };
+  }
+  if (typeof e.error === 'string') {
+    // Catch-all routes put the code in `error` and the human text in `message`.
+    return { message: e.message || e.error, code: e.error };
+  }
   if (e.message) return { message: e.message };
   return { message: 'Something went wrong' };
 }
@@ -351,7 +394,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
   const onAbort = () => controller.abort();
   if (signal) signal.addEventListener('abort', onAbort);
 
-  const activeToken = token || (tokenProvider ? await tokenProvider() : undefined);
+  const activeToken = token || (tokenProvider ? await tokenProvider({ path, method }) : undefined);
   // Public catalog reads must not send a customer Bearer. A stale/expired token
   // attached to /providers or /categories can trip the 401 refresh interceptor
   // and wipe the Home/Search rails even though those routes are unauthenticated.
@@ -404,7 +447,7 @@ async function coreHttp<T>(path: string, opts: RequestOptions): Promise<T> {
   }
 
   if (res.status === 401 && !skipAuthInterceptor && unauthorizedHandler && authorizationToken) {
-    const isSafe = method === 'GET';
+    const isSafe = isAuthReplaySafe(method, extraHeaders);
     return await unauthorizedHandler(() => http<T>(path, { ...opts, skipAuthInterceptor: true }), isSafe);
   }
 

@@ -24,6 +24,7 @@ const emptyFilters = (): Filters => ({
   contact: [],
   price: [],
   exp: [],
+  engagement: '',
 });
 
 interface Toast {
@@ -33,6 +34,8 @@ interface Toast {
 
 interface AppState {
   loggedIn: boolean;
+  /** True when customer access/refresh tokens are present on device. */
+  hasCustomerSession: boolean;
   user: AuthUser | null;
   pendingPhone: string;
   pendingChallengeId: string;
@@ -80,6 +83,7 @@ interface AppState {
   setPendingAuthRole(role: 'customer' | 'provider'): void;
   setPendingOtpPurpose(purpose: OtpPurpose | null): void;
   setActiveSession(role: 'customer' | 'provider' | null): void;
+  setHasCustomerSession(value: boolean): void;
 
   // preferences
   area: string;
@@ -101,6 +105,10 @@ interface AppState {
    * active area again clears it.
    */
   selectAreaFilter(area: string): void;
+  /** Single-select engagement filter: '' clears it, selecting the active value again clears it. */
+  selectEngagementFilter(value: string): void;
+  /** Always assign engagement ('' = All). Used by the home/categories segment control. */
+  setEngagementFilter(value: string): void;
   setRating(value: string): void;
   toggleQuick(kind: string): void;
   resetFilters(): void;
@@ -146,6 +154,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       loggedIn: false,
+      hasCustomerSession: false,
       user: null,
       pendingPhone: '',
       pendingChallengeId: '',
@@ -171,6 +180,7 @@ export const useAppStore = create<AppState>()(
       logoutCustomer: () =>
         set({
           loggedIn: false,
+          hasCustomerSession: false,
           user: null,
           pendingPhone: '',
           pendingChallengeId: '',
@@ -181,8 +191,8 @@ export const useAppStore = create<AppState>()(
       logout: () =>
         set({
           loggedIn: false,
+          hasCustomerSession: false,
           user: null,
-          saved: {},
           pendingPhone: '',
           pendingChallengeId: '',
           pendingOtpDelivery: null,
@@ -205,6 +215,7 @@ export const useAppStore = create<AppState>()(
       setPendingAuthRole: (pendingAuthRole) => set({ pendingAuthRole }),
       setPendingOtpPurpose: (pendingOtpPurpose) => set({ pendingOtpPurpose }),
       setActiveSession: (activeSession) => set({ activeSession }),
+      setHasCustomerSession: (hasCustomerSession) => set({ hasCustomerSession }),
 
       area: AREA_ALL,
       lang: 'en',
@@ -229,6 +240,14 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           filters: { ...s.filters, areas: s.filters.areas[0] === area ? [] : [area] },
         })),
+      selectEngagementFilter: (value) =>
+        set((s) => ({
+          filters: { ...s.filters, engagement: s.filters.engagement === value ? '' : value },
+        })),
+      setEngagementFilter: (value) =>
+        set((s) => ({
+          filters: { ...s.filters, engagement: value === 'temporary' || value === 'permanent' ? value : '' },
+        })),
       setRating: (value) => set((s) => ({ filters: { ...s.filters, rating: value } })),
       toggleQuick: (kind) =>
         set((s) => {
@@ -250,7 +269,8 @@ export const useAppStore = create<AppState>()(
           (f.rating !== 'Any' ? 1 : 0) +
           f.contact.length +
           f.price.length +
-          f.exp.length
+          f.exp.length +
+          (f.engagement ? 1 : 0)
         );
       },
 

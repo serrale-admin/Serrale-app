@@ -34,13 +34,22 @@ jest.mock('../../../src/components/LocationSheet', () => () => null);
 
 describe('RequestScreen error presentation', () => {
   beforeEach(() => {
-    useAppStore.setState({ loggedIn: true, lang: 'en' });
+    useAppStore.setState({
+      loggedIn: true,
+      hasCustomerSession: true,
+      sessionReady: true,
+      activeSession: 'customer',
+      lang: 'en',
+      toast: null,
+    });
   });
 
-  it('renders mapped safe copy instead of a raw backend error', () => {
+  it('maps raw backend errors to safe toast copy (never leaks SQL/PII)', () => {
     render(<RequestScreen />);
 
-    expect(screen.getByText(labelsFor('en').errors.unknownMessage)).toBeTruthy();
+    const en = labelsFor('en');
+    expect(useAppStore.getState().toast?.text).toBe(en.errors.unknownMessage);
+    expect(screen.getByText(en.errors.retry)).toBeTruthy();
     expect(screen.queryByText(/supabase|SELECT|PGRST204|\+251912345678/i)).toBeNull();
   });
 });

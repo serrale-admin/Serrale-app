@@ -55,6 +55,14 @@ export interface ApiProvider {
   created_at?: string | null;
   /** Only present in GPS/nearby mode. */
   distance_km?: number | null;
+  /** individual | business — added with engagement_types (engagement-model Phase 2). */
+  provider_type?: 'individual' | 'business' | null;
+  /** Subset of {temporary, permanent} — what engagement lengths this provider accepts. */
+  engagement_types?: ('temporary' | 'permanent')[] | null;
+  /** Published review average — null/absent when none. */
+  avg_rating?: number | null;
+  /** Published review count — 0 when none. */
+  review_count?: number | null;
 }
 
 /**
@@ -132,6 +140,8 @@ export interface ApiProviderSessionProvider {
   photo_url?: string | null;
   status?: string | null;
   created_at?: string | null;
+  provider_type?: 'individual' | 'business' | null;
+  engagement_types?: ('temporary' | 'permanent')[] | null;
 }
 
 /** GET/PATCH /providers/me response row. */

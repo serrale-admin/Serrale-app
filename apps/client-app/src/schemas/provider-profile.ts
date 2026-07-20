@@ -7,6 +7,8 @@ export const providerProfileSchema = z.object({
   whatsapp: z.string().max(32).optional(),
   experience: z.string().max(160).optional(),
   description: z.string().max(1200).optional(),
+  providerType: z.enum(['individual', 'business']),
+  engagementTypes: z.array(z.enum(['temporary', 'permanent'])).min(1, 'Select at least one work type'),
 });
 
 export type ProviderProfileFormValues = z.infer<typeof providerProfileSchema>;
@@ -18,6 +20,8 @@ export const defaultProviderProfile = (): ProviderProfileFormValues => ({
   whatsapp: '',
   experience: '',
   description: '',
+  providerType: 'individual',
+  engagementTypes: ['temporary', 'permanent'],
 });
 
 export function providerProfileToApiPatch(value: ProviderProfileFormValues) {
@@ -28,5 +32,7 @@ export function providerProfileToApiPatch(value: ProviderProfileFormValues) {
     whatsappNumber: value.whatsapp?.trim() || undefined,
     experience: value.experience?.trim() || undefined,
     description: value.description?.trim() || undefined,
+    providerType: value.providerType,
+    engagementTypes: value.engagementTypes,
   };
 }

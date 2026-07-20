@@ -86,6 +86,7 @@ export function decodeJwt(token: string): { customer_id?: string; phone?: string
 }
 
 function applyCustomerToStore(customer: ApiCustomerProfile | ApiSessionCustomer) {
+  useAppStore.getState().setHasCustomerSession(true);
   useAppStore.getState().login({
     id: customer.id,
     phone: customer.phone,
@@ -130,6 +131,8 @@ export function applyProviderSession(record: ProviderSessionRecord): void {
     });
   }
   const activeSession = useAppStore.getState().activeSession;
+  // Always mark the store signed-in for provider sessions so request history /
+  // notifications stay consistent with Profile (hybrid accounts).
   if (activeSession === 'provider' || !useAppStore.getState().loggedIn) {
     useAppStore.getState().login({
       id: provider.id,
@@ -264,8 +267,17 @@ export async function handleCustomerLogout(): Promise<void> {
     await secureSession.clear();
     queryClient.removeQueries({ queryKey: ['customers'] });
     useAppStore.getState().logoutCustomer();
-    useAppStore.getState().setActiveSession(null);
-    await writeActiveSessionRole(null);
+
+    // Keep provider UI when customer refresh expires but a provider JWT remains.
+    const providerRecord = await providerSession.read();
+    if (providerRecord?.provider?.phone) {
+      await writeActiveSessionRole('provider');
+      useAppStore.getState().setActiveSession('provider');
+      applyProviderSession(providerRecord);
+    } else {
+      useAppStore.getState().setActiveSession(null);
+      await writeActiveSessionRole(null);
+    }
   }
 }
 
@@ -292,25 +304,57 @@ export async function handleLogout(): Promise<void> {
 
 export async function initializeSessionManager(): Promise<void> {
   useAppStore.getState().setSessionReady(false);
+  useAppStore.getState().setHasCustomerSession(false);
   await checkInstallation();
 
-  setTokenProvider(async () => {
+  // Prefer customer access token. Fall back to provider JWT for hybrid accounts
+  // (service requests, activity, reviews, contact events). The backend ensures a
+  // customer row for the provider's phone on those routes.
+  setTokenProvider(async (_ctx) => {
     const tokens = await secureSession.read();
-    if (!tokens) return null;
-    return tokens.accessToken;
+    if (tokens?.accessToken) {
+      const expiresAt = Date.parse(tokens.accessExpiresAt);
+      // Proactively rotate a near-expired access token before customer writes
+      // (requests) so we don't 401 → false "session expired" after refresh.
+      if (
+        Number.isFinite(expiresAt) &&
+        Date.now() >= expiresAt - 15_000 &&
+        tokens.refreshToken
+      ) {
+        const refreshed = await doRefresh().catch(() => null);
+        if (refreshed?.accessToken) return refreshed.accessToken;
+      }
+      return tokens.accessToken;
+    }
+    const provider = await providerSession.read();
+    return provider?.sessionToken ?? null;
   });
 
   setUnauthorizedHandler(async (replay, isSafe) => {
-    const refreshed = await doRefresh();
-    if (!refreshed) {
-      throw new HttpError(401, 'Session expired');
+    // Provider JWT has no refresh path. Only attempt customer refresh when a
+    // customer refresh token exists — otherwise a 401 on a provider Bearer
+    // would call handleCustomerLogout and wipe the active session role.
+    const tokens = await secureSession.read();
+    if (!tokens?.refreshToken) {
+      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
     }
 
+    const refreshed = await doRefresh();
+    if (!refreshed) {
+      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
+    }
+
+    // Replay GETs and Idempotency-Key writes (service requests, OTP, reviews).
+    // Non-idempotent writes still skip auto-replay to avoid duplicate side effects.
     if (isSafe) {
       return await replay();
     }
 
-    throw new HttpError(401, 'Session expired. Write request skipped.');
+    throw new HttpError(
+      409,
+      'Please try again.',
+      'AUTH_REFRESHED_RETRY',
+    );
   });
 
   try {
@@ -322,6 +366,8 @@ export async function initializeSessionManager(): Promise<void> {
 
     const hasCustomer = !!tokens;
     const hasProvider = !!providerRecord?.provider?.phone;
+    useAppStore.getState().setHasCustomerSession(hasCustomer);
+
     let role = savedRole;
     if (!role) {
       if (hasCustomer) role = 'customer';

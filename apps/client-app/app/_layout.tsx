@@ -29,6 +29,8 @@ import { logger } from '../src/lib/logger';
 import { queryClient } from '../src/lib/queryClient';
 import { colors } from '../src/lib/theme';
 import { initializeSessionManager } from '../src/lib/session-manager';
+import { registerDirectoryPushIfPossible } from '../src/lib/push-registration';
+import { useAppStore } from '../src/store/appStore';
 
 const APP_VERSION =
   (Constants.expoConfig?.version as string | undefined) ??
@@ -65,6 +67,14 @@ export default function RootLayout() {
     initializeSessionManager().catch(() => {});
   }, []);
 
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  const sessionReady = useAppStore((s) => s.sessionReady);
+  useEffect(() => {
+    if (sessionReady && loggedIn) {
+      void registerDirectoryPushIfPossible();
+    }
+  }, [sessionReady, loggedIn]);
+
   // Tag outgoing requests with the current route template (PII-free) so the
   // network layer can attach it as diagnostic metadata, AND drop a release-health
   // breadcrumb for the navigation. The route TEMPLATE (e.g. /provider/[id]) is
@@ -94,6 +104,9 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="shared-leads" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="customer/[id]" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="provider/[id]" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="provider/join" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="categories/[id]" options={{ animation: 'slide_from_right' }} />

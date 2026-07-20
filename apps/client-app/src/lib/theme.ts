@@ -20,6 +20,14 @@ export const colors = {
   frostBorder: 'rgba(6,71,52,0.11)',
   frostHi: 'rgba(255,255,255,0.6)',
 
+  // Liquid-glass frosty white (rate / overlay sheets). Opaque ivory — not green wash, not see-through.
+  glassWhite: '#F7F8F6',
+  glassWhiteHi: '#FFFFFF',
+  glassWhiteDeep: '#EEF0EE',
+  glassWhiteBorder: 'rgba(16,46,37,0.14)',
+  /** Charcoal-green for empty/outline stars — readable on frosty white. */
+  starEmpty: '#5A6B62',
+
   text: '#102E25',
   muted: '#65756D',
   faint: '#9aa39d',

@@ -14,7 +14,15 @@ interface Props {
 }
 
 /** Category treatments: compact icon pills plus photographic discovery cards. */
-export default function CategoryCard({ name, icon, imageKey, count, variant = 'tile', onPress, style }: Props) {
+export default function CategoryCard({
+  name,
+  icon,
+  imageKey,
+  count,
+  variant = 'tile',
+  onPress,
+  style,
+}: Props) {
   if (variant === 'shortcut') {
     return (
       <Pressable
@@ -24,7 +32,9 @@ export default function CategoryCard({ name, icon, imageKey, count, variant = 't
         accessibilityLabel={name}
       >
         <Icon name={icon} size={17} color={colors.green700} weight="fill" />
-        <Text style={styles.shortcutName} numberOfLines={1}>{name}</Text>
+        <Text style={styles.shortcutName} numberOfLines={1}>
+          {name}
+        </Text>
       </Pressable>
     );
   }

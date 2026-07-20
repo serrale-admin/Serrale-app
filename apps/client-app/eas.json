@@ -38,6 +38,7 @@
   "submit": {
     "production": {
       "android": {
+        "serviceAccountKeyPath": "/Users/terusew/Downloads/serrale-68125e105a6c.json",
         "track": "alpha",
         "releaseStatus": "completed",
         "changesNotSentForReview": false

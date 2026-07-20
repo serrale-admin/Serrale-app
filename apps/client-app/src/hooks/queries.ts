@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import * as api from '../api';
 import type { VerifyArgs } from '../api';
 import { generateRequestId } from '../lib/request-policy';
+import { useAppStore } from '../store/appStore';
 import type { ProviderQuery, ServiceRequest } from '../types';
 
 export const keys = {
@@ -11,8 +12,8 @@ export const keys = {
   category: (id: string) => ['category', id] as const,
   providers: (q: ProviderQuery) => ['providers', q] as const,
   provider: (id: string) => ['provider', id] as const,
-  nearby: (area: string) => ['providers', 'nearby', area] as const,
-  verified: ['providers', 'verified'] as const,
+  nearby: (area: string, engagement = '') => ['providers', 'nearby', area, engagement] as const,
+  verified: (engagement = '') => ['providers', 'verified', engagement] as const,
   recentWork: ['pastwork', 'recent'] as const,
   providerWork: (id: string) => ['pastwork', id] as const,
   reviews: (id: string) => ['reviews', id] as const,
@@ -35,11 +36,17 @@ export const useProviders = (query: ProviderQuery) =>
 export const useProvider = (id: string) =>
   useQuery({ queryKey: keys.provider(id), queryFn: () => api.getProvider(id), enabled: !!id });
 
-export const useNearbyProviders = (area: string) =>
-  useQuery({ queryKey: keys.nearby(area), queryFn: () => api.getNearbyProviders(area) });
+export const useNearbyProviders = (area: string, engagement = '') =>
+  useQuery({
+    queryKey: keys.nearby(area, engagement),
+    queryFn: () => api.getNearbyProviders(area, 5, engagement || undefined),
+  });
 
-export const useVerifiedProviders = () =>
-  useQuery({ queryKey: keys.verified, queryFn: () => api.getVerifiedProviders() });
+export const useVerifiedProviders = (engagement = '') =>
+  useQuery({
+    queryKey: keys.verified(engagement),
+    queryFn: () => api.getVerifiedProviders(8, engagement || undefined),
+  });
 
 export const useRecentWork = () =>
   useQuery({ queryKey: keys.recentWork, queryFn: () => api.getRecentWork() });
@@ -48,8 +55,18 @@ export const useProviderWork = (id: string) =>
   useQuery({ queryKey: keys.providerWork(id), queryFn: () => api.getProviderPastWork(id), enabled: !!id });
 
 export const useProviderReviews = (id: string) =>
-  useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 2), enabled: !!id });
+  useQuery({ queryKey: keys.reviews(id), queryFn: () => api.getProviderReviews(id, 10), enabled: !!id });
 
+export const useReviewEligibility = (id: string, enabled = true) => {
+  const loggedIn = useAppStore((s) => s.loggedIn);
+  return useQuery({
+    // Include loggedIn so eligibility refetches after login/logout (Bearer present).
+    queryKey: ['reviews', 'eligibility', id, loggedIn] as const,
+    queryFn: () => api.getReviewEligibility(id),
+    enabled: !!id && enabled,
+    staleTime: 30_000,
+  });
+};
 /**
  * Service-request submission with a stable Idempotency-Key per LOGICAL
  * submission: the key is minted on the first attempt and reused across

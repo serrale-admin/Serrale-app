@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryCard from '../../src/components/CategoryCard';
+import EngagementFilterChip from '../../src/components/EngagementFilterChip';
 import FilterSheet from '../../src/components/FilterSheet';
 import HomeBanner from '../../src/components/HomeBanner';
 import LocationSheet from '../../src/components/LocationSheet';
@@ -11,7 +12,7 @@ import ProviderMini from '../../src/components/ProviderMini';
 import SafetyCard from '../../src/components/SafetyCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import { AREA_ALL, CATS, PASTWORK, PROV } from '../../src/data/mock';
-import { useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
+import { keys, useCategories, useNearbyProviders, useRecentWork, useVerifiedProviders } from '../../src/hooks/queries';
 import { directoryRefreshProps, usePullToRefresh } from '../../src/lib/directory-refresh';
 import { USE_MOCK } from '../../src/lib/env';
 import { Icon } from '../../src/lib/icons';
@@ -27,20 +28,22 @@ export default function HomeScreen() {
   const area = useAppStore((state) => state.area);
   const lang = useAppStore((state) => state.lang);
   const setArea = useAppStore((state) => state.setArea);
+  const engagement = useAppStore((state) => state.filters.engagement);
+  const selectEngagementFilter = useAppStore((state) => state.selectEngagementFilter);
   const am = lang === 'am';
 
   const [showFilter, setShowFilter] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
 
-  const nearby = useNearbyProviders(area);
-  const verified = useVerifiedProviders();
+  const nearby = useNearbyProviders(area, engagement);
+  const verified = useVerifiedProviders(engagement);
   const recent = useRecentWork();
   const categories = useCategories();
   const { refreshing, onRefresh } = usePullToRefresh(
-    () => nearby.refetch(),
-    () => verified.refetch(),
-    () => recent.refetch(),
-    () => categories.refetch(),
+    keys.categories,
+    keys.nearby(area, engagement),
+    keys.verified(engagement),
+    keys.recentWork,
   );
 
   const liveCats = categories.data?.length ? categories.data : CATS;
@@ -48,8 +51,20 @@ export default function HomeScreen() {
     (category): category is (typeof liveCats)[number] => Boolean(category),
   );
   const popularCats = liveCats.slice().sort((a, b) => b.count - a.count).slice(0, 8);
-  const nearbyMock = PROV.filter((provider) => area === AREA_ALL || provider.area === area);
-  const verifiedMock = PROV.filter((provider) => provider.verified || provider.adminReviewed);
+  const nearbyMock = PROV.filter((provider) => {
+    if (area !== AREA_ALL && provider.area !== area) return false;
+    if (engagement === 'temporary' || engagement === 'permanent') {
+      return (provider.engagementTypes || []).includes(engagement);
+    }
+    return true;
+  });
+  const verifiedMock = PROV.filter((provider) => {
+    if (!(provider.verified || provider.adminReviewed)) return false;
+    if (engagement === 'temporary' || engagement === 'permanent') {
+      return (provider.engagementTypes || []).includes(engagement);
+    }
+    return true;
+  });
   const nearbySource = USE_MOCK && nearby.isLoading ? nearbyMock : nearby.data ?? [];
   const verifiedSource = USE_MOCK && verified.isLoading ? verifiedMock : verified.data ?? [];
   const recentWork = USE_MOCK && recent.isLoading ? PASTWORK : recent.data ?? [];
@@ -71,6 +86,8 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
+        style={styles.scroll}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
@@ -101,14 +118,20 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
-              onPress={onRefresh}
+              onPress={() => {
+                void onRefresh();
+              }}
               disabled={refreshing}
               hitSlop={2}
               accessibilityRole="button"
               accessibilityLabel={labels.a11y.refresh}
               accessibilityState={{ busy: refreshing }}
             >
-              <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.green900} />
+              ) : (
+                <Icon name="ph-arrow-clockwise" size={20} color={colors.green900} />
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
@@ -149,6 +172,21 @@ export default function HomeScreen() {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+            <View style={styles.engagementPair}>
+              <EngagementFilterChip
+                kind="temporary"
+                label={labels.filter.engagementTemporary}
+                active={engagement === 'temporary'}
+                onPress={() => selectEngagementFilter('temporary')}
+              />
+              <EngagementFilterChip
+                kind="permanent"
+                label={labels.filter.engagementPermanent}
+                active={engagement === 'permanent'}
+                onPress={() => selectEngagementFilter('permanent')}
+              />
+            </View>
+            <View style={styles.chipDivider} />
             {quickCats.map((category) => (
               <CategoryCard
                 key={category.id}
@@ -268,6 +306,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   scrollContent: { alignItems: 'center', paddingBottom: 20 },
   content: { width: '100%', maxWidth: layout.contentMaxWidth },
   pressed: { opacity: 0.64 },
@@ -309,8 +348,22 @@ const styles = StyleSheet.create({
   searchPressed: { backgroundColor: colors.ivory },
   searchText: { flex: 1, fontSize: 13.5, fontFamily: fonts.regular, color: colors.muted },
   filterButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
-  quickRow: { gap: 7, paddingHorizontal: layout.gutter, paddingTop: 6, paddingBottom: 1 },
+  quickRow: {
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: layout.gutter,
+    paddingTop: 6,
+    paddingBottom: 1,
+  },
+  engagementPair: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  chipDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 22,
+    backgroundColor: colors.borderStrong,
+    marginHorizontal: 2,
+  },
   providerRail: { gap: 8, paddingHorizontal: layout.gutter, paddingBottom: 2 },
+
   inlineEmpty: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },
   inlineEmptyText: { flex: 1, fontSize: 12.5, fontFamily: fonts.semibold, color: colors.text },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: layout.gutter },

@@ -20,20 +20,28 @@ interface Props {
 /** Selectable areas: the canonical list minus the city-wide sentinel. */
 const AREA_OPTIONS = AREAS.filter((a) => a !== AREA_ALL);
 
+const ENGAGEMENT_OPTIONS = ['temporary', 'permanent'] as const;
+
 /**
  * Filter bottom sheet. Only surfaces dimensions the backend can actually filter
- * by — today that is Location (`?area=`, single value). Rating/availability/
- * price/experience controls were removed because the live API has no such
- * columns or params (contract matrix M-3/M-4); showing them implied filtering
- * that never happened.
+ * by — today that is Location (`?area=`, single value) and, since
+ * provider_type/engagement_types shipped, Engagement (`?engagement=`, single
+ * value). Rating/availability/price/experience controls were removed because
+ * the live API has no such columns or params (contract matrix M-3/M-4); showing
+ * them implied filtering that never happened.
  */
 export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Props) {
   const { height } = useWindowDimensions();
   const labels = useLabels();
   const filters = useAppStore((s) => s.filters);
   const selectAreaFilter = useAppStore((s) => s.selectAreaFilter);
+  const selectEngagementFilter = useAppStore((s) => s.selectEngagementFilter);
   const resetFilters = useAppStore((s) => s.resetFilters);
   const liveCount = useProviders({ ...(baseQuery || {}), filters });
+  const engagementLabel: Record<(typeof ENGAGEMENT_OPTIONS)[number], string> = {
+    temporary: labels.filter.engagementTemporary,
+    permanent: labels.filter.engagementPermanent,
+  };
 
   const count = liveCount.data?.total ?? liveCount.data?.items.length ?? 0;
 
@@ -63,6 +71,27 @@ export default function FilterSheet({ visible, onClose, onApply, baseQuery }: Pr
                 active={filters.areas[0] === o}
                 height={36}
                 onPress={() => selectAreaFilter(o)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={{ marginBottom: 20 }}>
+          <Text style={styles.secTitle}>{labels.filter.engagement}</Text>
+          <View style={styles.chips}>
+            <Chip
+              label={labels.filter.engagementAll}
+              active={!filters.engagement}
+              height={36}
+              onPress={() => selectEngagementFilter('')}
+            />
+            {ENGAGEMENT_OPTIONS.map((o) => (
+              <Chip
+                key={o}
+                label={engagementLabel[o]}
+                active={filters.engagement === o}
+                height={36}
+                onPress={() => selectEngagementFilter(o)}
               />
             ))}
           </View>

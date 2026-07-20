@@ -14,7 +14,7 @@ import FilterSheet from '../src/components/FilterSheet';
 import LocationSheet from '../src/components/LocationSheet';
 import ProviderRow from '../src/components/ProviderRow';
 import { SkeletonProviderList } from '../src/components/Skeleton';
-import { useProviders } from '../src/hooks/queries';
+import { keys, useProviders } from '../src/hooks/queries';
 import { useSearchSuggest } from '../src/hooks/useSearchSuggest';
 import { AREA_ALL } from '../src/data/mock';
 import { directoryRefreshProps, usePullToRefresh } from '../src/lib/directory-refresh';
@@ -29,8 +29,9 @@ import { useAppStore } from '../src/store/appStore';
  * Search assistance: the input drives GET /search/suggest (300 ms debounce,
  * cancellation, six results, brief cache — see useSearchSuggest); submitting or
  * picking a suggestion commits the query that drives the results list. Quick
- * chips only expose what the backend can really filter ("Near me" → area);
- * rating/availability/WhatsApp chips were removed with contract matrix M-4.
+ * chips expose backend-backed filters (Near me → area; Temporary/Permanent →
+ * engagement). Rating/availability/WhatsApp chips were removed with contract
+ * matrix M-4.
  */
 export default function ProvidersScreen() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function ProvidersScreen() {
   const setArea = useAppStore((s) => s.setArea);
   const filters = useAppStore((s) => s.filters);
   const toggleQuick = useAppStore((s) => s.toggleQuick);
+  const selectEngagementFilter = useAppStore((s) => s.selectEngagementFilter);
   const filterCount = useAppStore((s) => s.activeFilterCount)();
 
   const initialQ = typeof params.q === 'string' ? params.q : '';
@@ -56,7 +58,7 @@ export default function ProvidersScreen() {
     [submitted, categoryId, area, filters],
   );
   const providers = useProviders(query);
-  const { refreshing, onRefresh } = usePullToRefresh(() => providers.refetch());
+  const { refreshing, onRefresh } = usePullToRefresh(keys.providers(query));
   const results = providers.data?.items ?? [];
   const total = providers.data?.total ?? 0;
   const suffix = submitted
@@ -167,11 +169,25 @@ export default function ProvidersScreen() {
         <Text style={styles.count}>
           <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{total}</Text> {labels.providersWord}{suffix}
         </Text>
-        {area !== AREA_ALL && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+          <Chip
+            label={labels.filter.engagementTemporary}
+            iconName="ph-calendar-check"
+            active={filters.engagement === 'temporary'}
+            height={30}
+            onPress={() => selectEngagementFilter('temporary')}
+          />
+          <Chip
+            label={labels.filter.engagementPermanent}
+            iconName="ph-shield-check"
+            active={filters.engagement === 'permanent'}
+            height={30}
+            onPress={() => selectEngagementFilter('permanent')}
+          />
+          {area !== AREA_ALL && (
             <Chip label={fill(labels.providersList.nearMe, { area })} iconName="ph-map-pin" active={nearOn} height={30} onPress={() => toggleQuick('near')} />
-          </ScrollView>
-        )}
+          )}
+        </ScrollView>
       </View>
 
       {/* Results */}
@@ -187,6 +203,8 @@ export default function ProvidersScreen() {
         />
       ) : (
         <ScrollView
+          style={{ flex: 1 }}
+          nestedScrollEnabled
           contentContainerStyle={styles.results}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

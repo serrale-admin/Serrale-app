@@ -85,6 +85,8 @@ interface SelectFieldProps {
   caret?: 'right' | 'down';
   accessibilityLabel?: string;
   compact?: boolean;
+  errored?: boolean;
+  error?: string;
 }
 
 /**
@@ -101,24 +103,29 @@ export function SelectField({
   caret = 'right',
   accessibilityLabel,
   compact = false,
+  errored = false,
+  error,
 }: SelectFieldProps) {
   const filled = !!value;
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? placeholder}
-      style={[styles.select, compact && styles.selectCompact]}
-    >
-      {icon ? <Icon name={icon} size={compact ? 15 : 17} color={iconColor} weight={iconWeight} /> : null}
-      <Text
-        style={[styles.selectText, compact && styles.selectTextCompact, { color: filled ? colors.text : colors.faint }]}
-        numberOfLines={1}
+    <View>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? placeholder}
+        style={[styles.select, compact && styles.selectCompact, errored && styles.fieldErrored]}
       >
-        {filled ? value : placeholder}
-      </Text>
-      <Icon name={caret === 'down' ? 'ph-caret-down' : 'ph-caret-right'} size={13} color={colors.faint} weight="bold" />
-    </Pressable>
+        {icon ? <Icon name={icon} size={compact ? 15 : 17} color={iconColor} weight={iconWeight} /> : null}
+        <Text
+          style={[styles.selectText, compact && styles.selectTextCompact, { color: filled ? colors.text : colors.faint }]}
+          numberOfLines={1}
+        >
+          {filled ? value : placeholder}
+        </Text>
+        <Icon name={caret === 'down' ? 'ph-caret-down' : 'ph-caret-right'} size={13} color={colors.faint} weight="bold" />
+      </Pressable>
+      {error ? <FieldErrorText message={error} /> : null}
+    </View>
   );
 }
 
@@ -126,10 +133,12 @@ type LabeledInputProps = TextInputProps & {
   label: string;
   optional?: boolean;
   compact?: boolean;
+  errored?: boolean;
+  error?: string;
 };
 
 /** Single-line form input — same surface as Request tab description fields. */
-export function FormTextInput({ label, optional, compact, style, ...rest }: LabeledInputProps) {
+export function FormTextInput({ label, optional, compact, errored, error, style, ...rest }: LabeledInputProps) {
   return (
     <View>
       <FieldLabel optional={optional} compact={compact}>
@@ -137,15 +146,16 @@ export function FormTextInput({ label, optional, compact, style, ...rest }: Labe
       </FieldLabel>
       <TextInput
         placeholderTextColor={colors.faint}
-        style={[compact ? styles.formInputCompact : styles.formInput, style]}
+        style={[compact ? styles.formInputCompact : styles.formInput, errored && styles.fieldErrored, style]}
         {...rest}
       />
+      {error ? <FieldErrorText message={error} /> : null}
     </View>
   );
 }
 
 /** Multiline form input — matches Request tab `textarea` styling. */
-export function FormTextArea({ label, optional, compact, style, ...rest }: LabeledInputProps) {
+export function FormTextArea({ label, optional, compact, errored, error, style, ...rest }: LabeledInputProps) {
   return (
     <View>
       <FieldLabel optional={optional} compact={compact}>
@@ -155,11 +165,16 @@ export function FormTextArea({ label, optional, compact, style, ...rest }: Label
         placeholderTextColor={colors.faint}
         multiline
         textAlignVertical="top"
-        style={[compact ? styles.formTextareaCompact : styles.formTextarea, style]}
+        style={[compact ? styles.formTextareaCompact : styles.formTextarea, errored && styles.fieldErrored, style]}
         {...rest}
       />
+      {error ? <FieldErrorText message={error} /> : null}
     </View>
   );
+}
+
+export function FieldErrorText({ message }: { message: string }) {
+  return <Text style={styles.fieldError}>{message}</Text>;
 }
 
 /** Ethiopian phone row — login-sized by default; pass compact for dense forms. */
@@ -169,6 +184,7 @@ export function EthiopianPhoneField({
   value,
   onChangeText,
   errored,
+  error,
   compact = false,
 }: {
   label: string;
@@ -176,6 +192,7 @@ export function EthiopianPhoneField({
   value: string;
   onChangeText: (value: string) => void;
   errored?: boolean;
+  error?: string;
   compact?: boolean;
 }) {
   return (
@@ -209,6 +226,7 @@ export function EthiopianPhoneField({
           />
         </View>
       </LinearGradient>
+      {error ? <FieldErrorText message={error} /> : null}
     </View>
   );
 }
@@ -229,6 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
   },
   fieldErrored: { borderColor: colors.danger },
+  fieldError: { marginTop: 4, color: colors.danger, fontSize: 11, fontFamily: fonts.medium },
   input: { flex: 1, fontSize: 14, fontFamily: fonts.regular, color: colors.text, padding: 0 },
   select: {
     height: 48,

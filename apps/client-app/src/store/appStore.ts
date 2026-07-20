@@ -187,6 +187,8 @@ export const useAppStore = create<AppState>()(
           pendingOtpDelivery: null,
           pendingAccountHint: null,
           pendingOtpPurpose: null,
+          // Bookmarks are account data — clear with the session.
+          saved: {},
         }),
       logout: () =>
         set({
@@ -203,6 +205,8 @@ export const useAppStore = create<AppState>()(
           providerProfile: null,
           pendingAuthRole: 'customer',
           activeSession: null,
+          // Bookmarks are account data — never keep them on a signed-out device.
+          saved: {},
         }),
       setPendingPhone: (pendingPhone) => set({ pendingPhone }),
       setPendingChallengeId: (pendingChallengeId) => set({ pendingChallengeId }),
@@ -225,6 +229,8 @@ export const useAppStore = create<AppState>()(
       saved: {},
       isSaved: (id) => !!get().saved[id],
       toggleSaved: (id) => {
+        // Guests cannot bookmark — bookmarks belong to an authenticated account.
+        if (!get().loggedIn) return false;
         const saved = { ...get().saved };
         const next = !saved[id];
         if (next) saved[id] = true;

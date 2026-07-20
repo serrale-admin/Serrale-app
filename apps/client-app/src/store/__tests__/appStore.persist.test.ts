@@ -63,9 +63,16 @@ describe('language persistence', () => {
     expect(useAppStore.getState().lang).toBe('am');
   });
 
-  it('keeps saved providers after logout/login cycle', async () => {
+  it('clears saved providers on logout (bookmarks are account data)', async () => {
     useAppStore.setState({ saved: { 'prov-1': true }, loggedIn: true, hasCustomerSession: true });
     useAppStore.getState().logout();
-    expect(useAppStore.getState().saved).toEqual({ 'prov-1': true });
+    expect(useAppStore.getState().saved).toEqual({});
+    expect(useAppStore.getState().loggedIn).toBe(false);
+  });
+
+  it('refuses to bookmark when signed out', () => {
+    useAppStore.setState({ saved: {}, loggedIn: false });
+    expect(useAppStore.getState().toggleSaved('prov-1')).toBe(false);
+    expect(useAppStore.getState().saved).toEqual({});
   });
 });

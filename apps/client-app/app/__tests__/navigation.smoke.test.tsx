@@ -362,6 +362,7 @@ describe('stack + utility routes mount and render', () => {
   });
 
   it('bookmarks renders the empty state with no saved providers', () => {
+    useAppStore.setState({ loggedIn: true, sessionReady: true, hasCustomerSession: true });
     renderScreen(<BookmarksScreen />);
     expect(screen.getByText(en.activity.tabRequests)).toBeTruthy();
     expect(screen.getByText(en.activity.tabSaved)).toBeTruthy();
@@ -369,8 +370,21 @@ describe('stack + utility routes mount and render', () => {
     expect(screen.getByText(en.bookmarks.emptyTitle)).toBeTruthy();
   });
 
+  it('bookmarks saved tab shows login gate when signed out', () => {
+    mockRouteParams = { tab: 'saved' };
+    useAppStore.setState({ loggedIn: false, sessionReady: true, saved: { 'tekle-plumbing': true } });
+    renderScreen(<BookmarksScreen />);
+    expect(screen.getByText(en.bookmarks.loginTitle)).toBeTruthy();
+    expect(screen.queryByText(PROVIDER.name)).toBeNull();
+  });
+
   it('bookmarks renders a saved provider row when one is saved', async () => {
-    useAppStore.setState({ saved: { 'tekle-plumbing': true } });
+    useAppStore.setState({
+      loggedIn: true,
+      sessionReady: true,
+      hasCustomerSession: true,
+      saved: { 'tekle-plumbing': true },
+    });
     const { client } = renderScreen(<BookmarksScreen />);
     await settle(client);
     expect(await screen.findByText(PROVIDER.name)).toBeTruthy();

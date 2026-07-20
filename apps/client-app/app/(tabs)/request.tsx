@@ -184,7 +184,7 @@ export default function RequestScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ResultCard icon="ph-hand-heart" title={t.title} text={t.subtitle}>
-          <Button label={labels.common.loading} variant="secondary" size="md" fullWidth disabled />
+          <Button label={labels.common.loading} variant="secondary" size="md" fullWidth disabled onPress={() => {}} />
         </ResultCard>
       </SafeAreaView>
     );

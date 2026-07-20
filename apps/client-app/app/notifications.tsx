@@ -48,7 +48,7 @@ export default function NotificationsScreen() {
     mutationFn: () => api.markAllNotificationsRead(),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['directory-notifications'] });
-      showToast(labels.common.done, 'ph-check-circle');
+      showToast(labels.completed, 'ph-check-circle');
     },
   });
 
@@ -148,10 +148,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   pad: { padding: 20 },
   list: { padding: 16, gap: 10 },
-  loading: { padding: 20, color: colors.muted, fontFamily: fonts.sans },
-  markAll: { color: colors.green800, fontFamily: fonts.sansSemi, fontSize: 13 },
+  loading: { padding: 20, color: colors.muted, fontFamily: fonts.regular },
+  markAll: { color: colors.green800, fontFamily: fonts.semibold, fontSize: 13 },
   row: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 14,
     borderWidth: 1,
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   rowUnread: { borderColor: colors.gold, backgroundColor: colors.goldSoft },
   rowText: { gap: 4 },
-  title: { fontFamily: fonts.sansSemi, fontSize: 15, color: colors.ink },
-  body: { fontFamily: fonts.sans, fontSize: 13, color: colors.muted, lineHeight: 18 },
-  meta: { fontFamily: fonts.sans, fontSize: 11, color: colors.muted, marginTop: 4 },
+  title: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
+  body: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted, lineHeight: 18 },
+  meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted, marginTop: 4 },
 });

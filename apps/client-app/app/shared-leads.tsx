@@ -119,15 +119,15 @@ const styles = StyleSheet.create({
   pad: { padding: 20 },
   list: { padding: 16, gap: 12 },
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 12,
   },
-  title: { fontFamily: fonts.sansSemi, fontSize: 16, color: colors.ink },
-  meta: { fontFamily: fonts.sans, fontSize: 13, color: colors.muted, marginTop: 4 },
+  title: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
+  meta: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted, marginTop: 4 },
   actions: { flexDirection: 'row', gap: 8 },
   call: {
     flex: 1,
@@ -149,5 +149,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: 10,
   },
-  actionText: { color: '#fff', fontFamily: fonts.sansSemi, fontSize: 13 },
+  actionText: { color: '#fff', fontFamily: fonts.semibold, fontSize: 13 },
 });

@@ -45,7 +45,7 @@ export default function CustomerTrustScreen() {
         generateRequestId(),
       ),
     onSuccess: () => {
-      showToast(labels.rating.thanksTitle, 'ph-star');
+      showToast(labels.rating.success, 'ph-star');
       void qc.invalidateQueries({ queryKey: ['customer-trust', customerId] });
       void qc.invalidateQueries({ queryKey: ['customer-review-eligibility', customerId] });
     },
@@ -151,7 +151,7 @@ export default function CustomerTrustScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   pad: { padding: 16, gap: 12 },
-  name: { fontFamily: fonts.sansBold, fontSize: 22, color: colors.ink },
+  name: { fontFamily: fonts.bold, fontSize: 22, color: colors.text },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.goldSoft,
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    fontFamily: fonts.sansSemi,
+    fontFamily: fonts.semibold,
     fontSize: 12,
   },
-  meta: { fontFamily: fonts.sans, fontSize: 13, color: colors.muted },
-  section: { fontFamily: fonts.sansSemi, fontSize: 15, color: colors.ink, marginTop: 8 },
+  meta: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted },
+  section: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: 8 },
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 14,
     borderWidth: 1,
@@ -182,17 +182,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: 10,
-    fontFamily: fonts.sans,
-    color: colors.ink,
+    fontFamily: fonts.regular,
+    color: colors.text,
     textAlignVertical: 'top',
   },
   review: {
     padding: 12,
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 4,
   },
-  reviewTitle: { fontFamily: fonts.sansSemi, color: colors.ink },
+  reviewTitle: { fontFamily: fonts.semibold, color: colors.text },
 });

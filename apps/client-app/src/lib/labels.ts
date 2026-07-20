@@ -115,6 +115,7 @@ export interface Labels {
     loginBannerSub: string;
     reasonProfile: string;
     reasonRequest: string;
+    reasonBookmark: string;
     invalidPhone: string;
     sending: string;
     sendCode: string;
@@ -300,6 +301,10 @@ export interface Labels {
   bookmarks: {
     emptyTitle: string;
     emptyText: string;
+    loginTitle: string;
+    loginText: string;
+    removedToast: string;
+    savedToast: string;
   };
   activity: {
     screenTitle: string;
@@ -730,6 +735,7 @@ export function labelsFor(lang: Lang): Labels {
         : 'Browse providers, call, or request service near you.',
       reasonProfile: am ? 'መገለጫዎን ለማስተዳደር ይግቡ' : 'Log in to manage your profile',
       reasonRequest: am ? 'ጥያቄ ለመለጠፍ ይግቡ' : 'Log in to post a request',
+      reasonBookmark: am ? 'ባለሙያ ለማስቀመጥ ይግቡ' : 'Log in to save providers',
       invalidPhone: am
         ? 'ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0912 345 678)።'
         : 'Enter a valid Ethiopian phone number (e.g. 0912 345 678).',
@@ -986,6 +992,12 @@ export function labelsFor(lang: Lang): Labels {
       emptyText: am
         ? 'እዚህ ለማስቀመጥ በማንኛውም ባለሙያ ላይ ያለውን የዕልባት ምልክት ይንኩ።'
         : 'Tap the bookmark icon on any provider to save them here.',
+      loginTitle: am ? 'የተቀመጡ ባለሙያዎችን ለማየት ይግቡ' : 'Log in to see saved providers',
+      loginText: am
+        ? 'የተቀመጡ ባለሙያዎች ከመለያዎ ጋር የተያያዙ ናቸው። ለማየት ወይም ለማስቀመጥ ይግቡ።'
+        : 'Saved providers belong to your account. Sign in to view or bookmark them.',
+      removedToast: am ? 'ከተቀመጡ ተወግዷል' : 'Removed from saved',
+      savedToast: am ? 'ወደ ዕልባቶች ተቀምጧል' : 'Saved to bookmarks',
     },
     activity: {
       screenTitle: am ? 'ጥያቄዎቼ' : 'My requests',

@@ -237,13 +237,14 @@ function RequestsPane() {
 function SavedPane() {
   const router = useRouter();
   const labels = useLabels();
+  const loggedIn = useAppStore((s) => s.loggedIn);
   const saved = useAppStore((s) => s.saved);
-  const savedIds = Object.keys(saved);
+  const savedIds = loggedIn ? Object.keys(saved) : [];
   const providerQueries = useQueries({
     queries: savedIds.map((id) => ({
       queryKey: ['provider', id],
       queryFn: () => api.getProvider(id),
-      enabled: !!id,
+      enabled: !!id && loggedIn,
     })),
   });
   const list = providerQueries
@@ -252,6 +253,31 @@ function SavedPane() {
 
   const isLoading = savedIds.length > 0 && providerQueries.some((q) => q.isLoading);
   const isError = savedIds.length > 0 && list.length === 0 && providerQueries.some((q) => q.isError);
+
+  if (!loggedIn) {
+    return (
+      <View style={styles.emptyWrap}>
+        <EmptyState
+          icon="ph-bookmark-simple"
+          circle={colors.goldSoft}
+          iconColor={colors.goldText}
+          title={labels.bookmarks.loginTitle}
+          text={labels.bookmarks.loginText}
+        >
+          <Button
+            label={labels.common.loginWithPhone}
+            onPress={() =>
+              router.replace({
+                pathname: '/auth/login',
+                params: { next: '/bookmarks?tab=saved', reason: labels.auth.reasonBookmark },
+              })
+            }
+            style={styles.cta}
+          />
+        </EmptyState>
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (

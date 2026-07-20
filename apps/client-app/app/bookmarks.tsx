@@ -18,6 +18,7 @@ import { SkeletonProviderList } from '../src/components/Skeleton';
 import * as api from '../src/api';
 import type { CustomerActivityItem, DisplayStatus } from '../src/api/serrale/activity';
 import { resolveCustomerFeatureAccess } from '../src/lib/customerFeatureAccess';
+import { presentError } from '../src/lib/error-presentation';
 import { useLabels } from '../src/lib/labels';
 import { colors, fonts, radius } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
@@ -177,13 +178,18 @@ function RequestsPane() {
   }
 
   if (query.isError) {
+    // Provider/customer still signed in — never frame a load failure as "Signed out".
+    const mapped = presentError(query.error, labels);
+    const isFalseSignOut =
+      mapped.kind === 'session-expired' &&
+      (loggedIn || activeSession === 'provider' || !!providerProfile);
     return (
       <View style={styles.emptyWrap}>
         <ErrorBlock
           error={query.error}
+          title={isFalseSignOut ? labels.errors.unknownTitle : undefined}
+          text={isFalseSignOut ? labels.errors.unknownMessage : undefined}
           onRetry={() => query.refetch()}
-          // Already authenticated (including provider hybrid) — never bounce to
-          // the guest login gate from a transient API auth/network failure.
         />
       </View>
     );

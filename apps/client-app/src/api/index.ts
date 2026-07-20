@@ -49,6 +49,7 @@ export const updateCustomerProfile = impl.updateCustomerProfile;
 export const fetchProviderMe = impl.fetchProviderMe;
 export const updateProviderProfile = impl.updateProviderProfile;
 export const loginProvider = impl.loginProvider;
+export const ensureCustomerSessionFromProvider = impl.ensureCustomerSessionFromProvider;
 export const registerProvider = impl.registerProvider;
 
 

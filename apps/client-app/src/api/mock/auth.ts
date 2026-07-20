@@ -127,8 +127,28 @@ export function loginProvider(_verifyToken: string, phone: string): Promise<ApiP
         category_slug: 'plumbers',
         area: 'Bole',
       },
+      customer_session: {
+        access_token: 'mock-access-token-' + Date.now(),
+        refresh_token: 'mock-refresh-token-' + Date.now(),
+        access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      },
     },
     400,
+  );
+}
+
+export function ensureCustomerSessionFromProvider(): Promise<{
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+} | null> {
+  return delay(
+    {
+      access_token: 'mock-access-token-' + Date.now(),
+      refresh_token: 'mock-refresh-token-' + Date.now(),
+      access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+    },
+    200,
   );
 }
 

@@ -168,6 +168,30 @@ export async function loginProvider(verifyToken: string, phone: string): Promise
   });
 }
 
+/**
+ * POST /customers/session/from-provider — mint customer tokens from a live
+ * provider JWT so request history works for hybrid provider-only logins.
+ */
+export async function ensureCustomerSessionFromProvider(): Promise<{
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+} | null> {
+  try {
+    return await http<{
+      access_token: string;
+      refresh_token: string;
+      access_expires_at: string;
+    }>(`${DIRECTORY}/customers/session/from-provider`, {
+      method: 'POST',
+      body: {},
+      skipAuthInterceptor: true,
+    });
+  } catch {
+    return null;
+  }
+}
+
 export interface RegisterProviderPayload {
   verifyToken: string;
   phone: string;

@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { checkInstallation } from './installation';
 import { setTokenProvider, setUnauthorizedHandler, HttpError } from './http';
-import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe } from '../api';
+import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe, ensureCustomerSessionFromProvider } from '../api';
 import type { ApiCustomerProfile, ApiSessionCustomer } from '../api/serrale/types';
 import { customerDisplayName, isCustomerProfileComplete } from './customer-profile';
 import { parsePhoneAccountHint, phonesMatch } from './phone-account';
@@ -141,6 +141,39 @@ export function applyProviderSession(record: ProviderSessionRecord): void {
       profileComplete: true,
     });
   }
+}
+
+/** Persist co-issued customer tokens from a provider login / hybrid mint. */
+export async function storeHybridCustomerSession(session: {
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+}): Promise<void> {
+  await secureSession.write({
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token,
+    accessExpiresAt: session.access_expires_at,
+  });
+  useAppStore.getState().setHasCustomerSession(true);
+}
+
+/**
+ * When a provider is signed in without customer tokens, mint them so
+ * /customers/me/activity can authorize. Best-effort — never blocks bootstrap.
+ */
+export async function ensureHybridCustomerTokens(): Promise<boolean> {
+  const existing = await secureSession.read();
+  if (existing?.accessToken && existing?.refreshToken) {
+    useAppStore.getState().setHasCustomerSession(true);
+    return true;
+  }
+  const provider = await providerSession.read();
+  if (!provider?.sessionToken) return false;
+
+  const minted = await ensureCustomerSessionFromProvider();
+  if (!minted?.access_token || !minted?.refresh_token) return false;
+  await storeHybridCustomerSession(minted);
+  return true;
 }
 
 /** Activate the saved provider JWT for the same phone (no OTP) when switching roles. */
@@ -307,54 +340,54 @@ export async function initializeSessionManager(): Promise<void> {
   useAppStore.getState().setHasCustomerSession(false);
   await checkInstallation();
 
-  // Prefer customer access token. Fall back to provider JWT for hybrid accounts
-  // (service requests, activity, reviews, contact events). The backend ensures a
-  // customer row for the provider's phone on those routes.
+  // Prefer a live customer access token. If it is expired/unrefreshable, fall
+  // through to the provider JWT so hybrid request history keeps working.
   setTokenProvider(async (_ctx) => {
     const tokens = await secureSession.read();
     if (tokens?.accessToken) {
       const expiresAt = Date.parse(tokens.accessExpiresAt);
-      // Proactively rotate a near-expired access token before customer writes
-      // (requests) so we don't 401 → false "session expired" after refresh.
-      if (
-        Number.isFinite(expiresAt) &&
-        Date.now() >= expiresAt - 15_000 &&
-        tokens.refreshToken
-      ) {
+      const nearExpiry = Number.isFinite(expiresAt) && Date.now() >= expiresAt - 15_000;
+      if (nearExpiry && tokens.refreshToken) {
         const refreshed = await doRefresh().catch(() => null);
         if (refreshed?.accessToken) return refreshed.accessToken;
+        // Stale customer tokens — clear so provider JWT can authorize hybrid routes.
+        await secureSession.clear().catch(() => {});
+        useAppStore.getState().setHasCustomerSession(false);
+      } else if (!nearExpiry) {
+        return tokens.accessToken;
       }
-      return tokens.accessToken;
     }
     const provider = await providerSession.read();
     return provider?.sessionToken ?? null;
   });
 
   setUnauthorizedHandler(async (replay, isSafe) => {
-    // Provider JWT has no refresh path. Only attempt customer refresh when a
-    // customer refresh token exists — otherwise a 401 on a provider Bearer
-    // would call handleCustomerLogout and wipe the active session role.
     const tokens = await secureSession.read();
-    if (!tokens?.refreshToken) {
-      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
+    const provider = await providerSession.read();
+
+    if (tokens?.refreshToken) {
+      const refreshed = await doRefresh().catch(() => null);
+      if (refreshed) {
+        if (isSafe) return await replay();
+        throw new HttpError(409, 'Please try again.', 'AUTH_REFRESHED_RETRY');
+      }
+      // Customer refresh failed. Keep provider session; clear dead customer tokens
+      // so the next attempt (and replay) can use the provider JWT.
+      await secureSession.clear().catch(() => {});
+      useAppStore.getState().setHasCustomerSession(false);
     }
 
-    const refreshed = await doRefresh();
-    if (!refreshed) {
-      throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
+    if (provider?.sessionToken) {
+      // Still signed in as provider — never present this as a full sign-out.
+      if (isSafe) {
+        // Best-effort: mint customer tokens then replay activity/history GETs.
+        await ensureHybridCustomerTokens().catch(() => false);
+        return await replay();
+      }
+      throw new HttpError(401, 'Not authorized for this action.', 'UNAUTHORIZED');
     }
 
-    // Replay GETs and Idempotency-Key writes (service requests, OTP, reviews).
-    // Non-idempotent writes still skip auto-replay to avoid duplicate side effects.
-    if (isSafe) {
-      return await replay();
-    }
-
-    throw new HttpError(
-      409,
-      'Please try again.',
-      'AUTH_REFRESHED_RETRY',
-    );
+    throw new HttpError(401, 'Session expired', 'SESSION_EXPIRED');
   });
 
   try {
@@ -401,6 +434,13 @@ export async function initializeSessionManager(): Promise<void> {
         await writeActiveSessionRole('provider');
         useAppStore.getState().setActiveSession('provider');
         applyProviderSession(providerRecord!);
+      }
+      if (!hasCustomer) {
+        // Mint customer tokens in the background so Bookmarks → Requests works
+        // for provider-only logins without a second OTP.
+        void ensureHybridCustomerTokens().then((ok) => {
+          if (ok) useAppStore.getState().setHasCustomerSession(true);
+        });
       }
     }
 

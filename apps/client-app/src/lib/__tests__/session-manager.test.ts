@@ -12,6 +12,7 @@ jest.mock('../../api', () => ({
   refreshSession: jest.fn(),
   logoutSession: jest.fn(),
   fetchCustomerMe: jest.fn(),
+  ensureCustomerSessionFromProvider: jest.fn(),
 }));
 
 jest.mock('../provider-session', () => ({
@@ -468,6 +469,7 @@ describe('session-manager', () => {
         },
         savedAt: new Date().toISOString(),
       });
+      (api.ensureCustomerSessionFromProvider as jest.Mock).mockResolvedValue(null);
       await initializeSessionManager();
 
       const { http, setUnauthorizedHandler } = require('../http') as typeof import('../http');
@@ -493,6 +495,54 @@ describe('session-manager', () => {
       });
 
       expect(auths).toEqual(['Bearer provider-jwt', 'Bearer provider-jwt']);
+    });
+
+    it('does not report Signed out when provider JWT gets 401 on activity', async () => {
+      (providerSession.read as jest.Mock).mockResolvedValue({
+        sessionToken: 'provider-jwt',
+        provider: {
+          id: 'prov-1',
+          full_name: 'Natnael Asnake',
+          phone: '+251938064841',
+          category_slug: 'plumbers',
+          area: 'Bole',
+        },
+        savedAt: new Date().toISOString(),
+      });
+      (api.ensureCustomerSessionFromProvider as jest.Mock).mockResolvedValue({
+        access_token: 'cust-access',
+        refresh_token: 'cust-refresh',
+        access_expires_at: new Date(Date.now() + 3600_000).toISOString(),
+      });
+      await initializeSessionManager();
+
+      let calls = 0;
+      global.fetch = jest.fn(async (_url: string, init?: RequestInit) => {
+        calls += 1;
+        const headers = init?.headers as Record<string, string> | undefined;
+        const auth = headers?.Authorization || '';
+        if (calls === 1) {
+          return {
+            ok: false,
+            status: 401,
+            text: async () => JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid customer session.' } }),
+            headers: { get: () => null },
+          } as unknown as Response;
+        }
+        expect(auth).toMatch(/^Bearer /);
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ success: true, data: { items: [], total: 0 } }),
+          headers: { get: () => null },
+        } as unknown as Response;
+      }) as unknown as typeof fetch;
+
+      const { http } = require('../http') as typeof import('../http');
+      await expect(http('/public-directory/customers/me/activity')).resolves.toEqual({ items: [], total: 0 });
+      expect(api.ensureCustomerSessionFromProvider).toHaveBeenCalled();
+      expect(useAppStore.getState().loggedIn).toBe(true);
+      expect(useAppStore.getState().hasCustomerSession).toBe(true);
     });
   });
 });

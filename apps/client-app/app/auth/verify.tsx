@@ -122,8 +122,14 @@ export default function VerifyScreen() {
       {
         onSuccess: async (session) => {
           await providerSession.write(session.session_token, session.provider);
-          const { applyProviderSession } = require('../../src/lib/session-manager');
+          const {
+            applyProviderSession,
+            storeHybridCustomerSession,
+          } = require('../../src/lib/session-manager');
           const { writeActiveSessionRole } = require('../../src/lib/session-role');
+          if (session.customer_session?.access_token && session.customer_session?.refresh_token) {
+            await storeHybridCustomerSession(session.customer_session);
+          }
           await writeActiveSessionRole('provider');
           useAppStore.getState().setActiveSession('provider');
           applyProviderSession({

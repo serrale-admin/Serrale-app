@@ -154,5 +154,11 @@ export interface ApiProviderAccount extends ApiProviderSessionProvider {
 export interface ApiProviderSessionResult {
   provider: ApiProviderSessionProvider;
   session_token: string;
+  /** Co-issued customer session so hybrid providers can use request history. */
+  customer_session?: {
+    access_token: string;
+    refresh_token: string;
+    access_expires_at: string;
+  } | null;
 }
 

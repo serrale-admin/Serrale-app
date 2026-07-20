@@ -17,6 +17,7 @@ import ScreenHeader from '../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../src/components/Skeleton';
 import * as api from '../src/api';
 import type { CustomerActivityItem, DisplayStatus } from '../src/api/serrale/activity';
+import { resolveCustomerFeatureAccess } from '../src/lib/customerFeatureAccess';
 import { useLabels } from '../src/lib/labels';
 import { colors, fonts, radius } from '../src/lib/theme';
 import { useAppStore } from '../src/store/appStore';
@@ -116,20 +117,33 @@ function ActivityRow({
 function RequestsPane() {
   const router = useRouter();
   const labels = useLabels();
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const loggedIn = useAppStore((s) => s.loggedIn);
   const activeSession = useAppStore((s) => s.activeSession);
-  // Requests/activity require a customer Bearer — provider-only login must not
-  // hit /customers/me/activity (that 401 was shown as "session expired").
-  const isCustomerSession = loggedIn && activeSession === 'customer';
+  const providerProfile = useAppStore((s) => s.providerProfile);
+  const access = resolveCustomerFeatureAccess({
+    sessionReady,
+    loggedIn,
+    activeSession,
+    hasProviderProfile: !!providerProfile,
+  });
   const a = labels.activity;
 
   const query = useQuery({
     queryKey: ['customer-activity'],
     queryFn: () => api.fetchMyActivity({ limit: 50 }),
-    enabled: isCustomerSession,
+    enabled: access === 'allowed',
   });
 
-  if (!isCustomerSession) {
+  if (access === 'loading') {
+    return (
+      <View style={styles.list}>
+        <SkeletonProviderList count={4} />
+      </View>
+    );
+  }
+
+  if (access === 'need_login') {
     return (
       <View style={styles.emptyWrap}>
         <EmptyState
@@ -168,12 +182,8 @@ function RequestsPane() {
         <ErrorBlock
           error={query.error}
           onRetry={() => query.refetch()}
-          onAction={() =>
-            router.replace({
-              pathname: '/auth/login',
-              params: { next: '/bookmarks?tab=requests', reason: labels.auth.reasonRequest },
-            })
-          }
+          // Already authenticated (including provider hybrid) — never bounce to
+          // the guest login gate from a transient API auth/network failure.
         />
       </View>
     );

@@ -62,4 +62,10 @@ describe('language persistence', () => {
 
     expect(useAppStore.getState().lang).toBe('am');
   });
+
+  it('keeps saved providers after logout/login cycle', async () => {
+    useAppStore.setState({ saved: { 'prov-1': true }, loggedIn: true, hasCustomerSession: true });
+    useAppStore.getState().logout();
+    expect(useAppStore.getState().saved).toEqual({ 'prov-1': true });
+  });
 });

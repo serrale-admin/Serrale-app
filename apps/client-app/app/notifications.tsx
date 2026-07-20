@@ -28,10 +28,15 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const labels = useLabels();
   const loggedIn = useAppStore((s) => s.loggedIn);
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const activeSession = useAppStore((s) => s.activeSession);
+  const providerProfile = useAppStore((s) => s.providerProfile);
   const showToast = useAppStore((s) => s.showToast);
   const qc = useQueryClient();
-  const canLoad = loggedIn && (activeSession === 'customer' || activeSession === 'provider');
+  // Same hybrid gate as request history — provider sessions count as signed in.
+  const canLoad =
+    sessionReady &&
+    (loggedIn || activeSession === 'provider' || !!providerProfile);
 
   const query = useQuery({
     queryKey: ['directory-notifications', activeSession],

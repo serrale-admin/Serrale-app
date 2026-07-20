@@ -104,6 +104,9 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="shared-leads" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="customer/[id]" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="provider/[id]" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="provider/join" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="categories/[id]" options={{ animation: 'slide_from_right' }} />

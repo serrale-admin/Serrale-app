@@ -34,6 +34,8 @@ interface Toast {
 
 interface AppState {
   loggedIn: boolean;
+  /** True when customer access/refresh tokens are present on device. */
+  hasCustomerSession: boolean;
   user: AuthUser | null;
   pendingPhone: string;
   pendingChallengeId: string;
@@ -81,6 +83,7 @@ interface AppState {
   setPendingAuthRole(role: 'customer' | 'provider'): void;
   setPendingOtpPurpose(purpose: OtpPurpose | null): void;
   setActiveSession(role: 'customer' | 'provider' | null): void;
+  setHasCustomerSession(value: boolean): void;
 
   // preferences
   area: string;
@@ -151,6 +154,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       loggedIn: false,
+      hasCustomerSession: false,
       user: null,
       pendingPhone: '',
       pendingChallengeId: '',
@@ -176,6 +180,7 @@ export const useAppStore = create<AppState>()(
       logoutCustomer: () =>
         set({
           loggedIn: false,
+          hasCustomerSession: false,
           user: null,
           pendingPhone: '',
           pendingChallengeId: '',
@@ -186,8 +191,8 @@ export const useAppStore = create<AppState>()(
       logout: () =>
         set({
           loggedIn: false,
+          hasCustomerSession: false,
           user: null,
-          saved: {},
           pendingPhone: '',
           pendingChallengeId: '',
           pendingOtpDelivery: null,
@@ -210,6 +215,7 @@ export const useAppStore = create<AppState>()(
       setPendingAuthRole: (pendingAuthRole) => set({ pendingAuthRole }),
       setPendingOtpPurpose: (pendingOtpPurpose) => set({ pendingOtpPurpose }),
       setActiveSession: (activeSession) => set({ activeSession }),
+      setHasCustomerSession: (hasCustomerSession) => set({ hasCustomerSession }),
 
       area: AREA_ALL,
       lang: 'en',

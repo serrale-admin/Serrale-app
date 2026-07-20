@@ -9,6 +9,7 @@ import ScreenHeader from '../../../src/components/ScreenHeader';
 import { SkeletonProviderList } from '../../../src/components/Skeleton';
 import * as api from '../../../src/api';
 import type { ActivityType, DisplayStatus } from '../../../src/api/serrale/activity';
+import { resolveCustomerFeatureAccess } from '../../../src/lib/customerFeatureAccess';
 import { useLabels } from '../../../src/lib/labels';
 import { colors, fonts, radius } from '../../../src/lib/theme';
 import { useAppStore } from '../../../src/store/appStore';
@@ -31,9 +32,16 @@ export default function ActivityDetailScreen() {
   const router = useRouter();
   const labels = useLabels();
   const a = labels.activity;
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const loggedIn = useAppStore((s) => s.loggedIn);
   const activeSession = useAppStore((s) => s.activeSession);
-  const isCustomerSession = loggedIn && activeSession === 'customer';
+  const providerProfile = useAppStore((s) => s.providerProfile);
+  const access = resolveCustomerFeatureAccess({
+    sessionReady,
+    loggedIn,
+    activeSession,
+    hasProviderProfile: !!providerProfile,
+  });
   const params = useLocalSearchParams<{ type?: string; id?: string }>();
   const type = (params.type === 'job' ? 'job' : 'request') as ActivityType;
   const id = String(params.id || '');
@@ -41,13 +49,17 @@ export default function ActivityDetailScreen() {
   const query = useQuery({
     queryKey: ['customer-activity', type, id],
     queryFn: () => api.fetchActivityDetail(type, id),
-    enabled: isCustomerSession && !!id,
+    enabled: access === 'allowed' && !!id,
   });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title={a.detailTitle} onBack={() => router.back()} />
-      {!isCustomerSession ? (
+      {access === 'loading' ? (
+        <View style={styles.pad}>
+          <SkeletonProviderList count={3} />
+        </View>
+      ) : access === 'need_login' ? (
         <View style={styles.pad}>
           <EmptyState
             icon="ph-tray"
@@ -73,16 +85,7 @@ export default function ActivityDetailScreen() {
         </View>
       ) : query.isError || !query.data ? (
         <View style={styles.pad}>
-          <ErrorBlock
-            error={query.error}
-            onRetry={() => query.refetch()}
-            onAction={() =>
-              router.replace({
-                pathname: '/auth/login',
-                params: { next: `/activity/${type}/${id}`, reason: labels.auth.reasonRequest },
-              })
-            }
-          />
+          <ErrorBlock error={query.error} onRetry={() => query.refetch()} />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>

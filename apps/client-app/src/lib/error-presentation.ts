@@ -156,7 +156,11 @@ function classifyHttp(err: HttpError): FailureKind {
   // After a successful refresh, non-idempotent writes ask the user to retry —
   // never treat that as a signed-out session.
   if (err.code === 'AUTH_REFRESHED_RETRY') return 'server';
-  if (status === 401) return 'session-expired';
+  // 401 has two meanings in this app:
+  // - SESSION_EXPIRED / refresh failures -> sign-in recovery
+  // - UNAUTHORIZED scope mismatch (e.g. provider-only token on customer route)
+  //   -> access issue, not a logout state.
+  if (status === 401) return err.code === 'UNAUTHORIZED' ? 'forbidden' : 'session-expired';
   if (status === 403) return 'forbidden';
   if (status === 404 || status === 410) return 'not-found';
   if (status === 409) return 'conflict';

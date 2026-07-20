@@ -2,15 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as api from '../../src/api';
-import EmptyState from '../../src/components/EmptyState';
-import ErrorBlock from '../../src/components/ErrorBlock';
-import ScreenHeader from '../../src/components/ScreenHeader';
-import { SkeletonProviderList } from '../../src/components/Skeleton';
-import { Icon } from '../../src/lib/icons';
-import { useLabels } from '../../src/lib/labels';
-import { colors, fonts, radius } from '../../src/lib/theme';
-import { useAppStore } from '../../src/store/appStore';
+import { fetchSharedLeads, logLeadContact } from '../src/api';
+import EmptyState from '../src/components/EmptyState';
+import ErrorBlock from '../src/components/ErrorBlock';
+import ScreenHeader from '../src/components/ScreenHeader';
+import { SkeletonProviderList } from '../src/components/Skeleton';
+import { Icon } from '../src/lib/icons';
+import { useLabels } from '../src/lib/labels';
+import { colors, fonts, radius } from '../src/lib/theme';
+import { useAppStore } from '../src/store/appStore';
 
 const waDigits = (phone: string) => phone.replace(/[^0-9]/g, '');
 const telNumber = (phone: string) => {
@@ -27,13 +27,13 @@ export default function SharedLeadsScreen() {
 
   const query = useQuery({
     queryKey: ['shared-leads'],
-    queryFn: () => api.fetchSharedLeads(),
+    queryFn: () => fetchSharedLeads(),
     enabled: activeSession === 'provider',
   });
 
   const contact = async (leadId: string, phone: string, kind: 'phone_click' | 'whatsapp_click') => {
     try {
-      await api.logLeadContact({ leadId, eventType: kind, sourceFlow: 'shared_leads' });
+      await logLeadContact({ leadId, eventType: kind, sourceFlow: 'shared_leads' });
     } catch {
       // still open dialer
     }

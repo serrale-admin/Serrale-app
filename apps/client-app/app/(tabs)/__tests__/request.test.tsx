@@ -36,6 +36,8 @@ describe('RequestScreen error presentation', () => {
   beforeEach(() => {
     useAppStore.setState({
       loggedIn: true,
+      hasCustomerSession: true,
+      sessionReady: true,
       activeSession: 'customer',
       lang: 'en',
       toast: null,

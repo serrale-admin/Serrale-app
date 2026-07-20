@@ -2,7 +2,7 @@ import { secureSession, BasicSessionTokens } from './secure-session';
 import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { checkInstallation } from './installation';
-import { setTokenProvider, setUnauthorizedHandler, HttpError, isCustomerScopedPath } from './http';
+import { setTokenProvider, setUnauthorizedHandler, HttpError } from './http';
 import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe } from '../api';
 import type { ApiCustomerProfile, ApiSessionCustomer } from '../api/serrale/types';
 import { customerDisplayName, isCustomerProfileComplete } from './customer-profile';
@@ -86,6 +86,7 @@ export function decodeJwt(token: string): { customer_id?: string; phone?: string
 }
 
 function applyCustomerToStore(customer: ApiCustomerProfile | ApiSessionCustomer) {
+  useAppStore.getState().setHasCustomerSession(true);
   useAppStore.getState().login({
     id: customer.id,
     phone: customer.phone,
@@ -130,6 +131,8 @@ export function applyProviderSession(record: ProviderSessionRecord): void {
     });
   }
   const activeSession = useAppStore.getState().activeSession;
+  // Always mark the store signed-in for provider sessions so request history /
+  // notifications stay consistent with Profile (hybrid accounts).
   if (activeSession === 'provider' || !useAppStore.getState().loggedIn) {
     useAppStore.getState().login({
       id: provider.id,
@@ -264,8 +267,17 @@ export async function handleCustomerLogout(): Promise<void> {
     await secureSession.clear();
     queryClient.removeQueries({ queryKey: ['customers'] });
     useAppStore.getState().logoutCustomer();
-    useAppStore.getState().setActiveSession(null);
-    await writeActiveSessionRole(null);
+
+    // Keep provider UI when customer refresh expires but a provider JWT remains.
+    const providerRecord = await providerSession.read();
+    if (providerRecord?.provider?.phone) {
+      await writeActiveSessionRole('provider');
+      useAppStore.getState().setActiveSession('provider');
+      applyProviderSession(providerRecord);
+    } else {
+      useAppStore.getState().setActiveSession(null);
+      await writeActiveSessionRole(null);
+    }
   }
 }
 
@@ -292,13 +304,13 @@ export async function handleLogout(): Promise<void> {
 
 export async function initializeSessionManager(): Promise<void> {
   useAppStore.getState().setSessionReady(false);
+  useAppStore.getState().setHasCustomerSession(false);
   await checkInstallation();
 
-  // Prefer customer access token. Fall back to provider JWT only on routes that
-  // accept either scope (reviews, contact events). Never send a provider JWT to
-  // customer-scoped paths — that caused false "session expired" on requests /
-  // bookmarks while the UI still showed the user as logged in.
-  setTokenProvider(async (ctx) => {
+  // Prefer customer access token. Fall back to provider JWT for hybrid accounts
+  // (service requests, activity, reviews, contact events). The backend ensures a
+  // customer row for the provider's phone on those routes.
+  setTokenProvider(async (_ctx) => {
     const tokens = await secureSession.read();
     if (tokens?.accessToken) {
       const expiresAt = Date.parse(tokens.accessExpiresAt);
@@ -314,8 +326,6 @@ export async function initializeSessionManager(): Promise<void> {
       }
       return tokens.accessToken;
     }
-    const path = ctx?.path || '';
-    if (path && isCustomerScopedPath(path)) return null;
     const provider = await providerSession.read();
     return provider?.sessionToken ?? null;
   });
@@ -356,6 +366,8 @@ export async function initializeSessionManager(): Promise<void> {
 
     const hasCustomer = !!tokens;
     const hasProvider = !!providerRecord?.provider?.phone;
+    useAppStore.getState().setHasCustomerSession(hasCustomer);
+
     let role = savedRole;
     if (!role) {
       if (hasCustomer) role = 'customer';

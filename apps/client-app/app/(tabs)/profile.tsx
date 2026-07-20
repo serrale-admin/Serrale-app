@@ -137,7 +137,7 @@ export default function ProfileScreen() {
               {
                 label: 'Shared requests',
                 icon: 'ph-phone-call',
-                onPress: () => router.push('/provider/shared-leads'),
+                onPress: () => router.push('/shared-leads'),
               } as Row,
             ]
           : []),

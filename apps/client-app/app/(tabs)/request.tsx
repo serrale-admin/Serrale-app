@@ -23,6 +23,7 @@ import { FieldLabel, FormTextArea, SelectField } from '../../src/components/Fiel
 import LocationSheet from '../../src/components/LocationSheet';
 import { CATS } from '../../src/data/mock';
 import { useCreateRequest } from '../../src/hooks/queries';
+import { resolveCustomerFeatureAccess } from '../../src/lib/customerFeatureAccess';
 import { areaLabel, categoryLabel } from '../../src/lib/directory-display';
 import { presentError } from '../../src/lib/error-presentation';
 import { Icon } from '../../src/lib/icons';
@@ -95,9 +96,16 @@ export default function RequestScreen() {
   const router = useRouter();
   const area = useAppStore((s) => s.area);
   const lang = useAppStore((s) => s.lang);
+  const sessionReady = useAppStore((s) => s.sessionReady);
   const loggedIn = useAppStore((s) => s.loggedIn);
   const activeSession = useAppStore((s) => s.activeSession);
-  const isCustomerSession = loggedIn && activeSession === 'customer';
+  const providerProfile = useAppStore((s) => s.providerProfile);
+  const access = resolveCustomerFeatureAccess({
+    sessionReady,
+    loggedIn,
+    activeSession,
+    hasProviderProfile: !!providerProfile,
+  });
   const showToast = useAppStore((s) => s.showToast);
   const am = lang === 'am';
 
@@ -172,7 +180,17 @@ export default function RequestScreen() {
     );
   }
 
-  if (!isCustomerSession) {
+  if (access === 'loading') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ResultCard icon="ph-hand-heart" title={t.title} text={t.subtitle}>
+          <Button label={labels.common.loading} variant="secondary" size="md" fullWidth disabled />
+        </ResultCard>
+      </SafeAreaView>
+    );
+  }
+
+  if (access === 'need_login') {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ResultCard icon="ph-hand-heart" title={t.gateTitle} text={t.gateText}>

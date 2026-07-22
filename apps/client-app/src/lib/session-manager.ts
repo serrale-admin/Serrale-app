@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { checkInstallation } from './installation';
 import { setTokenProvider, setUnauthorizedHandler, HttpError } from './http';
-import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe, ensureCustomerSessionFromProvider } from '../api';
+import { exchangeSession, refreshSession, logoutSession, fetchCustomerMe, ensureCustomerSessionFromProvider, fetchSavedProviderIds } from '../api';
 import type { ApiCustomerProfile, ApiSessionCustomer } from '../api/serrale/types';
 import { customerDisplayName, isCustomerProfileComplete } from './customer-profile';
 import { parsePhoneAccountHint, phonesMatch } from './phone-account';
@@ -95,6 +95,24 @@ function applyCustomerToStore(customer: ApiCustomerProfile | ApiSessionCustomer)
   });
 }
 
+/** Load account-backed bookmarks from the server after auth is ready. */
+export async function syncSavedProviders(): Promise<void> {
+  if (!useAppStore.getState().loggedIn) {
+    useAppStore.getState().setSavedProviderIds([]);
+    return;
+  }
+  try {
+    const tokens = await secureSession.read();
+    if (!tokens?.accessToken) {
+      await ensureHybridCustomerTokens();
+    }
+    const ids = await fetchSavedProviderIds();
+    useAppStore.getState().setSavedProviderIds(ids);
+  } catch {
+    // Keep in-memory state on transient failures.
+  }
+}
+
 /** Restore in-memory auth state from a saved provider session (SecureStore). */
 export async function syncProviderProfile(): Promise<void> {
   try {
@@ -141,6 +159,7 @@ export function applyProviderSession(record: ProviderSessionRecord): void {
       profileComplete: true,
     });
   }
+  void syncSavedProviders();
 }
 
 /** Persist co-issued customer tokens from a provider login / hybrid mint. */
@@ -205,9 +224,13 @@ export async function syncCustomerProfile(fallback?: ApiSessionCustomer | null):
     // very request that triggered the refresh.
     const live = await fetchCustomerMe({ skipAuthInterceptor: true });
     applyCustomerToStore(live);
+    await syncSavedProviders();
     return;
   } catch {
-    if (fallback) applyCustomerToStore(fallback);
+    if (fallback) {
+      applyCustomerToStore(fallback);
+      await syncSavedProviders();
+    }
   }
 }
 
@@ -438,8 +461,11 @@ export async function initializeSessionManager(): Promise<void> {
       if (!hasCustomer) {
         // Mint customer tokens in the background so Bookmarks → Requests works
         // for provider-only logins without a second OTP.
-        void ensureHybridCustomerTokens().then((ok) => {
-          if (ok) useAppStore.getState().setHasCustomerSession(true);
+        void ensureHybridCustomerTokens().then(async (ok) => {
+          if (ok) {
+            useAppStore.getState().setHasCustomerSession(true);
+            await syncSavedProviders();
+          }
         });
       }
     }

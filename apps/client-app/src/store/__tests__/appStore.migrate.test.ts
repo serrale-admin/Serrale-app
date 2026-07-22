@@ -33,13 +33,20 @@ describe('appStore migratePersistedState (legacy auth strip, v0 -> v1)', () => {
     expect(migrated.userToken).toBeUndefined();
   });
 
-  it('keeps non-auth preferences (area / lang / saved) untouched', () => {
+  it('strips device-local saved bookmarks when upgrading to v3', () => {
+    const migrated = migratePersistedState({ area: 'Bole', lang: 'en', saved: { p1: true } }, 2) as Record<string, unknown>;
+    expect(migrated.saved).toBeUndefined();
+    expect(migrated.area).toBe('Bole');
+  });
+
+  it('keeps non-auth preferences (area / lang) untouched', () => {
     const migrated = migratePersistedState(legacyPersistedState(), 0) as Record<string, unknown>;
     expect(migrated.area).toBe('Piassa');
     expect(migrated.lang).toBe('am');
-    expect(migrated.saved).toEqual({ p1: true });
+    // Saved is stripped on v0→v3 migration path (version < 3).
+    expect(migrated.saved).toBeUndefined();
     // Nothing sensitive leaks through.
-    expect(Object.keys(migrated).sort()).toEqual(['area', 'lang', 'saved']);
+    expect(Object.keys(migrated).sort()).toEqual(['area', 'lang']);
   });
 
   it('is a no-op safe on null/undefined persisted state', () => {

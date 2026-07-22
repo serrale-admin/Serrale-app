@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
+import { saveProviderBookmark, unsaveProviderBookmark } from '../api';
 import { useLabels } from '../lib/labels';
 import { useAppStore } from '../store/appStore';
 import { useContactStore } from '../store/contactStore';
@@ -10,7 +11,8 @@ export function useProviderActions() {
   const router = useRouter();
   const labels = useLabels();
   const loggedIn = useAppStore((s) => s.loggedIn);
-  const toggleSaved = useAppStore((s) => s.toggleSaved);
+  const patchSaved = useAppStore((s) => s.patchSaved);
+  const isSaved = useAppStore((s) => s.isSaved);
   const showToast = useAppStore((s) => s.showToast);
   const openCall = useContactStore((s) => s.openCall);
   const openWhatsapp = useContactStore((s) => s.openWhatsapp);
@@ -29,10 +31,24 @@ export function useProviderActions() {
         });
         return;
       }
-      const added = toggleSaved(id);
-      showToast(added ? labels.bookmarks.savedToast : labels.bookmarks.removedToast, 'ph-bookmark-simple');
+      const wasSaved = isSaved(id);
+      const nextSaved = !wasSaved;
+      patchSaved(id, nextSaved);
+      void (async () => {
+        try {
+          if (nextSaved) await saveProviderBookmark(id);
+          else await unsaveProviderBookmark(id);
+          showToast(
+            nextSaved ? labels.bookmarks.savedToast : labels.bookmarks.removedToast,
+            'ph-bookmark-simple',
+          );
+        } catch {
+          patchSaved(id, wasSaved);
+          showToast(labels.common.refreshFailed, 'ph-warning-circle');
+        }
+      })();
     },
-    [loggedIn, toggleSaved, showToast, router, labels],
+    [loggedIn, isSaved, patchSaved, showToast, router, labels],
   );
 
   const call = useCallback((p: Provider) => openCall(p), [openCall]);

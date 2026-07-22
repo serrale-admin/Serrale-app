@@ -91,10 +91,13 @@ interface AppState {
   setArea(area: string): void;
   setLang(lang: Lang): void;
 
-  // saved providers (local for the mock backend)
+  // saved providers (synced from the customer account on login)
   saved: Record<string, boolean>;
   isSaved(id: string): boolean;
-  toggleSaved(id: string): boolean;
+  /** Replace saved set from server (login/bootstrap). */
+  setSavedProviderIds(ids: string[]): void;
+  /** Optimistic local toggle while API sync runs. */
+  patchSaved(id: string, saved: boolean): void;
 
   // discovery filters (shared between Search and Category screens)
   filters: Filters;
@@ -136,8 +139,11 @@ let toastTimer: ReturnType<typeof setTimeout> | undefined;
  * (Task 5). A persisted area outside the new list (e.g. the old
  * "All Addis Ababa" sentinel or a dropped sub-city like "Kirkos") would match
  * nothing server-side, so it resets to the city-wide default.
+ *
+ * v2 → v3: bookmarks moved to the customer account on the server. Drop any
+ * device-local saved map so signed-out installs never show stale bookmarks.
  */
-export function migratePersistedState(persistedState: any, _version: number): any {
+export function migratePersistedState(persistedState: any, version: number): any {
   if (persistedState) {
     delete persistedState.verifyToken;
     delete persistedState.loggedIn;
@@ -145,6 +151,9 @@ export function migratePersistedState(persistedState: any, _version: number): an
     delete persistedState.userToken;
     if (typeof persistedState.area === 'string' && !AREAS.includes(persistedState.area)) {
       persistedState.area = AREA_ALL;
+    }
+    if (version < 3) {
+      delete persistedState.saved;
     }
   }
   return persistedState;
@@ -228,15 +237,16 @@ export const useAppStore = create<AppState>()(
 
       saved: {},
       isSaved: (id) => !!get().saved[id],
-      toggleSaved: (id) => {
-        // Guests cannot bookmark — bookmarks belong to an authenticated account.
-        if (!get().loggedIn) return false;
+      setSavedProviderIds: (ids) => {
+        const saved: Record<string, boolean> = {};
+        for (const id of ids) saved[id] = true;
+        set({ saved });
+      },
+      patchSaved: (id, value) => {
         const saved = { ...get().saved };
-        const next = !saved[id];
-        if (next) saved[id] = true;
+        if (value) saved[id] = true;
         else delete saved[id];
         set({ saved });
-        return next;
       },
 
       filters: emptyFilters(),
@@ -295,11 +305,10 @@ export const useAppStore = create<AppState>()(
       name: 'serrale-basic-app',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        saved: state.saved,
         area: state.area,
         lang: state.lang,
       }),
-      version: 2,
+      version: 3,
       migrate: migratePersistedState,
     },
   ),

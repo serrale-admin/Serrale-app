@@ -70,9 +70,17 @@ describe('language persistence', () => {
     expect(useAppStore.getState().loggedIn).toBe(false);
   });
 
-  it('refuses to bookmark when signed out', () => {
-    useAppStore.setState({ saved: {}, loggedIn: false });
-    expect(useAppStore.getState().toggleSaved('prov-1')).toBe(false);
+  it('setSavedProviderIds hydrates bookmarks from server ids', () => {
+    useAppStore.getState().setSavedProviderIds(['prov-1', 'prov-2']);
+    expect(useAppStore.getState().saved).toEqual({ 'prov-1': true, 'prov-2': true });
+    expect(useAppStore.getState().isSaved('prov-1')).toBe(true);
+  });
+
+  it('patchSaved toggles a single provider locally', () => {
+    useAppStore.getState().setSavedProviderIds(['prov-1']);
+    useAppStore.getState().patchSaved('prov-1', false);
     expect(useAppStore.getState().saved).toEqual({});
+    useAppStore.getState().patchSaved('prov-2', true);
+    expect(useAppStore.getState().saved).toEqual({ 'prov-2': true });
   });
 });

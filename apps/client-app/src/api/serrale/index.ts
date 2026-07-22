@@ -6,3 +6,4 @@ export * from './auth';
 export * from './provider-account';
 export * from './activity';
 export * from './trust';
+export * from './saved-providers';
